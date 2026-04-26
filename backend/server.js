@@ -1,11 +1,10 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const { chromium } = require("playwright");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 
 const app = express();
 
-// middleware
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
@@ -25,44 +24,21 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
-    const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    // ✅ Playwright browser (FIXED)
+    const browser = await chromium.launch({
+      args: ["--no-sandbox"]
     });
 
     const page = await browser.newPage();
 
-    // ✅ PDF Template
     const html = `
       <style>
-        body {
-          font-family: Arial, sans-serif;
-          padding: 20px;
-        }
-        h1 {
-          text-align: center;
-          margin-bottom: 5px;
-        }
-        h2 {
-          text-align: center;
-          margin-top: 0;
-          font-size: 16px;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 10px;
-        }
-        td, th {
-          border: 1px solid #000;
-          padding: 8px;
-          font-size: 14px;
-        }
-        .section {
-          background: #ddd;
-          font-weight: bold;
-          text-align: center;
-        }
+        body { font-family: Arial; padding: 20px; }
+        h1 { text-align: center; margin-bottom: 5px; }
+        h2 { text-align: center; margin-top: 0; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        td, th { border: 1px solid #000; padding: 8px; font-size: 14px; }
+        .section { background: #ddd; font-weight: bold; text-align: center; }
       </style>
 
       <h1>Spice Malabar Daily Report</h1>
@@ -109,12 +85,10 @@ app.post("/generate-report", async (req, res) => {
 
     console.log("📄 PDF generated");
 
-    // ✅ Multiple emails
     const emails = data.ownerEmails
       ? data.ownerEmails.split(",").map(e => e.trim())
       : [];
 
-    // ✅ Email config (ENV variables)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -148,7 +122,6 @@ app.post("/generate-report", async (req, res) => {
   }
 });
 
-// ✅ FIXED PORT (CRITICAL FOR RENDER)
 const PORT = process.env.PORT || 5050;
 
 app.listen(PORT, () => {
