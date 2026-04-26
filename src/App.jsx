@@ -79,7 +79,7 @@ function App() {
       });
 
       // ✅ UPDATED: Call Render backend
-      await fetch("https://enddayreport.onrender.com", {
+      await fetch("https://enddayreport.onrender.com/generate-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
