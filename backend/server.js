@@ -71,10 +71,11 @@ app.post("/generate-report", async (req, res) => {
       }
     });
 
-    // ===== PDF DESIGN =====
+    // ===== PDF DESIGN (GRID TABLE) =====
 
-    const startX = 50;
-    const valueX = 500;
+    const col1 = 50;
+    const col2 = 400;
+    const rowHeight = 20;
 
     const formatMoney = (val) =>
       `$${Number(val || 0).toFixed(2)}`;
@@ -91,63 +92,75 @@ app.post("/generate-report", async (req, res) => {
 
     doc.moveDown(2);
 
-    // Section Header
-    const sectionHeader = (title) => {
-      doc.moveDown(1);
-      doc.font("Helvetica-Bold").fontSize(14).text(title);
+    // Table row with borders
+    const drawTableRow = (label, value, isMoney = true, bold = false) => {
+      const y = doc.y;
 
-      doc.moveTo(startX, doc.y)
-        .lineTo(550, doc.y)
-        .stroke();
+      const displayValue = isMoney
+        ? formatMoney(value)
+        : `${value || 0}`;
 
-      doc.moveDown(0.5);
-    };
+      // Border
+      doc.rect(col1, y, 500, rowHeight).stroke();
 
-    // Row
-    const drawRow = (label, value, bold = false) => {
-      doc.font(bold ? "Helvetica-Bold" : "Helvetica")
+      // Label
+      doc
+        .font(bold ? "Helvetica-Bold" : "Helvetica")
         .fontSize(11)
-        .text(label, startX, doc.y, {
-          width: 300,
+        .text(label, col1 + 5, y + 5, {
+          width: 250,
           align: "left"
         });
 
-      doc.text(formatMoney(value), valueX, doc.y - 12, {
-        width: 80,
+      // Value
+      doc.text(displayValue, col2, y + 5, {
+        width: 120,
         align: "right"
       });
 
       doc.moveDown();
     };
 
+    // Section header
+    const sectionHeader = (title) => {
+      doc.moveDown(1);
+
+      doc
+        .font("Helvetica-Bold")
+        .fontSize(13)
+        .text(title);
+
+      doc.moveDown(0.3);
+    };
+
     // ===== DATA =====
 
     sectionHeader("Cash");
-    drawRow("Cash Sale", data.cashSale);
-    drawRow("Cash Tip", data.cashTip);
-    drawRow("Total Cash w/ Tip", data.totalCashWithTip, true);
-    drawRow("Cash Catering", data.cashCatering);
+    drawTableRow("Cash Sale", data.cashSale);
+    drawTableRow("Cash Tip", data.cashTip);
+    drawTableRow("Total Cash w/ Tip", data.totalCashWithTip, true, true);
+    drawTableRow("Cash Catering", data.cashCatering);
 
     sectionHeader("Guests");
-    drawRow("Lunch Guests", data.lunchGuests);
-    drawRow("Dinner Guests", data.dinnerGuests);
-    drawRow("Dine In Sales", data.dineInSales);
+    drawTableRow("Lunch Guests", data.lunchGuests, false);
+    drawTableRow("Dinner Guests", data.dinnerGuests, false);
+    drawTableRow("Dine In Sales", data.dineInSales);
 
     sectionHeader("Credit Card");
-    drawRow("Credit Card Sale", data.creditCardSale);
+    drawTableRow("Credit Card Sale", data.creditCardSale);
 
     sectionHeader("Sales Channels");
-    drawRow("System Gross", data.systemGross);
-    drawRow("Gift Card", data.giftCard);
-    drawRow("Total In House", data.totalInHouse);
-    drawRow("Restaurant Online", data.restaurantOnline);
-    drawRow("Grubhub", data.grubhub);
-    drawRow("DoorDash", data.doordash);
-    drawRow("Uber Eats", data.uberEats);
+    drawTableRow("System Gross", data.systemGross);
+    drawTableRow("Gift Card", data.giftCard);
+    drawTableRow("Total In House", data.totalInHouse);
+    drawTableRow("Restaurant Online", data.restaurantOnline);
+    drawTableRow("Grubhub", data.grubhub);
+    drawTableRow("DoorDash", data.doordash);
+    drawTableRow("Uber Eats", data.uberEats);
 
     sectionHeader("Final Totals");
-    drawRow("Total Restaurant Sales", data.totalRestaurantSales, true);
-    drawRow("Total Sales of the Day", data.totalSalesDay, true);
+    drawTableRow("Total Restaurant Sales", data.totalRestaurantSales, true, true);
+    drawTableRow("Total Sales of the Day", data.totalSalesDay, true, true);
 
     // Finalize PDF
     doc.end();
