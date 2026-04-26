@@ -24,21 +24,9 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
-    // ✅ Playwright browser (FIXED)
-    const path = require("path");
-
+    // ✅ CLEAN Playwright (NO hacks)
     const browser = await chromium.launch({
-    headless: true,
-    executablePath: path.join(
-        process.cwd(),
-        "node_modules",
-        "playwright",
-        ".local-browsers",
-        "chromium",
-        "chrome-linux",
-        "chrome"
-    ),
-    args: ["--no-sandbox", "--disable-dev-shm-usage"]
+      args: ["--no-sandbox"]
     });
 
     const page = await browser.newPage();
