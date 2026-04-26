@@ -39,12 +39,12 @@ function App() {
       [e.target.name]: e.target.value
     };
 
-    // ✅ Total Cash with Tip
+    // Total Cash with Tip
     const cashSale = Number(updatedForm.cashSale) || 0;
     const cashTip = Number(updatedForm.cashTip) || 0;
     updatedForm.totalCashWithTip = cashSale + cashTip;
 
-    // ✅ Total Restaurant Sales
+    // Total Restaurant Sales
     const fields = [
       "cashSale",
       "cashTip",
@@ -71,13 +71,15 @@ function App() {
 
   const saveData = async () => {
     try {
+      // Save to Firebase
       await addDoc(collection(db, "restaurants"), {
         ...form,
         restaurantName: "Spice Malabar",
         createdAt: new Date()
       });
 
-      await fetch("http://localhost:5050/generate-report", {
+      // ✅ UPDATED: Call Render backend
+      await fetch("https://enddayreport.onrender.com", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -87,6 +89,7 @@ function App() {
 
       alert("Saved + Report Sent!");
 
+      // Reset form
       setForm({
         date: getToday(),
 
@@ -126,7 +129,6 @@ function App() {
       <div style={styles.card}>
         <h2>Spice Malabar Daily Report</h2>
 
-        {/* DATE */}
         <input
           type="date"
           name="date"
@@ -135,7 +137,6 @@ function App() {
           style={styles.input}
         />
 
-        {/* EMAILS */}
         <input
           name="ownerEmails"
           value={form.ownerEmails}
