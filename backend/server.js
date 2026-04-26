@@ -23,7 +23,7 @@ app.post("/generate-report", async (req, res) => {
       data.date || new Date().toISOString().split("T")[0];
 
     const browser = await puppeteer.launch({
-      args: ["--no-sandbox"]
+        args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
@@ -113,9 +113,10 @@ app.post("/generate-report", async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: "tejayenduri9999@gmail.com",
-        pass: "dmntenyvoqsvquri"
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
       }
+      
     });
 
     console.log("📧 Sending email...");
