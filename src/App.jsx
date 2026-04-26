@@ -72,20 +72,24 @@ function App() {
     try {
       const API_URL = import.meta.env.VITE_API_URL;
 
-      // 🔒 Safety check
       if (!API_URL) {
         alert("Backend URL not configured");
         return;
       }
 
-      // Save to Firebase
+      if (!form.ownerEmails) {
+        alert("Please enter at least one email");
+        return;
+      }
+
+      // ✅ Save to Firebase
       await addDoc(collection(db, "restaurants"), {
         ...form,
         restaurantName: "Spice Malabar",
         createdAt: new Date()
       });
 
-      // Call backend (Railway-ready)
+      // ✅ Send to backend
       const response = await fetch(`${API_URL}/generate-report`, {
         method: "POST",
         headers: {
