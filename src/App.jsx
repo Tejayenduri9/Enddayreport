@@ -7,7 +7,6 @@ function App() {
 
   const [form, setForm] = useState({
     date: getToday(),
-
     ownerEmails: "",
 
     cashSale: "",
@@ -39,12 +38,12 @@ function App() {
       [e.target.name]: e.target.value
     };
 
-    // Total Cash with Tip
+    // ✅ Total Cash with Tip
     const cashSale = Number(updatedForm.cashSale) || 0;
     const cashTip = Number(updatedForm.cashTip) || 0;
     updatedForm.totalCashWithTip = cashSale + cashTip;
 
-    // Total Restaurant Sales
+    // ✅ Total Restaurant Sales
     const fields = [
       "cashSale",
       "cashTip",
@@ -71,6 +70,14 @@ function App() {
 
   const saveData = async () => {
     try {
+      const API_URL = import.meta.env.VITE_API_URL;
+
+      // 🔒 Safety check
+      if (!API_URL) {
+        alert("Backend URL not configured");
+        return;
+      }
+
       // Save to Firebase
       await addDoc(collection(db, "restaurants"), {
         ...form,
@@ -78,8 +85,8 @@ function App() {
         createdAt: new Date()
       });
 
-      // ✅ UPDATED: Call Render backend
-      await fetch("https://enddayreport.onrender.com/generate-report", {
+      // Call backend (Railway-ready)
+      const response = await fetch(`${API_URL}/generate-report`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -87,24 +94,23 @@ function App() {
         body: JSON.stringify(form)
       });
 
+      if (!response.ok) {
+        throw new Error("Backend request failed");
+      }
+
       alert("Saved + Report Sent!");
 
       // Reset form
       setForm({
         date: getToday(),
-
         ownerEmails: "",
-
         cashSale: "",
         cashTip: "",
         cashCatering: "",
-
         lunchGuests: "",
         dinnerGuests: "",
         dineInSales: "",
-
         creditCardSale: "",
-
         systemGross: "",
         giftCard: "",
         totalInHouse: "",
@@ -112,14 +118,13 @@ function App() {
         grubhub: "",
         doordash: "",
         uberEats: "",
-
         totalCashWithTip: "",
         totalRestaurantSales: "",
         totalSalesDay: ""
       });
 
     } catch (err) {
-      console.error(err);
+      console.error("ERROR:", err);
       alert(err.message);
     }
   };
@@ -152,7 +157,6 @@ function App() {
         <input
           name="totalCashWithTip"
           value={form.totalCashWithTip}
-          placeholder="Total Cash w/ Tip"
           readOnly
           style={{ ...styles.input, background: "#eee" }}
         />
@@ -180,7 +184,6 @@ function App() {
         <input
           name="totalRestaurantSales"
           value={form.totalRestaurantSales}
-          placeholder="Total Restaurant Sales"
           readOnly
           style={{ ...styles.input, background: "#eee" }}
         />

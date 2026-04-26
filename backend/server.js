@@ -2,19 +2,22 @@ const express = require("express");
 const { chromium } = require("playwright");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
 
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// test route
+// Test route
 app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
 
-// main route
+// Main route
 app.post("/generate-report", async (req, res) => {
+  let browser;
+
   try {
     console.log("🔥 Request received");
 
@@ -24,13 +27,28 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
-    // ✅ CLEAN Playwright (NO hacks)
-    const browser = await chromium.launch({
-      args: ["--no-sandbox"]
+    // ✅ Validate emails
+    if (!data.ownerEmails) {
+      return res.status(400).send("Owner emails are required");
+    }
+
+    const emails = data.ownerEmails
+      .split(",")
+      .map((e) => e.trim())
+      .filter(Boolean);
+
+    if (emails.length === 0) {
+      return res.status(400).send("Valid email required");
+    }
+
+    // ✅ Launch browser (Railway-safe)
+    browser = await chromium.launch({
+      args: ["--no-sandbox", "--disable-dev-shm-usage"]
     });
 
     const page = await browser.newPage();
 
+    // ✅ HTML Template
     const html = `
       <style>
         body { font-family: Arial; padding: 20px; }
@@ -81,14 +99,9 @@ app.post("/generate-report", async (req, res) => {
       printBackground: true
     });
 
-    await browser.close();
-
     console.log("📄 PDF generated");
 
-    const emails = data.ownerEmails
-      ? data.ownerEmails.split(",").map(e => e.trim())
-      : [];
-
+    // ✅ Email setup
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -119,9 +132,15 @@ app.post("/generate-report", async (req, res) => {
   } catch (err) {
     console.error("❌ ERROR:", err);
     res.status(500).send(err.message);
+
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 });
 
+// Port (Railway compatible)
 const PORT = process.env.PORT || 5050;
 
 app.listen(PORT, () => {
