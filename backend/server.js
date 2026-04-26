@@ -23,7 +23,7 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
-    const doc = new PDFDocument({ margin: 30 });
+    const doc = new PDFDocument({ margin: 40 });
     const buffers = [];
 
     doc.on("data", buffers.push.bind(buffers));
@@ -73,37 +73,55 @@ app.post("/generate-report", async (req, res) => {
 
     // ===== PDF DESIGN =====
 
-    const formatMoney = (val) => `$${Number(val || 0).toFixed(2)}`;
+    const startX = 50;
+    const valueX = 500;
 
+    const formatMoney = (val) =>
+      `$${Number(val || 0).toFixed(2)}`;
+
+    // Title
     doc.fontSize(18).text("Spice Malabar Daily Report", {
       align: "center"
     });
 
-    doc.moveDown();
-    doc.fontSize(12).text(`Date: ${reportDate}`, { align: "center" });
+    doc.moveDown(0.5);
+    doc.fontSize(12).text(`Date: ${reportDate}`, {
+      align: "center"
+    });
 
     doc.moveDown(2);
 
-    const drawRow = (label, value, bold = false) => {
-      doc
-        .font(bold ? "Helvetica-Bold" : "Helvetica")
-        .fontSize(11)
-        .text(label, 50, doc.y, { continued: true })
-        .text(formatMoney(value), 400, doc.y, { align: "right" });
-    };
-
+    // Section Header
     const sectionHeader = (title) => {
-      doc.moveDown();
-      doc
-        .font("Helvetica-Bold")
-        .fontSize(13)
-        .text(title);
+      doc.moveDown(1);
+      doc.font("Helvetica-Bold").fontSize(14).text(title);
+
+      doc.moveTo(startX, doc.y)
+        .lineTo(550, doc.y)
+        .stroke();
 
       doc.moveDown(0.5);
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
     };
 
-    // Sections
+    // Row
+    const drawRow = (label, value, bold = false) => {
+      doc.font(bold ? "Helvetica-Bold" : "Helvetica")
+        .fontSize(11)
+        .text(label, startX, doc.y, {
+          width: 300,
+          align: "left"
+        });
+
+      doc.text(formatMoney(value), valueX, doc.y - 12, {
+        width: 80,
+        align: "right"
+      });
+
+      doc.moveDown();
+    };
+
+    // ===== DATA =====
+
     sectionHeader("Cash");
     drawRow("Cash Sale", data.cashSale);
     drawRow("Cash Tip", data.cashTip);
@@ -131,7 +149,7 @@ app.post("/generate-report", async (req, res) => {
     drawRow("Total Restaurant Sales", data.totalRestaurantSales, true);
     drawRow("Total Sales of the Day", data.totalSalesDay, true);
 
-    // 🔥 THIS WAS MISSING (VERY IMPORTANT)
+    // Finalize PDF
     doc.end();
 
   } catch (err) {
