@@ -27,6 +27,7 @@ app.post("/generate-report", async (req, res) => {
 
     // ✅ Puppeteer fix for Render
     const browser = await puppeteer.launch({
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
