@@ -26,14 +26,8 @@ app.post("/generate-report", async (req, res) => {
       data.date || new Date().toISOString().split("T")[0];
 
     const browser = await puppeteer.launch({
-    executablePath: "/usr/bin/chromium",
-    headless: true,
-    args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu"
-    ]
+    headless: "new",
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
