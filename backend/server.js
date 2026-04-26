@@ -5,13 +5,16 @@ const cors = require("cors");
 
 const app = express();
 
-app.use(cors());
+// middleware
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+// test route
 app.get("/", (req, res) => {
   res.send("Backend is working!");
 });
 
+// main route
 app.post("/generate-report", async (req, res) => {
   try {
     console.log("🔥 Request received");
@@ -22,13 +25,14 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
+    // ✅ Puppeteer fix for Render
     const browser = await puppeteer.launch({
-        args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
 
     const page = await browser.newPage();
 
-    // ✅ UPDATED PDF TEMPLATE
+    // ✅ PDF Template
     const html = `
       <style>
         body {
@@ -105,24 +109,24 @@ app.post("/generate-report", async (req, res) => {
 
     console.log("📄 PDF generated");
 
-    // ✅ MULTIPLE EMAIL SUPPORT
+    // ✅ Multiple emails
     const emails = data.ownerEmails
       ? data.ownerEmails.split(",").map(e => e.trim())
       : [];
 
+    // ✅ Email config (ENV variables)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       }
-      
     });
 
     console.log("📧 Sending email...");
 
     await transporter.sendMail({
-      from: "tejayenduri9999@gmail.com",
+      from: process.env.EMAIL_USER,
       to: emails,
       subject: `Daily Report - ${reportDate}`,
       text: "Attached is your report",
@@ -144,6 +148,9 @@ app.post("/generate-report", async (req, res) => {
   }
 });
 
-app.listen(5050, () => {
-  console.log("Server running on port 5050");
+// ✅ FIXED PORT (CRITICAL FOR RENDER)
+const PORT = process.env.PORT || 5050;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
