@@ -25,10 +25,15 @@ app.post("/generate-report", async (req, res) => {
     const reportDate =
       data.date || new Date().toISOString().split("T")[0];
 
-    // ✅ Puppeteer fix for Render
     const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    executablePath: "/usr/bin/chromium",
+    headless: true,
+    args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu"
+    ]
     });
 
     const page = await browser.newPage();
