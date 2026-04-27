@@ -65,60 +65,49 @@ app.post("/generate-report", async (req, res) => {
 
         console.log("✅ Email sent successfully");
         res.send("Report generated + email sent");
+
       } catch (err) {
         console.error("❌ EMAIL ERROR:", err);
         res.status(500).send(err.message);
       }
     });
 
-    // ====== LAYOUT (GRID, CONTROLLED Y) ======
+    // ===== LAYOUT =====
     const pageWidth = doc.page.width;
     const startX = 40;
-    const tableWidth = pageWidth - 80; // margins accounted
+    const tableWidth = pageWidth - 80;
     const col1Width = Math.floor(tableWidth * 0.6);
     const col2Width = tableWidth - col1Width;
-    const rowHeight = 20; // tighter to fit one page
+    const rowHeight = 20;
 
-    let y = 80; // start below header
+    let y = 80;
 
     const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
 
     // Title
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(18)
-      .text("Restaurant Daily Report", 0, 30, { align: "center" });
+    doc.font("Helvetica-Bold").fontSize(18).text("Spice Malabar Sales Report", 0, 30, { align: "center" });
+    doc.font("Helvetica").fontSize(11).text(`Date: ${reportDate}`, 0, 52, { align: "center" });
 
-    doc
-      .font("Helvetica")
-      .fontSize(11)
-      .text(`Date: ${reportDate}`, 0, 52, { align: "center" });
-
-    // Ensure we don’t split a section header from its first row
-    const ensureSpace = (neededRows = 1) => {
-      const needed = neededRows * rowHeight + 10;
-      if (y + needed > doc.page.height - 30) {
+    const ensureSpace = (rows = 1) => {
+      if (y + rows * rowHeight > doc.page.height - 30) {
         doc.addPage();
         y = 40;
       }
     };
 
     const drawSection = (title) => {
-      ensureSpace(2); // header + at least one row
+      ensureSpace(2);
 
-      // header background
-      doc
-        .rect(startX, y, tableWidth, rowHeight)
-        .fillAndStroke("#eeeeee", "#000");
+      doc.rect(startX, y, tableWidth, rowHeight)
+         .fillAndStroke("#eeeeee", "#000");
 
-      doc
-        .fillColor("#000")
-        .font("Helvetica-Bold")
-        .fontSize(12)
-        .text(title, startX, y + 5, {
-          width: tableWidth,
-          align: "center"
-        });
+      doc.fillColor("#000")
+         .font("Helvetica-Bold")
+         .fontSize(12)
+         .text(title, startX, y + 5, {
+           width: tableWidth,
+           align: "center"
+         });
 
       y += rowHeight;
     };
@@ -126,22 +115,14 @@ app.post("/generate-report", async (req, res) => {
     const drawRow = (label, value, isMoney = true, bold = false) => {
       ensureSpace(1);
 
-      // left cell
       doc.rect(startX, y, col1Width, rowHeight).stroke();
+      doc.rect(startX + col1Width, y, col2Width, rowHeight).stroke();
 
-      doc
-        .font(bold ? "Helvetica-Bold" : "Helvetica")
-        .fontSize(11)
-        .fillColor("#000")
-        .text(label, startX + 6, y + 5, {
-          width: col1Width - 12,
-          align: "left"
-        });
-
-      // right cell
-      doc
-        .rect(startX + col1Width, y, col2Width, rowHeight)
-        .stroke();
+      doc.font(bold ? "Helvetica-Bold" : "Helvetica")
+         .fontSize(11)
+         .text(label, startX + 6, y + 5, {
+           width: col1Width - 12
+         });
 
       const display = isMoney ? formatMoney(value) : `${value || 0}`;
 
@@ -153,36 +134,48 @@ app.post("/generate-report", async (req, res) => {
       y += rowHeight;
     };
 
-    // ====== DATA ======
+    // ===== DATA =====
+
+    // CASH
     drawSection("Cash");
     drawRow("Cash Sale", data.cashSale);
     drawRow("Cash Tip", data.cashTip);
-    drawRow("Total Cash w/ Tip", data.totalCashWithTip, true, true);
-    drawRow("Cash Catering", data.cashCatering);
+    drawRow("Total Cash", data.totalCashWithTip, true, true);
 
+    // GUESTS
     drawSection("Guests");
     drawRow("Lunch Guests", data.lunchGuests, false);
     drawRow("Dinner Guests", data.dinnerGuests, false);
     drawRow("Dine In Sales", data.dineInSales);
 
+    // CREDIT CARD (UPDATED)
     drawSection("Credit Card");
-    drawRow("Credit Card Sale", data.creditCardSale);
+    drawRow("Total Credit Card Settle", data.totalSettle);
+    drawRow("Credit Card Tip", data.creditCardTip);
+    drawRow("Credit Card Sale", data.creditCardSale, true, true);
 
+    // SALES CHANNEL
     drawSection("Sales Channels");
     drawRow("System Gross Sale", data.systemGross);
     drawRow("Gift Card Redeemed", data.giftCard);
-    drawRow("Total In House", data.totalInHouse);
+    drawRow("Total In House", data.totalInHouse, true, true);
+
+    // ONLINE SALES
+    drawSection("Online Sales");
     drawRow("Restaurant Online", data.restaurantOnline);
     drawRow("Grubhub", data.grubhub);
     drawRow("DoorDash", data.doordash);
     drawRow("Uber Eats", data.uberEats);
+    drawRow("Total Online Sales", data.totalRestaurantOnline, true, true);
 
+    // FINAL TOTALS (UPDATED)
     drawSection("Final Totals");
     drawRow("Total Restaurant Sales", data.totalRestaurantSales, true, true);
+    drawRow("Cash Catering", data.cashCatering);
     drawRow("Total Sales of the Day", data.totalSalesDay, true, true);
 
-    // finalize
     doc.end();
+
   } catch (err) {
     console.error("❌ ERROR:", err);
     res.status(500).send(err.message);
@@ -190,6 +183,7 @@ app.post("/generate-report", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5050;
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

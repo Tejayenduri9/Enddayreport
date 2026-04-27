@@ -7,89 +7,101 @@ function App() {
 
   const [form, setForm] = useState({
     date: getToday(),
-    ownerEmails: "",
+    ownerEmails: "tejayenduri9999@gmail.com",
 
-    cashSale: "",
-    cashTip: "",
-    cashCatering: "",
-
+    // Guests
     lunchGuests: "",
     dinnerGuests: "",
     dineInSales: "",
 
-    creditCardSale: "",
+    // Cash
+    cashSale: "",
+    cashTip: "",
+    cashCatering: "",
 
-    systemGross: "",
+    // Credit card
+    totalSettle: "",
+    creditCardTip: "",
+
+    // Sales Channels
     giftCard: "",
-    totalInHouse: "",
     restaurantOnline: "",
     grubhub: "",
     doordash: "",
     uberEats: "",
 
+    // Hidden values (for backend only)
     totalCashWithTip: "",
+    creditCardSale: "",
+    systemGross: "",
+    totalInHouse: "",
+    totalRestaurantOnline: "",
     totalRestaurantSales: "",
     totalSalesDay: ""
   });
 
   const handleChange = (e) => {
-    const updatedForm = {
+    const updated = {
       ...form,
       [e.target.name]: e.target.value
     };
 
-    // ✅ Total Cash with Tip
-    const cashSale = Number(updatedForm.cashSale) || 0;
-    const cashTip = Number(updatedForm.cashTip) || 0;
-    updatedForm.totalCashWithTip = cashSale + cashTip;
+    // ===== CASH =====
+    const cashSale = Number(updated.cashSale) || 0;
+    const cashTip = Number(updated.cashTip) || 0;
+    const cashCatering = Number(updated.cashCatering) || 0;
 
-    // ✅ Total Restaurant Sales
-    const fields = [
-      "cashSale",
-      "cashTip",
-      "cashCatering",
-      "creditCardSale",
-      "systemGross",
-      "giftCard",
-      "totalInHouse",
-      "restaurantOnline",
-      "grubhub",
-      "doordash",
-      "uberEats"
-    ];
+    const grandTotalCash = cashSale + cashTip + cashCatering;
 
-    let total = 0;
-    fields.forEach((f) => {
-      total += Number(updatedForm[f]) || 0;
-    });
+    // ===== CREDIT CARD =====
+    const totalSettle = Number(updated.totalSettle) || 0;
+    const creditCardTip = Number(updated.creditCardTip) || 0;
 
-    updatedForm.totalRestaurantSales = total;
+    const creditCardSale = totalSettle - creditCardTip;
 
-    setForm(updatedForm);
+    // ===== SYSTEM =====
+    const systemGross = cashSale + creditCardSale;
+
+    const giftCard = Number(updated.giftCard) || 0;
+    const totalInHouse = systemGross - giftCard;
+
+    // ===== ONLINE =====
+    const restaurantOnline = Number(updated.restaurantOnline) || 0;
+    const grubhub = Number(updated.grubhub) || 0;
+    const doordash = Number(updated.doordash) || 0;
+    const uberEats = Number(updated.uberEats) || 0;
+
+    const onlineSale =
+      restaurantOnline + grubhub + doordash + uberEats;
+
+    // ===== FINAL TOTALS =====
+    const totalRestaurantSales = totalInHouse + onlineSale;
+
+    const totalSalesDay =
+      totalRestaurantSales + cashCatering;
+
+    // ===== STORE (ONLY FOR BACKEND) =====
+    updated.totalCashWithTip = grandTotalCash;
+    updated.creditCardSale = creditCardSale;
+    updated.systemGross = systemGross;
+    updated.totalInHouse = totalInHouse;
+    updated.totalRestaurantOnline = onlineSale;
+
+    updated.totalRestaurantSales = totalRestaurantSales;
+    updated.totalSalesDay = totalSalesDay;
+
+    setForm(updated);
   };
 
   const saveData = async () => {
     try {
       const API_URL = import.meta.env.VITE_API_URL;
 
-      if (!API_URL) {
-        alert("Backend URL not configured");
-        return;
-      }
-
-      if (!form.ownerEmails) {
-        alert("Please enter at least one email");
-        return;
-      }
-
-      // ✅ Save to Firebase
       await addDoc(collection(db, "restaurants"), {
         ...form,
-        restaurantName: "Spice Malabar",
         createdAt: new Date()
       });
 
-      // ✅ Send to backend
       const response = await fetch(`${API_URL}/generate-report`, {
         method: "POST",
         headers: {
@@ -98,37 +110,12 @@ function App() {
         body: JSON.stringify(form)
       });
 
-      if (!response.ok) {
-        throw new Error("Backend request failed");
-      }
+      if (!response.ok) throw new Error("Backend request failed");
 
       alert("Saved + Report Sent!");
 
-      // Reset form
-      setForm({
-        date: getToday(),
-        ownerEmails: "",
-        cashSale: "",
-        cashTip: "",
-        cashCatering: "",
-        lunchGuests: "",
-        dinnerGuests: "",
-        dineInSales: "",
-        creditCardSale: "",
-        systemGross: "",
-        giftCard: "",
-        totalInHouse: "",
-        restaurantOnline: "",
-        grubhub: "",
-        doordash: "",
-        uberEats: "",
-        totalCashWithTip: "",
-        totalRestaurantSales: "",
-        totalSalesDay: ""
-      });
-
     } catch (err) {
-      console.error("ERROR:", err);
+      console.error(err);
       alert(err.message);
     }
   };
@@ -136,72 +123,48 @@ function App() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2>Spice Malabar Daily Report</h2>
+        <h2>Spice Malabar Sales Report</h2>
 
+        {/* LOCKED DATE */}
         <input
           type="date"
-          name="date"
           value={form.date}
-          onChange={handleChange}
-          style={styles.input}
-        />
-
-        <input
-          name="ownerEmails"
-          value={form.ownerEmails}
-          placeholder="Owner Emails (comma separated)"
-          onChange={handleChange}
-          style={styles.input}
-        />
-
-        <h3>Cash</h3>
-        <input name="cashSale" value={form.cashSale} placeholder="Cash Sale" onChange={handleChange} style={styles.input}/>
-        <input name="cashTip" value={form.cashTip} placeholder="Cash Tip" onChange={handleChange} style={styles.input}/>
-
-        <input
-          name="totalCashWithTip"
-          value={form.totalCashWithTip}
           readOnly
           style={{ ...styles.input, background: "#eee" }}
         />
 
-        <input name="cashCatering" value={form.cashCatering} placeholder="Cash Catering" onChange={handleChange} style={styles.input}/>
+        {/* LOCKED EMAIL */}
+        <input
+          value={form.ownerEmails}
+          readOnly
+          style={{ ...styles.input, background: "#eee" }}
+        />
 
         <h3>Guests</h3>
-        <input name="lunchGuests" value={form.lunchGuests} placeholder="Lunch Guests" onChange={handleChange} style={styles.input}/>
-        <input name="dinnerGuests" value={form.dinnerGuests} placeholder="Dinner Guests" onChange={handleChange} style={styles.input}/>
-        <input name="dineInSales" value={form.dineInSales} placeholder="Dine In Sales" onChange={handleChange} style={styles.input}/>
+        <input name="lunchGuests" placeholder="Lunch Guests" value={form.lunchGuests} onChange={handleChange} style={styles.input}/>
+        <input name="dinnerGuests" placeholder="Dinner Guests" value={form.dinnerGuests} onChange={handleChange} style={styles.input}/>
+        <input name="dineInSales" placeholder="Dine In Sales" value={form.dineInSales} onChange={handleChange} style={styles.input}/>
+
+        <h3>Cash</h3>
+        <input name="cashSale" placeholder="Cash Sale" value={form.cashSale} onChange={handleChange} style={styles.input}/>
+        <input name="cashTip" placeholder="Cash Tip" value={form.cashTip} onChange={handleChange} style={styles.input}/>
+        <input name="cashCatering" placeholder="Cash Catering" value={form.cashCatering} onChange={handleChange} style={styles.input}/>
 
         <h3>Credit Card</h3>
-        <input name="creditCardSale" value={form.creditCardSale} placeholder="Credit Card Sale" onChange={handleChange} style={styles.input}/>
+        <input name="totalSettle" placeholder="Total Credit Card Settle Amt" value={form.totalSettle} onChange={handleChange} style={styles.input}/>
+        <input name="creditCardTip" placeholder="Total Credit Card Tip" value={form.creditCardTip} onChange={handleChange} style={styles.input}/>
 
         <h3>Sales Channels</h3>
-        <input name="systemGross" value={form.systemGross} placeholder="System Gross Sale" onChange={handleChange} style={styles.input}/>
-        <input name="giftCard" value={form.giftCard} placeholder="Gift Card Redeemed" onChange={handleChange} style={styles.input}/>
-        <input name="totalInHouse" value={form.totalInHouse} placeholder="Total Sale In House" onChange={handleChange} style={styles.input}/>
-        <input name="restaurantOnline" value={form.restaurantOnline} placeholder="Restaurant Online" onChange={handleChange} style={styles.input}/>
-        <input name="grubhub" value={form.grubhub} placeholder="Grubhub" onChange={handleChange} style={styles.input}/>
-        <input name="doordash" value={form.doordash} placeholder="DoorDash" onChange={handleChange} style={styles.input}/>
-        <input name="uberEats" value={form.uberEats} placeholder="Uber Eats" onChange={handleChange} style={styles.input}/>
+        <input name="giftCard" placeholder="Gift Card Redeemed" value={form.giftCard} onChange={handleChange} style={styles.input}/>
 
-        <h3>Final Totals</h3>
-        <input
-          name="totalRestaurantSales"
-          value={form.totalRestaurantSales}
-          readOnly
-          style={{ ...styles.input, background: "#eee" }}
-        />
-
-        <input
-          name="totalSalesDay"
-          value={form.totalSalesDay}
-          placeholder="Total Sales of the Day"
-          onChange={handleChange}
-          style={styles.input}
-        />
+        <h3>Restaurant Online</h3>
+        <input name="restaurantOnline" placeholder="Restaurant Online" value={form.restaurantOnline} onChange={handleChange} style={styles.input}/>
+        <input name="grubhub" placeholder="Grubhub" value={form.grubhub} onChange={handleChange} style={styles.input}/>
+        <input name="doordash" placeholder="DoorDash" value={form.doordash} onChange={handleChange} style={styles.input}/>
+        <input name="uberEats" placeholder="Uber Eats" value={form.uberEats} onChange={handleChange} style={styles.input}/>
 
         <button onClick={saveData} style={styles.button}>
-          Save
+          Save & Send Report
         </button>
       </div>
     </div>
@@ -212,8 +175,8 @@ const styles = {
   container: {
     display: "flex",
     justifyContent: "center",
-    background: "#f5f5f5",
-    padding: "20px"
+    padding: "20px",
+    background: "#f5f5f5"
   },
   card: {
     background: "#fff",
@@ -230,13 +193,14 @@ const styles = {
     border: "1px solid #ccc"
   },
   button: {
-    padding: "10px",
+    padding: "12px",
     background: "green",
     color: "white",
     border: "none",
     borderRadius: "5px",
+    width: "100%",
     cursor: "pointer",
-    width: "100%"
+    fontWeight: "bold"
   }
 };
 
