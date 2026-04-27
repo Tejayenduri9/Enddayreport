@@ -1,771 +1,304 @@
-import { useState } from "react";
-import { db } from "./firebase";
-import { collection, addDoc } from "firebase/firestore";
-import logo from "./assets/logo.png";
+const express = require("express");
+const PDFDocument = require("pdfkit");
+const nodemailer = require("nodemailer");
+const cors = require("cors");
+require("dotenv").config();
 
-function App() {
-  const getToday = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+const app = express();
 
-  const formatDate = (dateStr) => {
-    const [year, month, day] = dateStr.split("-").map(Number);
-    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+app.use(cors({ origin: "*" }));
+app.use(express.json());
+
+// Health check
+app.get("/", (req, res) => {
+  res.send("Backend is working!");
+});
+
+app.post("/generate-report", async (req, res) => {
+  try {
+    console.log("🔥 Request received");
+
+    const data = req.body;
+    const reportDate =
+      data.date || new Date().toISOString().split("T")[0];
+
+    const doc = new PDFDocument({
+      size: "A4",
+      margins: { top: 30, bottom: 30, left: 40, right: 40 }
     });
-  };
 
-  const [form, setForm] = useState({
-    date: getToday(),
-    ownerEmails: "tejayenduri9999@gmail.com",
-    lunchGuests: "",
-    dinnerGuests: "",
-    dineInSales: "",
-    cashSale: "",
-    cashTip: "",
-    cashCatering: "",
-    totalSettle: "",
-    creditCardTip: "",
-    giftCard: "",
-    restaurantOnline: "",
-    grubhub: "",
-    doordash: "",
-    uberEats: "",
-    totalCashWithTip: "",
-    creditCardSale: "",
-    systemGross: "",
-    totalInHouse: "",
-    totalRestaurantOnline: "",
-    totalRestaurantSales: "",
-    totalSalesDay: "",
-  });
+    const buffers = [];
+    doc.on("data", (b) => buffers.push(b));
 
-  const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
-  const [cateringNotes, setCateringNotes] = useState([emptyCatering()]);
-  const [notesOpen, setNotesOpen] = useState(false);
-  const [modal, setModal] = useState({ open: false, type: "", title: "", message: "" });
-  const [feedback, setFeedback] = useState("");
+    doc.on("end", async () => {
+      try {
+        const pdfBuffer = Buffer.concat(buffers);
 
-  const showModal = (type, title, message) => setModal({ open: true, type, title, message });
-  const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
+        console.log("📄 PDF generated");
 
-  const handleCateringChange = (index, e) => {
-    const updated = [...cateringNotes];
-    updated[index] = { ...updated[index], [e.target.name]: e.target.value };
-    setCateringNotes(updated);
-  };
+        const emails = data.ownerEmails
+          ? data.ownerEmails.split(",").map((e) => e.trim())
+          : [];
 
-  const addCateringEntry = () => setCateringNotes([...cateringNotes, emptyCatering()]);
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS
+          }
+        });
 
-  const removeCateringEntry = (index) => {
-    if (cateringNotes.length === 1) return;
-    setCateringNotes(cateringNotes.filter((_, i) => i !== index));
-  };
+        console.log("📧 Sending email...");
 
-  const handleChange = (e) => {
-    const updated = { ...form, [e.target.name]: e.target.value };
+        await transporter.sendMail({
+          from: process.env.EMAIL_USER,
+          to: emails,
+          subject: `Daily Report - ${reportDate}`,
+          text: "Attached is your report",
+          attachments: [
+            {
+              filename: `${reportDate}_daily_report.pdf`,
+              content: pdfBuffer
+            }
+          ]
+        });
 
-    const cashSale = Number(updated.cashSale) || 0;
-    const cashTip = Number(updated.cashTip) || 0;
-    const cashCatering = Number(updated.cashCatering) || 0;
-    const totalCash = cashSale + cashTip + cashCatering;
+        console.log("✅ Email sent successfully");
+        res.send("Report generated + email sent");
 
-    const totalSettle = Number(updated.totalSettle) || 0;
-    const creditCardTip = Number(updated.creditCardTip) || 0;
-    const creditCardSale = totalSettle - creditCardTip;
+      } catch (err) {
+        console.error("❌ EMAIL ERROR:", err);
+        res.status(500).send(err.message);
+      }
+    });
 
-    const systemGross = cashSale + creditCardSale;
-    const giftCard = Number(updated.giftCard) || 0;
-    const totalInHouse = systemGross - giftCard;
+    // ===== LAYOUT =====
+    const pageWidth = doc.page.width;
+    const startX = 40;
+    const tableWidth = pageWidth - 80;
+    const col1Width = Math.floor(tableWidth * 0.6);
+    const col2Width = tableWidth - col1Width;
+    const rowHeight = 20;
 
-    const restaurantOnline = Number(updated.restaurantOnline) || 0;
-    const grubhub = Number(updated.grubhub) || 0;
-    const doordash = Number(updated.doordash) || 0;
-    const uberEats = Number(updated.uberEats) || 0;
-    const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
+    let y = 80;
 
-    const totalRestaurantSales = totalInHouse + onlineSale;
-    const totalSalesDay = totalRestaurantSales + cashCatering;
+    const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
 
-    updated.totalCashWithTip = totalCash;
-    updated.creditCardSale = creditCardSale;
-    updated.systemGross = systemGross;
-    updated.totalInHouse = totalInHouse;
-    updated.totalRestaurantOnline = onlineSale;
-    updated.totalRestaurantSales = totalRestaurantSales;
-    updated.totalSalesDay = totalSalesDay;
+    // Title
+    doc.font("Helvetica-Bold").fontSize(18).text("Spice Malabar Sales Report", 0, 30, { align: "center" });
+    doc.font("Helvetica").fontSize(11).text(`Date: ${reportDate}`, 0, 52, { align: "center" });
 
-    setForm(updated);
-  };
+    const pageHeight = doc.page.height;
+    const bottomMargin = 50;
 
-  const saveData = async () => {
-    try {
-      const API_URL = import.meta.env.VITE_API_URL;
+    const ensureSpace = (rows = 1) => {
+      if (y + rows * rowHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        y = 40;
+      }
+    };
 
-      await addDoc(collection(db, "restaurants"), {
-        ...form,
-        cateringNotes,
-        createdAt: new Date(),
+    const drawSection = (title, numRows = 1) => {
+      // If section header + at least one row won't fit, move to next page
+      if (y + (numRows + 1) * rowHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        y = 40;
+      }
+
+      doc.rect(startX, y, tableWidth, rowHeight)
+         .fillAndStroke("#eeeeee", "#000");
+
+      doc.fillColor("#000")
+         .font("Helvetica-Bold")
+         .fontSize(12)
+         .text(title, startX, y + 5, {
+           width: tableWidth,
+           align: "center"
+         });
+
+      y += rowHeight;
+    };
+
+    const drawRow = (label, value, isMoney = true, bold = false) => {
+      // If this row won't fit, add a new page and redraw a continuation border
+      if (y + rowHeight > pageHeight - bottomMargin) {
+        doc.addPage();
+        y = 40;
+      }
+
+      doc.rect(startX, y, col1Width, rowHeight).stroke();
+      doc.rect(startX + col1Width, y, col2Width, rowHeight).stroke();
+
+      doc.font(bold ? "Helvetica-Bold" : "Helvetica")
+         .fontSize(11)
+         .fillColor("#000")
+         .text(label, startX + 6, y + 5, {
+           width: col1Width - 12
+         });
+
+      const display = isMoney ? formatMoney(value) : `${value || 0}`;
+
+      doc.text(display, startX + col1Width + 6, y + 5, {
+        width: col2Width - 12,
+        align: "right"
       });
 
-      const response = await fetch(`${API_URL}/generate-report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, cateringNotes }),
-      });
+      y += rowHeight;
+    };
 
-      if (!response.ok) throw new Error("Backend request failed");
+    // ===== DATA =====
+    // GUESTS
+    drawSection("Guests");
+    drawRow("Lunch Guests", data.lunchGuests, false);
+    drawRow("Dinner Guests", data.dinnerGuests, false);
+    drawRow("Dine In Sales", data.dineInSales);
+    
+    // CASH
+    drawSection("Cash");
+    drawRow("Cash Sale", data.cashSale);
+    drawRow("Cash Tip", data.cashTip);
+    drawRow("Total Cash", data.totalCashWithTip, true, true);
 
-      // Reset form
-      setForm({
-        date: getToday(),
-        ownerEmails: form.ownerEmails,
-        lunchGuests: "",
-        dinnerGuests: "",
-        dineInSales: "",
-        cashSale: "",
-        cashTip: "",
-        cashCatering: "",
-        totalSettle: "",
-        creditCardTip: "",
-        giftCard: "",
-        restaurantOnline: "",
-        grubhub: "",
-        doordash: "",
-        uberEats: "",
-        totalCashWithTip: "",
-        creditCardSale: "",
-        systemGross: "",
-        totalInHouse: "",
-        totalRestaurantOnline: "",
-        totalRestaurantSales: "",
-        totalSalesDay: "",
+    // CREDIT CARD (UPDATED)
+    drawSection("Credit Card");
+    drawRow("Total Credit Card Settle", data.totalSettle);
+    drawRow("Credit Card Tip", data.creditCardTip);
+    drawRow("Credit Card Sale", data.creditCardSale, true, true);
+
+    // SALES CHANNEL
+    drawSection("Sales Channels");
+    drawRow("System Gross Sale", data.systemGross);
+    drawRow("Gift Card Redeemed", data.giftCard);
+    drawRow("Total In House", data.totalInHouse, true, true);
+
+    // ONLINE SALES
+    drawSection("Online Sales");
+    drawRow("Restaurant Online", data.restaurantOnline);
+    drawRow("Grubhub", data.grubhub);
+    drawRow("DoorDash", data.doordash);
+    drawRow("Uber Eats", data.uberEats);
+    drawRow("Total Online Sales", data.totalRestaurantOnline, true, true);
+
+    // FINAL TOTALS (UPDATED)
+    drawSection("Final Totals");
+    drawRow("Total Restaurant Sales", data.totalRestaurantSales, true, true);
+    drawRow("Cash Catering", data.cashCatering);
+    drawRow("Total Sales of the Day", data.totalSalesDay, true, true);
+
+
+    // CATERING NOTES - horizontal table layout
+    const cateringNotes = data.cateringNotes;
+    const validCatering = Array.isArray(cateringNotes)
+      ? cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount)
+      : [];
+
+    if (validCatering.length > 0) {
+      // Section header
+      ensureSpace(2);
+      doc.rect(startX, y, tableWidth, rowHeight)
+         .fillAndStroke("#eeeeee", "#000");
+      doc.fillColor("#000")
+         .font("Helvetica-Bold")
+         .fontSize(12)
+         .text("Catering Notes", startX, y + 5, { width: tableWidth, align: "center" });
+      y += rowHeight;
+
+      // Column widths: precise — last column takes remaining space to avoid rounding gaps
+      const cColBase = Math.floor(tableWidth / 4);
+      const cCols = [cColBase, cColBase, cColBase, tableWidth - cColBase * 3];
+      const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
+
+      const getCX = (i) => startX + cCols.slice(0, i).reduce((a, b) => a + b, 0);
+
+      const drawCateringHeaders = () => {
+        ensureSpace(1);
+        cHeaders.forEach((h, i) => {
+          const cx = getCX(i);
+          doc.rect(cx, y, cCols[i], rowHeight).fillAndStroke("#d5e8d4", "#000");
+          doc.fillColor("#000").font("Helvetica-Bold").fontSize(10)
+             .text(h, cx + 4, y + 5, { width: cCols[i] - 8, align: "center" });
+        });
+        y += rowHeight;
+      };
+
+      drawCateringHeaders();
+
+      // Draw each entry as a row
+      validCatering.forEach((catering) => {
+        if (y + rowHeight > doc.page.height - 50) {
+          doc.addPage();
+          y = 40;
+          drawCateringHeaders();
+        }
+
+        const cells = [
+          catering.cateringDate || "—",
+          catering.name || "—",
+          catering.paymentType || "—",
+          catering.amount ? `$${Number(catering.amount).toFixed(2)}` : "—"
+        ];
+
+        cells.forEach((val, i) => {
+          const cx = getCX(i);
+          doc.rect(cx, y, cCols[i], rowHeight).stroke();
+          doc.font("Helvetica").fontSize(10).fillColor("#000")
+             .text(val, cx + 4, y + 5, { width: cCols[i] - 8, align: "center" });
+        });
+        y += rowHeight;
       });
-      setCateringNotes([emptyCatering()]);
-      setNotesOpen(false);
-      showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
-    } catch (err) {
-      console.error(err);
-      showModal("error", "Something went wrong", err.message || "An unexpected error occurred. Please check your entries and try again.");
     }
-  };
 
-  return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');
+    doc.end();
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+  } catch (err) {
+    console.error("❌ ERROR:", err);
+    res.status(500).send(err.message);
+  }
+});
 
-        body {
-          background: #f0f2f0;
-          font-family: 'DM Sans', sans-serif;
-        }
 
-        .rs-wrapper {
-          min-height: 100vh;
-          display: flex;
-          justify-content: center;
-          padding: 2rem 1rem;
-        }
+app.post("/send-feedback", async (req, res) => {
+  try {
+    const { feedback, date, ownerEmails } = req.body;
 
-        .rs-card {
-          width: 100%;
-          max-width: 520px;
-          background: #fff;
-          border-radius: 20px;
-          border: 0.5px solid rgba(0,0,0,0.08);
-          overflow: hidden;
-          height: fit-content;
-        }
+    const emails = ownerEmails
+      ? ownerEmails.split(",").map((e) => e.trim())
+      : [];
 
-        .rs-header {
-          background: #1a3d2b;
-          padding: 2rem 2rem 1.5rem;
-          text-align: center;
-        }
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
 
-        .rs-header::after {
-          content: '';
-          display: block;
-          width: 40px;
-          height: 3px;
-          background: #e8c97e;
-          border-radius: 2px;
-          margin: 1rem auto 0;
-        }
-
-        .rs-brand-name {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 22px;
-          font-weight: 600;
-          color: #fff;
-          letter-spacing: 0.5px;
-        }
-
-        .rs-brand-sub {
-          font-size: 11px;
-          letter-spacing: 3px;
-          color: #e8c97e;
-          text-transform: uppercase;
-          margin-top: 4px;
-        }
-
-        .rs-date-pill {
-          display: inline-block;
-          margin-top: 1rem;
-          background: rgba(255,255,255,0.12);
-          border: 0.5px solid rgba(255,255,255,0.25);
-          border-radius: 20px;
-          padding: 5px 16px;
-          font-size: 13px;
-          color: rgba(255,255,255,0.85);
-        }
-
-        .rs-body { padding: 1.5rem 1.75rem 2rem; }
-
-        .rs-section { margin-bottom: 1.75rem; }
-
-        .rs-section-label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #333;
-          margin-bottom: 0.75rem;
-          padding-bottom: 6px;
-          border-bottom: 1px solid #ddd;
-        }
-
-        .rs-grid-2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
-        .rs-field {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-          margin-bottom: 10px;
-        }
-
-        .rs-field:last-child { margin-bottom: 0; }
-
-        .rs-field label {
-          font-size: 11px;
-          font-weight: 500;
-          color: #666;
-        }
-
-        .rs-field input {
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 14px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          outline: none;
-          width: 100%;
-        }
-
-        .rs-field input:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.12);
-        }
-
-        .rs-field select {
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 14px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          outline: none;
-          width: 100%;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-        }
-
-        .rs-field select:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.12);
-        }
-
-        .rs-btn {
-          width: 100%;
-          padding: 14px;
-          background: #1a3d2b;
-          color: #fff;
-          border: none;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-          margin-top: 0.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: opacity 0.15s;
-        }
-
-        .rs-btn:hover { opacity: 0.88; }
-
-        .rs-notes-toggle {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 10px;
-          padding: 12px 16px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
-          font-weight: 600;
-          color: #333;
-          letter-spacing: 0.5px;
-          transition: background 0.15s;
-          outline: none;
-        }
-
-        .rs-notes-toggle:hover { background: #eef0ee; }
-
-        .rs-notes-arrow {
-          transition: transform 0.25s ease;
-          display: flex;
-          align-items: center;
-        }
-
-        .rs-notes-arrow.open { transform: rotate(180deg); }
-
-        .rs-notes-body {
-          overflow: hidden;
-          max-height: 0;
-          transition: max-height 0.4s ease, opacity 0.25s ease;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        .rs-notes-body.open {
-          max-height: 2000px;
-          opacity: 1;
-          pointer-events: all;
-        }
-
-        .rs-notes-inner {
-          padding-top: 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .rs-catering-entry {
-          border: 0.5px solid #e0e0e0;
-          border-radius: 10px;
-          padding: 14px;
-          position: relative;
-        }
-
-        .rs-entry-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #999;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          margin-bottom: 10px;
-        }
-
-        .rs-remove-btn {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #bbb;
-          font-size: 15px;
-          line-height: 1;
-          padding: 2px 5px;
-          border-radius: 4px;
-          transition: color 0.15s;
-        }
-
-        .rs-remove-btn:hover { color: #e05555; }
-
-        .rs-add-btn {
-          width: 100%;
-          padding: 10px;
-          background: none;
-          border: 1px dashed #bbb;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 13px;
-          color: #555;
-          font-family: 'DM Sans', sans-serif;
-          font-weight: 500;
-          transition: border-color 0.15s, color 0.15s;
-        }
-
-        .rs-add-btn:hover { border-color: #1a3d2b; color: #1a3d2b; }
-
-        .rs-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.45);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
-          animation: rs-fade-in 0.2s ease;
-        }
-
-        @keyframes rs-fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .rs-modal {
-          background: #fff;
-          border-radius: 16px;
-          padding: 2rem;
-          width: 100%;
-          max-width: 360px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-          animation: rs-slide-up 0.25s ease;
-          text-align: center;
-        }
-
-        @keyframes rs-slide-up {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        .rs-modal-icon {
-          width: 52px;
-          height: 52px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1rem;
-          font-size: 22px;
-        }
-
-        .rs-modal-icon.success { background: #e8f5e9; }
-        .rs-modal-icon.error { background: #fdecea; }
-
-        .rs-modal-title {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 18px;
-          font-weight: 600;
-          color: #111;
-          margin-bottom: 8px;
-        }
-
-        .rs-modal-message {
-          font-size: 13px;
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-        }
-
-        .rs-modal-input {
-          width: 100%;
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 13px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          outline: none;
-          resize: vertical;
-          min-height: 80px;
-          margin-bottom: 1rem;
-          transition: border-color 0.15s;
-        }
-
-        .rs-modal-input:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.1);
-        }
-
-        .rs-modal-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .rs-modal-btn {
-          flex: 1;
-          padding: 11px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          border: none;
-          transition: opacity 0.15s;
-        }
-
-        .rs-modal-btn:hover { opacity: 0.85; }
-
-        .rs-modal-btn.primary { background: #1a3d2b; color: #fff; }
-        .rs-modal-btn.secondary { background: #f0f2f0; color: #333; }
-
-      `}</style>
-
-      <div className="rs-wrapper">
-        <div className="rs-card">
-
-          {/* Header */}
-          <div className="rs-header">
-            {logo && <img src={logo} alt="logo" style={{ width: 160, marginBottom: 12 }} />}
-            <div className="rs-brand-name">Restaurant Sales</div>
-            <div className="rs-brand-sub">Daily Report</div>
-            <div className="rs-date-pill">{formatDate(form.date)}</div>
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: emails,
+      subject: `Report Feedback - ${date}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+          <h2 style="color: #1a3d2b;">📋 Report Feedback</h2>
+          <p style="color: #555;">A correction was submitted for the <strong>${date}</strong> daily report:</p>
+          <div style="background: #f7f8f7; border-left: 4px solid #1a3d2b; padding: 12px 16px; border-radius: 4px; margin: 16px 0;">
+            <p style="margin: 0; font-size: 15px; color: #111;">${feedback}</p>
           </div>
-
-          <div className="rs-body">
-
-            {/* Guests */}
-            <div className="rs-section">
-              <div className="rs-section-label">Guests</div>
-              <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Lunch Guests</label>
-                  <input required name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Dinner Guests</label>
-                  <input required name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" />
-                </div>
-              </div>
-              <div className="rs-field">
-                <label>Dine-in Sales ($)</label>
-                <input required name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
-            </div>
-
-            {/* Cash */}
-            <div className="rs-section">
-              <div className="rs-section-label">Cash</div>
-              <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Cash Sale</label>
-                  <input required name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Cash Tip</label>
-                  <input required name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-              </div>
-              <div className="rs-field">
-                <label>Cash Catering</label>
-                <input required name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
-            </div>
-
-            {/* Credit Card */}
-            <div className="rs-section">
-              <div className="rs-section-label">Credit Card</div>
-              <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Total Settle Amount</label>
-                  <input required name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Credit Card Tip</label>
-                  <input required name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-              </div>
-            </div>
-
-            {/* Gift Cards & Online */}
-            <div className="rs-section">
-              <div className="rs-section-label">Gift Cards & Online</div>
-              <div className="rs-field">
-                <label>Gift Card Redeemed</label>
-                <input required name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
-              <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Restaurant Online</label>
-                  <input required name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Grubhub</label>
-                  <input required name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>DoorDash</label>
-                  <input required name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Uber Eats</label>
-                  <input required name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-              </div>
-            </div>
-
-            {/* Catering Notes */}
-            <div className="rs-section">
-              <button
-                type="button"
-                className="rs-notes-toggle"
-                onClick={() => setNotesOpen(!notesOpen)}
-              >
-                <span>📋 Notes — Catering</span>
-                <span className={`rs-notes-arrow${notesOpen ? " open" : ""}`}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 5l5 5 5-5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </span>
-              </button>
-
-              <div className={`rs-notes-body${notesOpen ? " open" : ""}`}>
-                <div className="rs-notes-inner">
-                  {cateringNotes.map((note, index) => (
-                    <div key={index} className="rs-catering-entry">
-                      {cateringNotes.length > 1 && (
-                        <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>
-                      )}
-                      <div className="rs-entry-label">Entry {index + 1}</div>
-                      <div className="rs-field">
-                        <label>Catering Date</label>
-                        <input type="date" name="cateringDate" value={note.cateringDate} onChange={(e) => handleCateringChange(index, e)} />
-                      </div>
-                      <div className="rs-field">
-                        <label>Name</label>
-                        <input type="text" name="name" value={note.name} onChange={(e) => handleCateringChange(index, e)} placeholder="Client name" />
-                      </div>
-                      <div className="rs-field">
-                        <label>Payment Type</label>
-                        <select name="paymentType" value={note.paymentType} onChange={(e) => handleCateringChange(index, e)}>
-                          <option value="">Select payment type</option>
-                          <option value="Cash">Cash</option>
-                          <option value="Credit Card">Credit Card</option>
-                          <option value="Check">Check</option>
-                          <option value="Zelle">Zelle</option>
-                          <option value="Venmo">Venmo</option>
-                          <option value="Other">Other</option>
-                        </select>
-                      </div>
-                      <div className="rs-field">
-                        <label>Amount ($)</label>
-                        <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
-                      </div>
-                    </div>
-                  ))}
-                  <button type="button" className="rs-add-btn" onClick={addCateringEntry}>
-                    + Add Another Entry
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Submit */}
-            <button className="rs-btn" onClick={saveData}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Generate Report
-            </button>
-
-          </div>
+          <p style="color: #999; font-size: 12px;">Please review and correct the report if needed.</p>
         </div>
-      </div>
+      `,
+    });
 
-      {/* Modal */}
-      {modal.open && (
-        <div className="rs-modal-overlay" onClick={closeModal}>
-          <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
-            <div className={`rs-modal-icon ${modal.type}`}>
-              {modal.type === "success" ? "✅" : "⚠️"}
-            </div>
-            <div className="rs-modal-title">{modal.title}</div>
-            <div className="rs-modal-message">{modal.message}</div>
+    console.log("✅ Feedback email sent");
+    res.send("Feedback sent");
+  } catch (err) {
+    console.error("❌ Feedback error:", err);
+    res.status(500).send(err.message);
+  }
+});
 
-            {modal.type === "success" && (
-              <>
-                <textarea
-                  className="rs-modal-input"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Did anything look wrong? Let us know (optional)..."
-                />
-                <div className="rs-modal-actions">
-                  <button className="rs-modal-btn secondary" onClick={closeModal}>Skip</button>
-                  <button
-                    className="rs-modal-btn primary"
-                    onClick={async () => {
-                      if (feedback.trim()) {
-                        try {
-                          const API_URL = import.meta.env.VITE_API_URL;
-                          // Save to Firestore
-                          await addDoc(collection(db, "feedback"), {
-                            feedback,
-                            date: form.date,
-                            createdAt: new Date(),
-                          });
-                          // Send to backend to email
-                          await fetch(`${API_URL}/send-feedback`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              feedback,
-                              date: form.date,
-                              ownerEmails: form.ownerEmails,
-                            }),
-                          });
-                        } catch (err) {
-                          console.error("Feedback send error:", err);
-                        }
-                      }
-                      closeModal();
-                    }}
-                  >Submit</button>
-                </div>
-              </>
-            )}
+const PORT = process.env.PORT || 5050;
 
-            {modal.type === "error" && (
-              <>
-                <textarea
-                  className="rs-modal-input"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Describe what went wrong (optional)..."
-                />
-                <div className="rs-modal-actions">
-                  <button className="rs-modal-btn secondary" onClick={closeModal}>Dismiss</button>
-                  <button className="rs-modal-btn primary" onClick={closeModal}>Got it</button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
-export default App;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
