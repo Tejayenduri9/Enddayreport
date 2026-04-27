@@ -7,7 +7,7 @@ function App() {
 
   const [form, setForm] = useState({
     date: getToday(),
-    ownerEmails: "tejayenduri9999@gmail.com",
+    ownerEmails: "tejayenduri9999@gmail.com, Vincegeorge2001@yahoo.co.in",
 
     // Guests
     lunchGuests: "",
