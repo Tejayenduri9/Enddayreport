@@ -279,7 +279,7 @@ app.post("/send-feedback", async (req, res) => {
       subject: `Report Feedback - ${date}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #1a3d2b;">📋 Report Feedback</h2>
+          <h2 style="color: #1a3d2b;">Report Feedback</h2>
           <p style="color: #555;">A correction was submitted for the <strong>${date}</strong> daily report:</p>
           <div style="background: #f7f8f7; border-left: 4px solid #1a3d2b; padding: 12px 16px; border-radius: 4px; margin: 16px 0;">
             <p style="margin: 0; font-size: 15px; color: #111;">${feedback}</p>

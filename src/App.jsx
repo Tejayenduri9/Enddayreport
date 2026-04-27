@@ -590,7 +590,7 @@ function App() {
                 </div>
               </div>
               <div className="rs-field">
-                <label>Dine-in Sales ($)</label>
+                <label>Dine-in Sales</label>
                 <input required name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
             </div>
