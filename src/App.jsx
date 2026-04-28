@@ -13,9 +13,9 @@ const getToday = () => {
   return `${year}-${month}-${day}`;
 };
 
-const blankForm = (emails = "tejayenduri9999@gmail.com") => ({
+const blankForm = () => ({
   date: getToday(),
-  ownerEmails: emails,
+  ownerEmails: "tejayenduri9999@gmail.com",
   lunchGuests: "",
   dinnerGuests: "",
   dineInSales: "",
@@ -59,8 +59,8 @@ function App() {
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
 
-  const resetForm = (emails) => {
-    setForm(blankForm(emails));
+  const resetForm = () => {
+    setForm(blankForm());
     setCateringNotes([emptyCatering()]);
     setNotesOpen(false);
   };
@@ -142,8 +142,6 @@ function App() {
     }
 
     setLoading(true);
-    const savedEmails = form.ownerEmails;
-
     try {
       const API_URL = import.meta.env.VITE_API_URL;
 
@@ -161,7 +159,7 @@ function App() {
 
       if (!response.ok) throw new Error("Backend request failed");
 
-      resetForm(savedEmails);
+      resetForm();
       setLoading(false);
       showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
     } catch (err) {
