@@ -36,11 +36,19 @@ app.post("/generate-report", async (req, res) => {
 
         console.log("📄 PDF generated");
 
-        const emails = data.ownerEmails
-          ? data.ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
+        const fallbackEmails = process.env.OWNER_EMAILS
+          ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
           : [];
 
-        console.log("📧 Sending to:", emails);
+        const emails = (data.ownerEmails
+          ? data.ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
+          : []
+        );
+
+        // Merge both sources and deduplicate
+        const allEmails = [...new Set([...emails, ...fallbackEmails])];
+
+        console.log("📧 Sending to:", allEmails);
 
         const transporter = nodemailer.createTransport({
           service: "gmail",
@@ -54,7 +62,7 @@ app.post("/generate-report", async (req, res) => {
 
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
-          to: emails.join(", "),
+          to: allEmails.join(", "),
           subject: `Daily Report - ${reportDate}`,
           text: "Attached is your report",
           attachments: [
