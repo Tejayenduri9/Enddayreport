@@ -569,6 +569,42 @@ function App() {
           to { transform: rotate(360deg); }
         }
 
+        .rs-loading-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          gap: 16px;
+        }
+
+        .rs-loading-spinner {
+          width: 52px;
+          height: 52px;
+          border: 4px solid rgba(255,255,255,0.2);
+          border-top-color: #e8c97e;
+          border-radius: 50%;
+          animation: rs-spin 0.8s linear infinite;
+        }
+
+        .rs-loading-text {
+          color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 15px;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+        }
+
+        .rs-loading-sub {
+          color: rgba(255,255,255,0.6);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
+          margin-top: -8px;
+        }
+
       `}</style>
 
       <div className="rs-wrapper">
@@ -598,7 +634,7 @@ function App() {
                 </div>
               </div>
               <div className="rs-field">
-                <label>Dine-in Sales</label>
+                <label>Dine-in Sales ($)</label>
                 <input required name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
             </div>
@@ -702,10 +738,13 @@ function App() {
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
+                          <option value="Zelle">Zelle</option>
+                          <option value="Venmo">Venmo</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                       <div className="rs-field">
-                        <label>Amount</label>
+                        <label>Amount ($)</label>
                         <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
                       </div>
                     </div>
@@ -740,6 +779,15 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="rs-loading-overlay">
+          <div className="rs-loading-spinner" />
+          <div className="rs-loading-text">Generating Report...</div>
+          <div className="rs-loading-sub">This may take up to a minute</div>
+        </div>
+      )}
 
       {/* Modal */}
       {modal.open && (
