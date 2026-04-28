@@ -3,15 +3,42 @@ import { db } from "./firebase";
 import { collection, addDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
 
-function App() {
-  const getToday = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
-    const day = String(now.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  };
+const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
 
+const getToday = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const blankForm = (emails = "tejayenduri9999@gmail.com") => ({
+  date: getToday(),
+  ownerEmails: emails,
+  lunchGuests: "",
+  dinnerGuests: "",
+  dineInSales: "",
+  cashSale: "",
+  cashTip: "",
+  cashCatering: "",
+  totalSettle: "",
+  creditCardTip: "",
+  giftCard: "",
+  restaurantOnline: "",
+  grubhub: "",
+  doordash: "",
+  uberEats: "",
+  totalCashWithTip: "",
+  creditCardSale: "",
+  systemGross: "",
+  totalInHouse: "",
+  totalRestaurantOnline: "",
+  totalRestaurantSales: "",
+  totalSalesDay: "",
+});
+
+function App() {
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day).toLocaleDateString("en-US", {
@@ -22,58 +49,7 @@ function App() {
     });
   };
 
-  const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
-
-  const initialForm = (emails = "tejayenduri9999@gmail.com, Vincegeorge2001@yahoo.co.in") => ({
-    date: getToday(),
-    ownerEmails: emails,
-    lunchGuests: "",
-    dinnerGuests: "",
-    dineInSales: "",
-    cashSale: "",
-    cashTip: "",
-    cashCatering: "",
-    totalSettle: "",
-    creditCardTip: "",
-    giftCard: "",
-    restaurantOnline: "",
-    grubhub: "",
-    doordash: "",
-    uberEats: "",
-    totalCashWithTip: "",
-    creditCardSale: "",
-    systemGross: "",
-    totalInHouse: "",
-    totalRestaurantOnline: "",
-    totalRestaurantSales: "",
-    totalSalesDay: "",
-  });
-
-  const [form, setForm] = useState({
-    date: getToday(),
-    ownerEmails: "tejayenduri9999@gmail.com, Vincegeorge2001@yahoo.co.in",
-    lunchGuests: "",
-    dinnerGuests: "",
-    dineInSales: "",
-    cashSale: "",
-    cashTip: "",
-    cashCatering: "",
-    totalSettle: "",
-    creditCardTip: "",
-    giftCard: "",
-    restaurantOnline: "",
-    grubhub: "",
-    doordash: "",
-    uberEats: "",
-    totalCashWithTip: "",
-    creditCardSale: "",
-    systemGross: "",
-    totalInHouse: "",
-    totalRestaurantOnline: "",
-    totalRestaurantSales: "",
-    totalSalesDay: "",
-  });
-
+  const [form, setForm] = useState(blankForm());
   const [cateringNotes, setCateringNotes] = useState([emptyCatering()]);
   const [notesOpen, setNotesOpen] = useState(false);
   const [modal, setModal] = useState({ open: false, type: "", title: "", message: "" });
@@ -82,6 +58,12 @@ function App() {
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
+
+  const resetForm = (emails) => {
+    setForm(blankForm(emails));
+    setCateringNotes([emptyCatering()]);
+    setNotesOpen(false);
+  };
 
   const handleCateringChange = (index, e) => {
     const updated = [...cateringNotes];
@@ -133,7 +115,7 @@ function App() {
   };
 
   const saveData = async () => {
-    // Manual validation — all fields required except catering notes
+    // Validation
     const requiredFields = {
       lunchGuests: "Lunch Guests",
       dinnerGuests: "Dinner Guests",
@@ -155,9 +137,12 @@ function App() {
       .map(([, label]) => label);
 
     if (missing.length > 0) {
-      showModal("error", "Missing Fields", `Please fill in the following fields before submitting:\n\n• ${missing.join("\n• ")}`);
+      showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${missing.join("\n• ")}`);
       return;
     }
+
+    setLoading(true);
+    const savedEmails = form.ownerEmails;
 
     try {
       const API_URL = import.meta.env.VITE_API_URL;
@@ -176,11 +161,7 @@ function App() {
 
       if (!response.ok) throw new Error("Backend request failed");
 
-      // Reset form
-      const currentEmails = form.ownerEmails;
-      setForm(initialForm(currentEmails));
-      setCateringNotes([emptyCatering()]);
-      setNotesOpen(false);
+      resetForm(savedEmails);
       setLoading(false);
       showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
     } catch (err) {
@@ -359,6 +340,7 @@ function App() {
         }
 
         .rs-btn:hover { opacity: 0.88; }
+        .rs-btn:disabled { opacity: 0.75; cursor: not-allowed; }
 
         .rs-notes-toggle {
           width: 100%;
@@ -459,6 +441,47 @@ function App() {
 
         .rs-add-btn:hover { border-color: #1a3d2b; color: #1a3d2b; }
 
+        .rs-loading-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.6);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          gap: 16px;
+        }
+
+        .rs-loading-spinner {
+          width: 52px;
+          height: 52px;
+          border: 4px solid rgba(255,255,255,0.2);
+          border-top-color: #e8c97e;
+          border-radius: 50%;
+          animation: rs-spin 0.8s linear infinite;
+        }
+
+        .rs-loading-text {
+          color: #fff;
+          font-family: 'DM Sans', sans-serif;
+          font-size: 15px;
+          font-weight: 500;
+          letter-spacing: 0.5px;
+        }
+
+        .rs-loading-sub {
+          color: rgba(255,255,255,0.6);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 12px;
+          margin-top: -8px;
+        }
+
+        @keyframes rs-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
         .rs-modal-overlay {
           position: fixed;
           inset: 0;
@@ -519,6 +542,7 @@ function App() {
           color: #666;
           line-height: 1.6;
           margin-bottom: 1.5rem;
+          white-space: pre-line;
         }
 
         .rs-modal-input {
@@ -560,51 +584,8 @@ function App() {
         }
 
         .rs-modal-btn:hover { opacity: 0.85; }
-
         .rs-modal-btn.primary { background: #1a3d2b; color: #fff; }
         .rs-modal-btn.secondary { background: #f0f2f0; color: #333; }
-
-        @keyframes rs-spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .rs-loading-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.6);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          gap: 16px;
-        }
-
-        .rs-loading-spinner {
-          width: 52px;
-          height: 52px;
-          border: 4px solid rgba(255,255,255,0.2);
-          border-top-color: #e8c97e;
-          border-radius: 50%;
-          animation: rs-spin 0.8s linear infinite;
-        }
-
-        .rs-loading-text {
-          color: #fff;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 15px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-        }
-
-        .rs-loading-sub {
-          color: rgba(255,255,255,0.6);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          margin-top: -8px;
-        }
-
       `}</style>
 
       <div className="rs-wrapper">
@@ -626,16 +607,16 @@ function App() {
               <div className="rs-grid-2">
                 <div className="rs-field">
                   <label>Lunch Guests</label>
-                  <input required name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" />
+                  <input name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>Dinner Guests</label>
-                  <input required name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" />
+                  <input name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" />
                 </div>
               </div>
               <div className="rs-field">
                 <label>Dine-in Sales ($)</label>
-                <input required name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
+                <input name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
             </div>
 
@@ -645,16 +626,16 @@ function App() {
               <div className="rs-grid-2">
                 <div className="rs-field">
                   <label>Cash Sale</label>
-                  <input required name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>Cash Tip</label>
-                  <input required name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
               </div>
               <div className="rs-field">
                 <label>Cash Catering</label>
-                <input required name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" />
+                <input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
             </div>
 
@@ -664,11 +645,11 @@ function App() {
               <div className="rs-grid-2">
                 <div className="rs-field">
                   <label>Total Settle Amount</label>
-                  <input required name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>Credit Card Tip</label>
-                  <input required name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
               </div>
             </div>
@@ -678,35 +659,31 @@ function App() {
               <div className="rs-section-label">Gift Cards & Online</div>
               <div className="rs-field">
                 <label>Gift Card Redeemed</label>
-                <input required name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" />
+                <input name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
               <div className="rs-grid-2">
                 <div className="rs-field">
                   <label>Restaurant Online</label>
-                  <input required name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>Grubhub</label>
-                  <input required name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>DoorDash</label>
-                  <input required name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
                 <div className="rs-field">
                   <label>Uber Eats</label>
-                  <input required name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" />
+                  <input name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" />
                 </div>
               </div>
             </div>
 
             {/* Catering Notes */}
             <div className="rs-section">
-              <button
-                type="button"
-                className="rs-notes-toggle"
-                onClick={() => setNotesOpen(!notesOpen)}
-              >
+              <button type="button" className="rs-notes-toggle" onClick={() => setNotesOpen(!notesOpen)}>
                 <span>📋 Notes — Catering</span>
                 <span className={`rs-notes-arrow${notesOpen ? " open" : ""}`}>
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -757,14 +734,14 @@ function App() {
             </div>
 
             {/* Submit */}
-            <button className="rs-btn" onClick={saveData} disabled={loading} style={{ opacity: loading ? 0.75 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
+            <button className="rs-btn" onClick={saveData} disabled={loading}>
               {loading ? (
                 <>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: "rs-spin 0.8s linear infinite" }}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}>
                     <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/>
                     <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
-                  Generating Report...
+                  Generating...
                 </>
               ) : (
                 <>
@@ -797,7 +774,7 @@ function App() {
               {modal.type === "success" ? "✅" : "⚠️"}
             </div>
             <div className="rs-modal-title">{modal.title}</div>
-            <div className="rs-modal-message" style={{ whiteSpace: "pre-line" }}>{modal.message}</div>
+            <div className="rs-modal-message">{modal.message}</div>
 
             {modal.type === "success" && (
               <>
@@ -815,24 +792,22 @@ function App() {
                       if (feedback.trim()) {
                         try {
                           const API_URL = import.meta.env.VITE_API_URL;
-                          // Save to Firestore
                           await addDoc(collection(db, "feedback"), {
                             feedback,
-                            date: form.date,
+                            date: getToday(),
                             createdAt: new Date(),
                           });
-                          // Send to backend to email
                           await fetch(`${API_URL}/send-feedback`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
                               feedback,
-                              date: form.date,
-                              ownerEmails: form.ownerEmails,
+                              date: getToday(),
+                              ownerEmails: "tejayenduri9999@gmail.com",
                             }),
                           });
                         } catch (err) {
-                          console.error("Feedback send error:", err);
+                          console.error("Feedback error:", err);
                         }
                       }
                       closeModal();
