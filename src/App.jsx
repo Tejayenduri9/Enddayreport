@@ -613,7 +613,7 @@ function App() {
                 </div>
               </div>
               <div className="rs-field">
-                <label>Dine-in Sales ($)</label>
+                <label>Dine-in Sales</label>
                 <input name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
               </div>
             </div>
@@ -719,7 +719,7 @@ function App() {
                         </select>
                       </div>
                       <div className="rs-field">
-                        <label>Amount ($)</label>
+                        <label>Amount</label>
                         <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
                       </div>
                     </div>
