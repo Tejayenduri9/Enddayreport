@@ -15,7 +15,7 @@ const getToday = () => {
 
 const blankForm = () => ({
   date: getToday(),
-  ownerEmails: "tejayenduri9999@gmail.com",
+  ownerEmails: import.meta.env.VITE_OWNER_EMAILS || "",
   lunchGuests: "",
   dinnerGuests: "",
   dineInSales: "",
@@ -798,7 +798,7 @@ function App() {
                             body: JSON.stringify({
                               feedback,
                               date: getToday(),
-                              ownerEmails: "tejayenduri9999@gmail.com",
+                              ownerEmails: import.meta.env.VITE_OWNER_EMAILS || "",
                             }),
                           });
                         } catch (err) {
