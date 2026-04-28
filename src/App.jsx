@@ -713,9 +713,6 @@ function App() {
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
-                          <option value="Zelle">Zelle</option>
-                          <option value="Venmo">Venmo</option>
-                          <option value="Other">Other</option>
                         </select>
                       </div>
                       <div className="rs-field">
