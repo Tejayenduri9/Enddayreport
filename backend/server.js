@@ -37,8 +37,10 @@ app.post("/generate-report", async (req, res) => {
         console.log("📄 PDF generated");
 
         const emails = data.ownerEmails
-          ? data.ownerEmails.split(",").map((e) => e.trim())
+          ? data.ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
           : [];
+
+        console.log("📧 Sending to:", emails);
 
         const transporter = nodemailer.createTransport({
           service: "gmail",
@@ -52,7 +54,7 @@ app.post("/generate-report", async (req, res) => {
 
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
-          to: emails,
+          to: emails.join(", "),
           subject: `Daily Report - ${reportDate}`,
           text: "Attached is your report",
           attachments: [
@@ -279,7 +281,7 @@ app.post("/send-feedback", async (req, res) => {
       subject: `Report Feedback - ${date}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-          <h2 style="color: #1a3d2b;">Report Feedback</h2>
+          <h2 style="color: #1a3d2b;">📋 Report Feedback</h2>
           <p style="color: #555;">A correction was submitted for the <strong>${date}</strong> daily report:</p>
           <div style="background: #f7f8f7; border-left: 4px solid #1a3d2b; padding: 12px 16px; border-radius: 4px; margin: 16px 0;">
             <p style="margin: 0; font-size: 15px; color: #111;">${feedback}</p>
