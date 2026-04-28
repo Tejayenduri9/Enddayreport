@@ -24,7 +24,7 @@ function App() {
 
   const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
 
-  const initialForm = (emails = "tejayenduri9999@gmail.com") => ({
+  const initialForm = (emails = "tejayenduri9999@gmail.com, Vincegeorge2001@yahoo.co.in") => ({
     date: getToday(),
     ownerEmails: emails,
     lunchGuests: "",
@@ -51,7 +51,7 @@ function App() {
 
   const [form, setForm] = useState({
     date: getToday(),
-    ownerEmails: "tejayenduri9999@gmail.com",
+    ownerEmails: "tejayenduri9999@gmail.com, Vincegeorge2001@yahoo.co.in",
     lunchGuests: "",
     dinnerGuests: "",
     dineInSales: "",
@@ -78,6 +78,7 @@ function App() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [modal, setModal] = useState({ open: false, type: "", title: "", message: "" });
   const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
@@ -180,8 +181,10 @@ function App() {
       setForm(initialForm(currentEmails));
       setCateringNotes([emptyCatering()]);
       setNotesOpen(false);
-      showModal("success", "Report Sent!", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
+      setLoading(false);
+      showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
     } catch (err) {
+      setLoading(false);
       console.error(err);
       showModal("error", "Something went wrong", err.message || "An unexpected error occurred. Please check your entries and try again.");
     }
@@ -561,6 +564,11 @@ function App() {
         .rs-modal-btn.primary { background: #1a3d2b; color: #fff; }
         .rs-modal-btn.secondary { background: #f0f2f0; color: #333; }
 
+        @keyframes rs-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
       `}</style>
 
       <div className="rs-wrapper">
@@ -694,13 +702,10 @@ function App() {
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
-                          <option value="Zelle">Zelle</option>
-                          <option value="Venmo">Venmo</option>
-                          <option value="Other">Other</option>
                         </select>
                       </div>
                       <div className="rs-field">
-                        <label>Amount ($)</label>
+                        <label>Amount</label>
                         <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
                       </div>
                     </div>
@@ -713,11 +718,23 @@ function App() {
             </div>
 
             {/* Submit */}
-            <button className="rs-btn" onClick={saveData}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              Generate Report
+            <button className="rs-btn" onClick={saveData} disabled={loading} style={{ opacity: loading ? 0.75 : 1, cursor: loading ? "not-allowed" : "pointer" }}>
+              {loading ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: "rs-spin 0.8s linear infinite" }}>
+                    <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/>
+                    <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  Generating Report...
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Generate Report
+                </>
+              )}
             </button>
 
           </div>
