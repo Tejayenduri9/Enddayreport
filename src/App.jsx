@@ -115,7 +115,6 @@ function App() {
   };
 
   const saveData = async () => {
-    // Validation
     const requiredFields = {
       lunchGuests: "Lunch Guests",
       dinnerGuests: "Dinner Guests",
@@ -143,15 +142,13 @@ function App() {
 
     setLoading(true);
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
-
       await addDoc(collection(db, "restaurants"), {
         ...form,
         cateringNotes,
         createdAt: new Date(),
       });
 
-      const response = await fetch(`${API_URL}/generate-report`, {
+      const response = await fetch("/.netlify/functions/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, cateringNotes }),
@@ -713,10 +710,13 @@ function App() {
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
+                          <option value="Zelle">Zelle</option>
+                          <option value="Venmo">Venmo</option>
+                          <option value="Other">Other</option>
                         </select>
                       </div>
                       <div className="rs-field">
-                        <label>Amount</label>
+                        <label>Amount ($)</label>
                         <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
                       </div>
                     </div>
@@ -786,13 +786,12 @@ function App() {
                     onClick={async () => {
                       if (feedback.trim()) {
                         try {
-                          const API_URL = import.meta.env.VITE_API_URL;
                           await addDoc(collection(db, "feedback"), {
                             feedback,
                             date: getToday(),
                             createdAt: new Date(),
                           });
-                          await fetch(`${API_URL}/send-feedback`, {
+                          await fetch("/.netlify/functions/send-feedback", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
