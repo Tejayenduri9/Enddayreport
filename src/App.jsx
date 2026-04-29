@@ -148,7 +148,7 @@ function App() {
         createdAt: new Date(),
       });
 
-      const response = await fetch("/.netlify/functions/generate_report", {
+      const response = await fetch("/.netlify/functions/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, cateringNotes }),
@@ -791,7 +791,7 @@ function App() {
                             date: getToday(),
                             createdAt: new Date(),
                           });
-                          await fetch("/.netlify/functions/send_feedback", {
+                          await fetch("/.netlify/functions/send-feedback", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({
