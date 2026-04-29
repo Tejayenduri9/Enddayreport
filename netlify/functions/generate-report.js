@@ -1,5 +1,5 @@
-import PDFDocument from "pdfkit";
-import nodemailer from "nodemailer";
+const PDFDocument = require("pdfkit");
+const nodemailer = require("nodemailer");
 
 const createTransporter = () => nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -12,7 +12,7 @@ const createTransporter = () => nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -76,6 +76,7 @@ export const handler = async (event) => {
       drawSection("Cash");
       drawRow("Cash Sale", data.cashSale);
       drawRow("Cash Tip", data.cashTip);
+      drawRow("Cash Catering", data.cashCatering);
       drawRow("Total Cash", data.totalCashWithTip, true, true);
 
       drawSection("Credit Card");

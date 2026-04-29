@@ -4,8 +4,7 @@
   functions = "netlify/functions"
  
 [functions]
-  node_bundler = "esbuild"
-  external_node_modules = ["nodemailer", "pdfkit"]
+  node_bundler = "zisi"
  
 [[redirects]]
   from = "/api/*"
