@@ -1,5 +1,5 @@
-const PDFDocument = require("pdfkit");
-const nodemailer = require("nodemailer");
+import PDFDocument from "pdfkit";
+import nodemailer from "nodemailer";
 
 const createTransporter = () => nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -12,7 +12,7 @@ const createTransporter = () => nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -22,7 +22,6 @@ exports.handler = async (event) => {
     const data = JSON.parse(event.body);
     const reportDate = data.date || new Date().toISOString().split("T")[0];
 
-    // Generate PDF
     const pdfBuffer = await new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         size: "A4",
@@ -34,14 +33,12 @@ exports.handler = async (event) => {
       doc.on("end", () => resolve(Buffer.concat(buffers)));
       doc.on("error", reject);
 
-      // ===== LAYOUT =====
       const pageWidth = doc.page.width;
       const startX = 40;
       const tableWidth = pageWidth - 80;
       const col1Width = Math.floor(tableWidth * 0.6);
       const col2Width = tableWidth - col1Width;
       const rowHeight = 20;
-
       let y = 80;
 
       const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
@@ -71,7 +68,6 @@ exports.handler = async (event) => {
         y += rowHeight;
       };
 
-      // ===== DATA =====
       drawSection("Guests");
       drawRow("Lunch Guests", data.lunchGuests, false);
       drawRow("Dinner Guests", data.dinnerGuests, false);
@@ -104,7 +100,6 @@ exports.handler = async (event) => {
       drawRow("Cash Catering", data.cashCatering);
       drawRow("Total Sales of the Day", data.totalSalesDay, true, true);
 
-      // CATERING NOTES
       const cateringNotes = data.cateringNotes;
       const validCatering = Array.isArray(cateringNotes)
         ? cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount)
@@ -134,7 +129,6 @@ exports.handler = async (event) => {
         };
 
         drawCateringHeaders();
-
         validCatering.forEach((catering) => {
           if (y + rowHeight > pageHeight - 50) { doc.addPage(); y = 40; drawCateringHeaders(); }
           const cells = [
@@ -156,9 +150,6 @@ exports.handler = async (event) => {
       doc.end();
     });
 
-    console.log("📄 PDF generated");
-
-    // Build email list
     const fallbackEmails = process.env.OWNER_EMAILS
       ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
@@ -168,30 +159,20 @@ exports.handler = async (event) => {
     const allEmails = [...new Set([...emails, ...fallbackEmails])];
     console.log("📧 Sending to:", allEmails);
 
-    // Send email
     const transporter = createTransporter();
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: allEmails.join(", "),
       subject: `Daily Report - ${reportDate}`,
       text: "Attached is your daily sales report.",
-      attachments: [{
-        filename: `${reportDate}_daily_report.pdf`,
-        content: pdfBuffer,
-      }]
+      attachments: [{ filename: `${reportDate}_daily_report.pdf`, content: pdfBuffer }]
     });
 
     console.log("✅ Email sent successfully");
-    return {
-      statusCode: 200,
-      body: "Report generated + email sent",
-    };
+    return { statusCode: 200, body: "Report generated + email sent" };
 
   } catch (err) {
     console.error("❌ ERROR:", err);
-    return {
-      statusCode: 500,
-      body: err.message,
-    };
+    return { statusCode: 500, body: err.message };
   }
 };

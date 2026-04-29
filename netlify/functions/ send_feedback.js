@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
 const createTransporter = () => nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -11,7 +11,7 @@ const createTransporter = () => nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -44,9 +44,7 @@ exports.handler = async (event) => {
       `,
     });
 
-    console.log("✅ Feedback email sent");
     return { statusCode: 200, body: "Feedback sent" };
-
   } catch (err) {
     console.error("❌ Feedback error:", err);
     return { statusCode: 500, body: err.message };
