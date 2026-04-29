@@ -1,23 +1,11 @@
 const express = require("express");
 const PDFDocument = require("pdfkit");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-
-const createTransporter = () => nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // SSL
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.use(cors({ origin: "*" }));
 app.use(express.json());
@@ -58,16 +46,16 @@ app.post("/generate-report", async (req, res) => {
         const allEmails = [...new Set([...emails, ...fallbackEmails])];
         console.log("📧 Sending to:", allEmails);
 
-        const transporter = createTransporter();
-        await transporter.sendMail({
-          from: process.env.EMAIL_USER,
-          to: allEmails.join(", "),
+        await resend.emails.send({
+          from: process.env.RESEND_FROM,
+          to: allEmails,
           subject: `Daily Report - ${reportDate}`,
           text: "Attached is your daily sales report.",
           attachments: [
             {
               filename: `${reportDate}_daily_report.pdf`,
-              content: pdfBuffer,
+              content: pdfBuffer.toString("base64"),
+              type: "application/pdf",
             }
           ]
         });
@@ -240,10 +228,9 @@ app.post("/send-feedback", async (req, res) => {
 
     const allEmails = [...new Set([...emails, ...fallbackEmails])];
 
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: allEmails.join(", "),
+    await resend.emails.send({
+      from: process.env.RESEND_FROM,
+      to: allEmails,
       subject: `Report Feedback - ${date}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
