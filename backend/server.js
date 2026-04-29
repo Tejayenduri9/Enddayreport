@@ -6,6 +6,19 @@ require("dotenv").config();
 
 const app = express();
 
+const createTransporter = () => nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // SSL
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
@@ -19,8 +32,7 @@ app.post("/generate-report", async (req, res) => {
     console.log("🔥 Request received");
 
     const data = req.body;
-    const reportDate =
-      data.date || new Date().toISOString().split("T")[0];
+    const reportDate = data.date || new Date().toISOString().split("T")[0];
 
     const doc = new PDFDocument({
       size: "A4",
@@ -33,42 +45,29 @@ app.post("/generate-report", async (req, res) => {
     doc.on("end", async () => {
       try {
         const pdfBuffer = Buffer.concat(buffers);
-
         console.log("📄 PDF generated");
 
         const fallbackEmails = process.env.OWNER_EMAILS
           ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
           : [];
 
-        const emails = (data.ownerEmails
+        const emails = data.ownerEmails
           ? data.ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
-          : []
-        );
+          : [];
 
-        // Merge both sources and deduplicate
         const allEmails = [...new Set([...emails, ...fallbackEmails])];
-
         console.log("📧 Sending to:", allEmails);
 
-        const transporter = nodemailer.createTransport({
-          service: "gmail",
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-          }
-        });
-
-        console.log("📧 Sending email...");
-
+        const transporter = createTransporter();
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
           to: allEmails.join(", "),
           subject: `Daily Report - ${reportDate}`,
-          text: "Attached is your report",
+          text: "Attached is your daily sales report.",
           attachments: [
             {
               filename: `${reportDate}_daily_report.pdf`,
-              content: pdfBuffer
+              content: pdfBuffer,
             }
           ]
         });
@@ -109,79 +108,51 @@ app.post("/generate-report", async (req, res) => {
     };
 
     const drawSection = (title, numRows = 1) => {
-      // If section header + at least one row won't fit, move to next page
       if (y + (numRows + 1) * rowHeight > pageHeight - bottomMargin) {
         doc.addPage();
         y = 40;
       }
-
-      doc.rect(startX, y, tableWidth, rowHeight)
-         .fillAndStroke("#eeeeee", "#000");
-
-      doc.fillColor("#000")
-         .font("Helvetica-Bold")
-         .fontSize(12)
-         .text(title, startX, y + 5, {
-           width: tableWidth,
-           align: "center"
-         });
-
+      doc.rect(startX, y, tableWidth, rowHeight).fillAndStroke("#eeeeee", "#000");
+      doc.fillColor("#000").font("Helvetica-Bold").fontSize(12)
+         .text(title, startX, y + 5, { width: tableWidth, align: "center" });
       y += rowHeight;
     };
 
     const drawRow = (label, value, isMoney = true, bold = false) => {
-      // If this row won't fit, add a new page and redraw a continuation border
       if (y + rowHeight > pageHeight - bottomMargin) {
         doc.addPage();
         y = 40;
       }
-
       doc.rect(startX, y, col1Width, rowHeight).stroke();
       doc.rect(startX + col1Width, y, col2Width, rowHeight).stroke();
-
-      doc.font(bold ? "Helvetica-Bold" : "Helvetica")
-         .fontSize(11)
-         .fillColor("#000")
-         .text(label, startX + 6, y + 5, {
-           width: col1Width - 12
-         });
-
+      doc.font(bold ? "Helvetica-Bold" : "Helvetica").fontSize(11).fillColor("#000")
+         .text(label, startX + 6, y + 5, { width: col1Width - 12 });
       const display = isMoney ? formatMoney(value) : `${value || 0}`;
-
-      doc.text(display, startX + col1Width + 6, y + 5, {
-        width: col2Width - 12,
-        align: "right"
-      });
-
+      doc.text(display, startX + col1Width + 6, y + 5, { width: col2Width - 12, align: "right" });
       y += rowHeight;
     };
 
     // ===== DATA =====
-    // GUESTS
     drawSection("Guests");
     drawRow("Lunch Guests", data.lunchGuests, false);
     drawRow("Dinner Guests", data.dinnerGuests, false);
     drawRow("Dine In Sales", data.dineInSales);
-    
-    // CASH
+
     drawSection("Cash");
     drawRow("Cash Sale", data.cashSale);
     drawRow("Cash Tip", data.cashTip);
     drawRow("Total Cash", data.totalCashWithTip, true, true);
 
-    // CREDIT CARD (UPDATED)
     drawSection("Credit Card");
     drawRow("Total Credit Card Settle", data.totalSettle);
     drawRow("Credit Card Tip", data.creditCardTip);
     drawRow("Credit Card Sale", data.creditCardSale, true, true);
 
-    // SALES CHANNEL
     drawSection("Sales Channels");
     drawRow("System Gross Sale", data.systemGross);
     drawRow("Gift Card Redeemed", data.giftCard);
     drawRow("Total In House", data.totalInHouse, true, true);
 
-    // ONLINE SALES
     drawSection("Online Sales");
     drawRow("Restaurant Online", data.restaurantOnline);
     drawRow("Grubhub", data.grubhub);
@@ -189,35 +160,27 @@ app.post("/generate-report", async (req, res) => {
     drawRow("Uber Eats", data.uberEats);
     drawRow("Total Online Sales", data.totalRestaurantOnline, true, true);
 
-    // FINAL TOTALS (UPDATED)
     drawSection("Final Totals");
     drawRow("Total Restaurant Sales", data.totalRestaurantSales, true, true);
     drawRow("Cash Catering", data.cashCatering);
     drawRow("Total Sales of the Day", data.totalSalesDay, true, true);
 
-
-    // CATERING NOTES - horizontal table layout
+    // CATERING NOTES
     const cateringNotes = data.cateringNotes;
     const validCatering = Array.isArray(cateringNotes)
       ? cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount)
       : [];
 
     if (validCatering.length > 0) {
-      // Section header
       ensureSpace(2);
-      doc.rect(startX, y, tableWidth, rowHeight)
-         .fillAndStroke("#eeeeee", "#000");
-      doc.fillColor("#000")
-         .font("Helvetica-Bold")
-         .fontSize(12)
+      doc.rect(startX, y, tableWidth, rowHeight).fillAndStroke("#eeeeee", "#000");
+      doc.fillColor("#000").font("Helvetica-Bold").fontSize(12)
          .text("Catering Notes", startX, y + 5, { width: tableWidth, align: "center" });
       y += rowHeight;
 
-      // Column widths: precise — last column takes remaining space to avoid rounding gaps
       const cColBase = Math.floor(tableWidth / 4);
       const cCols = [cColBase, cColBase, cColBase, tableWidth - cColBase * 3];
       const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
-
       const getCX = (i) => startX + cCols.slice(0, i).reduce((a, b) => a + b, 0);
 
       const drawCateringHeaders = () => {
@@ -233,21 +196,18 @@ app.post("/generate-report", async (req, res) => {
 
       drawCateringHeaders();
 
-      // Draw each entry as a row
       validCatering.forEach((catering) => {
         if (y + rowHeight > doc.page.height - 50) {
           doc.addPage();
           y = 40;
           drawCateringHeaders();
         }
-
         const cells = [
           catering.cateringDate || "—",
           catering.name || "—",
           catering.paymentType || "—",
           catering.amount ? `$${Number(catering.amount).toFixed(2)}` : "—"
         ];
-
         cells.forEach((val, i) => {
           const cx = getCX(i);
           doc.rect(cx, y, cCols[i], rowHeight).stroke();
@@ -266,26 +226,24 @@ app.post("/generate-report", async (req, res) => {
   }
 });
 
-
 app.post("/send-feedback", async (req, res) => {
   try {
     const { feedback, date, ownerEmails } = req.body;
 
-    const emails = ownerEmails
-      ? ownerEmails.split(",").map((e) => e.trim())
+    const fallbackEmails = process.env.OWNER_EMAILS
+      ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    const emails = ownerEmails
+      ? ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
+      : [];
 
+    const allEmails = [...new Set([...emails, ...fallbackEmails])];
+
+    const transporter = createTransporter();
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
-      to: emails,
+      to: allEmails.join(", "),
       subject: `Report Feedback - ${date}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -308,7 +266,6 @@ app.post("/send-feedback", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5050;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
