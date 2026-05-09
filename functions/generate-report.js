@@ -1,25 +1,14 @@
-const PDFDocument = require("pdfkit");
-const nodemailer = require("nodemailer");
+import { Resend } from "resend";
+import PDFDocument from "pdfkit";
 
-const createTransporter = () => nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false },
-});
-
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+export async function onRequest(context) {
+  if (context.request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   try {
     console.log("🔥 Request received");
-    const data = JSON.parse(event.body);
+    const data = await context.request.json();
     const reportDate = data.date || new Date().toISOString().split("T")[0];
 
     const pdfBuffer = await new Promise((resolve, reject) => {
@@ -119,7 +108,6 @@ exports.handler = async (event) => {
         const getCX = (i) => startX + cCols.slice(0, i).reduce((a, b) => a + b, 0);
 
         const drawCateringHeaders = () => {
-          if (y + rowHeight > pageHeight - bottomMargin) { doc.addPage(); y = 40; }
           cHeaders.forEach((h, i) => {
             const cx = getCX(i);
             doc.rect(cx, y, cCols[i], rowHeight).fillAndStroke("#d5e8d4", "#000");
@@ -151,8 +139,8 @@ exports.handler = async (event) => {
       doc.end();
     });
 
-    const fallbackEmails = process.env.OWNER_EMAILS
-      ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
+    const fallbackEmails = context.env.OWNER_EMAILS
+      ? context.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
     const emails = data.ownerEmails
       ? data.ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
@@ -160,20 +148,23 @@ exports.handler = async (event) => {
     const allEmails = [...new Set([...emails, ...fallbackEmails])];
     console.log("📧 Sending to:", allEmails);
 
-    const transporter = createTransporter();
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: allEmails.join(", "),
+    const resend = new Resend(context.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: context.env.RESEND_FROM || "reports@enddayreports.com",
+      to: allEmails,
       subject: `Daily Report - ${reportDate}`,
       text: "Attached is your daily sales report.",
-      attachments: [{ filename: `${reportDate}_daily_report.pdf`, content: pdfBuffer }]
+      attachments: [{
+        filename: `${reportDate}_daily_report.pdf`,
+        content: pdfBuffer.toString("base64"),
+      }]
     });
 
     console.log("✅ Email sent successfully");
-    return { statusCode: 200, body: "Report generated + email sent" };
+    return new Response("Report generated + email sent", { status: 200 });
 
   } catch (err) {
     console.error("❌ ERROR:", err);
-    return { statusCode: 500, body: err.message };
+    return new Response(err.message, { status: 500 });
   }
-};
+}

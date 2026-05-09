@@ -1,35 +1,25 @@
-const nodemailer = require("nodemailer");
+import { Resend } from "resend";
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+export async function onRequest(context) {
+  if (context.request.method !== "POST") {
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   try {
-    const { feedback, date, ownerEmails } = JSON.parse(event.body);
+    const { feedback, date, ownerEmails } = await context.request.json();
 
-    const fallbackEmails = process.env.OWNER_EMAILS
-      ? process.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
+    const fallbackEmails = context.env.OWNER_EMAILS
+      ? context.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
     const emails = ownerEmails
       ? ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
     const allEmails = [...new Set([...emails, ...fallbackEmails])];
 
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      tls: { rejectUnauthorized: false },
-    });
-
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: allEmails.join(", "),
+    const resend = new Resend(context.env.RESEND_API_KEY);
+    await resend.emails.send({
+      from: context.env.RESEND_FROM || "reports@enddayreports.com",
+      to: allEmails,
       subject: `Report Feedback - ${date}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
@@ -43,9 +33,9 @@ exports.handler = async (event) => {
       `,
     });
 
-    return { statusCode: 200, body: "Feedback sent" };
+    return new Response("Feedback sent", { status: 200 });
   } catch (err) {
     console.error("❌ Feedback error:", err);
-    return { statusCode: 500, body: err.message };
+    return new Response(err.message, { status: 500 });
   }
-};
+}
