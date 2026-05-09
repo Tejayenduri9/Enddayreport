@@ -229,10 +229,10 @@ function App() {
         const cCol = tableWidth / 4;
         const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
         // Header row
-        doc.setFillColor(213, 232, 212);
         cHeaders.forEach((h, i) => {
-          doc.rect(startX + i * cCol, y, cCol, rowHeight, "F");
-          doc.rect(startX + i * cCol, y, cCol, rowHeight);
+          doc.setFillColor(213, 232, 212);
+          doc.rect(startX + i * cCol, y, cCol, rowHeight, "FD");
+          doc.setTextColor(0, 0, 0);
           doc.setFont("helvetica", "bold").setFontSize(8);
           doc.text(h, startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
         });
