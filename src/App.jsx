@@ -1,4 +1,5 @@
 import { useState } from "react";
+import jsPDF from "jspdf";
 import { db } from "./firebase";
 import { collection, addDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
@@ -148,10 +149,117 @@ function App() {
         createdAt: new Date(),
       });
 
+      // Generate PDF on frontend
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const startX = 10;
+      const tableWidth = pageWidth - 20;
+      const col1Width = tableWidth * 0.6;
+      const col2Width = tableWidth - col1Width;
+      const rowHeight = 8;
+      let y = 30;
+
+      const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
+
+      doc.setFontSize(16).setFont("helvetica", "bold");
+      doc.text("Spice Malabar Sales Report", pageWidth / 2, 15, { align: "center" });
+      doc.setFontSize(10).setFont("helvetica", "normal");
+      doc.text(`Date: ${form.date}`, pageWidth / 2, 22, { align: "center" });
+
+      const drawSection = (title) => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.setFillColor(238, 238, 238);
+        doc.rect(startX, y, tableWidth, rowHeight, "F");
+        doc.setDrawColor(0);
+        doc.rect(startX, y, tableWidth, rowHeight);
+        doc.setFont("helvetica", "bold").setFontSize(10);
+        doc.text(title, pageWidth / 2, y + 5.5, { align: "center" });
+        doc.setTextColor(0);
+        y += rowHeight;
+      };
+
+      const drawRow = (label, value, isMoney = true, bold = false) => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.rect(startX, y, col1Width, rowHeight);
+        doc.rect(startX + col1Width, y, col2Width, rowHeight);
+        doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(9);
+        doc.text(label, startX + 2, y + 5.5);
+        const display = isMoney ? formatMoney(value) : `${value || 0}`;
+        doc.text(display, startX + tableWidth - 2, y + 5.5, { align: "right" });
+        y += rowHeight;
+      };
+
+      drawSection("Guests");
+      drawRow("Lunch Guests", form.lunchGuests, false);
+      drawRow("Dinner Guests", form.dinnerGuests, false);
+      drawRow("Dine In Sales", form.dineInSales);
+
+      drawSection("Cash");
+      drawRow("Cash Sale", form.cashSale);
+      drawRow("Cash Tip", form.cashTip);
+      drawRow("Cash Catering", form.cashCatering);
+      drawRow("Total Cash", form.totalCashWithTip, true, true);
+
+      drawSection("Credit Card");
+      drawRow("Total Credit Card Settle", form.totalSettle);
+      drawRow("Credit Card Tip", form.creditCardTip);
+      drawRow("Credit Card Sale", form.creditCardSale, true, true);
+
+      drawSection("Sales Channels");
+      drawRow("System Gross Sale", form.systemGross);
+      drawRow("Gift Card Redeemed", form.giftCard);
+      drawRow("Total In House", form.totalInHouse, true, true);
+
+      drawSection("Online Sales");
+      drawRow("Restaurant Online", form.restaurantOnline);
+      drawRow("Grubhub", form.grubhub);
+      drawRow("DoorDash", form.doordash);
+      drawRow("Uber Eats", form.uberEats);
+      drawRow("Total Online Sales", form.totalRestaurantOnline, true, true);
+
+      drawSection("Final Totals");
+      drawRow("Total Restaurant Sales", form.totalRestaurantSales, true, true);
+      drawRow("Cash Catering", form.cashCatering);
+      drawRow("Total Sales of the Day", form.totalSalesDay, true, true);
+
+      // Catering Notes
+      const validCatering = cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
+      if (validCatering.length > 0) {
+        drawSection("Catering Notes");
+        const cCol = tableWidth / 4;
+        const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
+        // Header row
+        doc.setFillColor(213, 232, 212);
+        cHeaders.forEach((h, i) => {
+          doc.rect(startX + i * cCol, y, cCol, rowHeight, "F");
+          doc.rect(startX + i * cCol, y, cCol, rowHeight);
+          doc.setFont("helvetica", "bold").setFontSize(8);
+          doc.text(h, startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
+        });
+        y += rowHeight;
+        // Data rows
+        validCatering.forEach((c) => {
+          if (y > 270) { doc.addPage(); y = 20; }
+          const cells = [c.cateringDate || "—", c.name || "—", c.paymentType || "—", c.amount ? formatMoney(c.amount) : "—"];
+          cells.forEach((val, i) => {
+            doc.rect(startX + i * cCol, y, cCol, rowHeight);
+            doc.setFont("helvetica", "normal").setFontSize(8);
+            doc.text(val, startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
+          });
+          y += rowHeight;
+        });
+      }
+
+      const pdfBase64 = doc.output("datauristring").split(",")[1];
+
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, cateringNotes }),
+        body: JSON.stringify({
+          pdfBase64,
+          reportDate: form.date,
+          ownerEmails: form.ownerEmails,
+        }),
       });
 
       if (!response.ok) throw new Error("Backend request failed");
