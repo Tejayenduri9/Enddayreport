@@ -39,6 +39,19 @@ const blankForm = () => ({
   totalSalesDay: "",
 });
 
+// Orange theme colors
+const OG = {
+  primary:   [196, 82,  0],    // #C45200 burnt orange
+  dark:      [140, 55,  0],    // darker orange
+  light:     [232, 121, 58],   // #E8793A light orange
+  accent:    [255, 200, 100],  // gold accent
+  cash:      [180, 90,  20],   // cash section
+  cc:        [150, 60,  10],   // credit card section
+  guests:    [100, 70,  30],   // guests section
+  online:    [196, 110, 30],   // online section
+  channels:  [160, 80,  10],   // sales channels
+};
+
 function App() {
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
@@ -81,29 +94,23 @@ function App() {
 
   const handleChange = (e) => {
     const updated = { ...form, [e.target.name]: e.target.value };
-
     const cashSale = Number(updated.cashSale) || 0;
     const cashTip = Number(updated.cashTip) || 0;
     const cashCatering = Number(updated.cashCatering) || 0;
     const totalCash = cashSale + cashTip + cashCatering;
-
     const totalSettle = Number(updated.totalSettle) || 0;
     const creditCardTip = Number(updated.creditCardTip) || 0;
     const creditCardSale = totalSettle - creditCardTip;
-
     const systemGross = cashSale + creditCardSale;
     const giftCard = Number(updated.giftCard) || 0;
     const totalInHouse = systemGross - giftCard;
-
     const restaurantOnline = Number(updated.restaurantOnline) || 0;
     const grubhub = Number(updated.grubhub) || 0;
     const doordash = Number(updated.doordash) || 0;
     const uberEats = Number(updated.uberEats) || 0;
     const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
-
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + cashCatering;
-
     updated.totalCashWithTip = totalCash;
     updated.creditCardSale = creditCardSale;
     updated.systemGross = systemGross;
@@ -111,122 +118,222 @@ function App() {
     updated.totalRestaurantOnline = onlineSale;
     updated.totalRestaurantSales = totalRestaurantSales;
     updated.totalSalesDay = totalSalesDay;
-
     setForm(updated);
   };
 
   const generatePDF = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
-    const startX = 10;
-    const tableWidth = pageWidth - 20;
-    const col1Width = tableWidth * 0.6;
-    const col2Width = tableWidth - col1Width;
-    const rowHeight = 8;
-    let y = 30;
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    const margin = 14;
+    const cw = pageWidth - margin * 2; // contentWidth
 
-    const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
+    // ── HEADER ──
+    doc.setFillColor(...OG.primary);
+    doc.rect(0, 0, pageWidth, 36, "F");
+    try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch(e) {}
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold").setFontSize(11);
+    doc.text("DAILY SALES REPORT", pageWidth / 2, 23, { align: "center" });
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "normal").setFontSize(8.5);
+    const dateText = new Date(form.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    doc.text(dateText, pageWidth / 2, 31, { align: "center" });
 
-    doc.setFontSize(16).setFont("helvetica", "bold");
-    doc.text("Spice Malabar Sales Report", pageWidth / 2, 15, { align: "center" });
-    doc.setFontSize(10).setFont("helvetica", "normal");
-    doc.text(`Date: ${form.date}`, pageWidth / 2, 22, { align: "center" });
+    let y = 42;
 
-    const drawSection = (title) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.setFillColor(238, 238, 238);
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(startX, y, tableWidth, rowHeight, "FD");
-      doc.setFont("helvetica", "bold").setFontSize(10);
-      doc.setTextColor(0);
-      doc.text(title, pageWidth / 2, y + 5.5, { align: "center" });
-      y += rowHeight;
+    // ── SUMMARY BOX ──
+    const colWBase = Math.floor(cw / 3);
+    const colWs = [colWBase, colWBase, cw - colWBase * 2];
+    const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62]];
+    const summaryLabels = ["TOTAL SALES", "TOTAL GUESTS", "IN-HOUSE SALES"];
+    const summaryValues = [
+      fmt(form.totalSalesDay),
+      String((Number(form.lunchGuests) || 0) + (Number(form.dinnerGuests) || 0)),
+      fmt(form.totalInHouse),
+    ];
+    let sumX = margin;
+    summaryColors.forEach(([r, g, b], i) => {
+      const sw = colWs[i];
+      doc.setFillColor(r, g, b);
+      doc.setDrawColor(255, 200, 100);
+      doc.rect(sumX, y, sw, 18, "FD");
+      doc.setTextColor(...OG.accent);
+      doc.setFont("helvetica", "normal").setFontSize(6.5);
+      doc.text(summaryLabels[i], sumX + sw / 2, y + 6, { align: "center" });
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold").setFontSize(11);
+      doc.text(summaryValues[i], sumX + sw / 2, y + 14, { align: "center" });
+      sumX += sw;
+    });
+    y += 24;
+
+    // ── HELPERS ──
+    const secHeader = (title, color, x, w) => {
+      doc.setFillColor(...color);
+      doc.rect(x, y, w, 7, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold").setFontSize(8);
+      doc.text(title, x + w / 2, y + 5, { align: "center" });
+      y += 7;
     };
 
-    const drawRow = (label, value, isMoney = true, bold = false) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(startX, y, col1Width, rowHeight);
-      doc.rect(startX + col1Width, y, col2Width, rowHeight);
-      doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(9);
-      doc.setTextColor(0);
-      doc.text(String(label), startX + 2, y + 5.5);
-      const display = isMoney ? formatMoney(value) : `${value || 0}`;
-      doc.text(String(display), startX + tableWidth - 2, y + 5.5, { align: "right" });
-      y += rowHeight;
+    const row = (label, value, x, w, bold = false) => {
+      doc.setDrawColor(200, 150, 100);
+      doc.setFillColor(bold ? 235 : 255, bold ? 245 : 255, bold ? 235 : 255);
+      doc.rect(x, y, w, 6, bold ? "FD" : "D");
+      doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(8);
+      if (bold) { doc.setTextColor(26, 61, 43); } else { doc.setTextColor(60, 60, 60); }
+      doc.text(String(label), x + 2, y + 4.5);
+      doc.text(String(value), x + w - 2, y + 4.5, { align: "right" });
+      y += 6;
     };
 
-    drawSection("Guests");
-    drawRow("Lunch Guests", form.lunchGuests, false);
-    drawRow("Dinner Guests", form.dinnerGuests, false);
-    drawRow("Dine In Sales", form.dineInSales);
+    // ── GUESTS ──
+    secHeader("GUESTS & DINE-IN", [26, 61, 43], margin, cw);
+    const gcb = Math.floor(cw / 3);
+    const gcs = [gcb, gcb, cw - gcb * 2];
+    doc.setDrawColor(180, 180, 180);
+    doc.rect(margin, y, gcs[0], 6, "D");
+    doc.rect(margin + gcs[0], y, gcs[1], 6, "D");
+    doc.rect(margin + gcs[0] + gcs[1], y, gcs[2], 6, "D");
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60, 60, 60);
+    doc.text(`Lunch: ${form.lunchGuests || 0}`, margin + gcs[0] / 2, y + 4.5, { align: "center" });
+    doc.text(`Dinner: ${form.dinnerGuests || 0}`, margin + gcs[0] + gcs[1] / 2, y + 4.5, { align: "center" });
+    doc.setFont("helvetica", "bold").setTextColor(26, 61, 43);
+    doc.text(`Dine-in: ${fmt(form.dineInSales)}`, margin + gcs[0] + gcs[1] + gcs[2] / 2, y + 4.5, { align: "center" });
+    y += 8;
 
-    drawSection("Cash");
-    drawRow("Cash Sale", form.cashSale);
-    drawRow("Cash Tip", form.cashTip);
-    drawRow("Cash Catering", form.cashCatering);
-    drawRow("Total Cash", form.totalCashWithTip, true, true);
+    // ── CASH + CC SIDE BY SIDE ──
+    const hw = cw / 2;
+    const rx = margin + hw;
+    const hy = y;
+    doc.setFillColor(26, 61, 43);
+    doc.rect(margin, hy, hw, 7, "F");
+    doc.setFillColor(26, 61, 43);
+    doc.rect(rx, hy, hw, 7, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold").setFontSize(8);
+    doc.text("CASH", margin + hw / 2, hy + 5, { align: "center" });
+    doc.text("CREDIT CARD", rx + hw / 2, hy + 5, { align: "center" });
+    y = hy + 7;
 
-    drawSection("Credit Card");
-    drawRow("Total Credit Card Settle", form.totalSettle);
-    drawRow("Credit Card Tip", form.creditCardTip);
-    drawRow("Credit Card Sale", form.creditCardSale, true, true);
+    const cy0 = y;
+    row("Cash Sale", fmt(form.cashSale), margin, hw);
+    row("Cash Tip", fmt(form.cashTip), margin, hw);
+    row("Cash Catering", fmt(form.cashCatering), margin, hw);
+    row("Total Cash", fmt(form.totalCashWithTip), margin, hw, true);
+    const cyEnd = y;
 
-    drawSection("Sales Channels");
-    drawRow("System Gross Sale", form.systemGross);
-    drawRow("Gift Card Redeemed", form.giftCard);
-    drawRow("Total In House", form.totalInHouse, true, true);
+    y = cy0;
+    row("Total CC Settle", fmt(form.totalSettle), rx, hw);
+    row("CC Tip", fmt(form.creditCardTip), rx, hw);
+    row("CC Sale", fmt(form.creditCardSale), rx, hw, true);
+    if (y < cyEnd) {
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(200, 150, 100);
+      doc.rect(rx, y, hw, cyEnd - y, "FD");
+    }
+    y = Math.max(cyEnd, y);
+    doc.setDrawColor(150, 150, 150);
+    doc.rect(margin, hy, cw, y - hy);
+    y += 4;
 
-    drawSection("Online Sales");
-    drawRow("Restaurant Online", form.restaurantOnline);
-    drawRow("Grubhub", form.grubhub);
-    drawRow("DoorDash", form.doordash);
-    drawRow("Uber Eats", form.uberEats);
-    drawRow("Total Online Sales", form.totalRestaurantOnline, true, true);
+    // ── SALES CHANNELS ──
+    secHeader("SALES CHANNELS", [26, 61, 43], margin, cw);
+    row("System Gross Sale", fmt(form.systemGross), margin, cw);
+    row("Gift Card Redeemed", fmt(form.giftCard), margin, cw);
+    row("Total In House", fmt(form.totalInHouse), margin, cw, true);
+    y += 2;
 
-    drawSection("Final Totals");
-    drawRow("Total Restaurant Sales", form.totalRestaurantSales, true, true);
-    drawRow("Cash Catering", form.cashCatering);
-    drawRow("Total Sales of the Day", form.totalSalesDay, true, true);
+    // ── ONLINE SALES ──
+    secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
+    const ocb = Math.floor(cw / 4);
+    const ocs = [ocb, ocb, ocb, cw - ocb * 3];
+    const platforms = [
+      { label: "Restaurant Online", val: form.restaurantOnline },
+      { label: "Grubhub", val: form.grubhub },
+      { label: "DoorDash", val: form.doordash },
+      { label: "Uber Eats", val: form.uberEats },
+    ];
+    let ox = margin;
+    platforms.forEach((p, i) => {
+      const pw = ocs[i];
+      doc.setFillColor(240, 248, 240);
+      doc.setDrawColor(180, 210, 180);
+      doc.rect(ox, y, pw, 14, "FD");
+      doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(60, 80, 60);
+      doc.text(p.label, ox + pw / 2, y + 5, { align: "center" });
+      doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(26, 61, 43);
+      doc.text(fmt(p.val), ox + pw / 2, y + 11, { align: "center" });
+      ox += pw;
+    });
+    y += 14;
+    doc.setFillColor(220, 240, 220);
+    doc.setDrawColor(150, 200, 150);
+    doc.rect(margin, y, cw, 6, "FD");
+    doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(26, 61, 43);
+    doc.text("Total Online Sales", margin + 3, y + 4.5);
+    doc.text(fmt(form.totalRestaurantOnline), margin + cw - 2, y + 4.5, { align: "right" });
+    y += 8;
 
+    // ── FINAL TOTALS ──
+    secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
+    row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
+    row("Cash Catering", fmt(form.cashCatering), margin, cw);
+    y += 2;
+
+    // ── TOTAL SALES BAR ──
+    doc.setFillColor(...OG.primary);
+    doc.rect(margin, y, cw, 12, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold").setFontSize(12);
+    doc.text("TOTAL SALES OF THE DAY", margin + 4, y + 8);
+    doc.text(fmt(form.totalSalesDay), margin + cw - 3, y + 8, { align: "right" });
+    y += 16;
+
+    // ── CATERING NOTES ──
     const validCatering = cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
     if (validCatering.length > 0) {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.setFillColor(238, 238, 238);
-      doc.setDrawColor(0, 0, 0);
-      doc.rect(startX, y, tableWidth, rowHeight, "FD");
-      doc.setFont("helvetica", "bold").setFontSize(10);
-      doc.setTextColor(0);
-      doc.text("Catering Notes", pageWidth / 2, y + 5.5, { align: "center" });
-      y += rowHeight;
-
-      const cCol = tableWidth / 4;
+      if (y > pageHeight - 40) { doc.addPage(); y = 15; }
+      secHeader("CATERING NOTES", [26, 61, 43], margin, cw);
+      const ccb = Math.floor(cw / 4);
+      const ccs = [ccb, ccb, ccb, cw - ccb * 3];
       const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
-
+      let chx = margin;
       cHeaders.forEach((h, i) => {
-        doc.setFillColor(213, 232, 212);
-        doc.setDrawColor(0, 0, 0);
-        doc.rect(startX + i * cCol, y, cCol, rowHeight, "FD");
-        doc.setTextColor(0);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(8);
-        doc.text(String(h), startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
+        doc.setFillColor(255, 235, 200);
+        doc.setDrawColor(200, 150, 100);
+        doc.rect(chx, y, ccs[i], 6, "FD");
+        doc.setTextColor(...OG.dark);
+        doc.setFont("helvetica", "bold").setFontSize(7);
+        doc.text(String(h), chx + ccs[i] / 2, y + 4.5, { align: "center" });
+        chx += ccs[i];
       });
-      y += rowHeight;
-
+      y += 6;
       validCatering.forEach((c) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        const cells = [c.cateringDate || "—", c.name || "—", c.paymentType || "—", c.amount ? formatMoney(c.amount) : "—"];
+        if (y > pageHeight - 20) { doc.addPage(); y = 15; }
+        const cells = [c.cateringDate || "—", c.name || "—", c.paymentType || "—", c.amount ? fmt(c.amount) : "—"];
+        let cdx = margin;
         cells.forEach((val, i) => {
-          doc.setDrawColor(0, 0, 0);
-          doc.rect(startX + i * cCol, y, cCol, rowHeight);
-          doc.setFont("helvetica", "normal").setFontSize(8);
-          doc.setTextColor(0);
-          doc.text(String(val), startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
+          doc.setDrawColor(200, 200, 200);
+          doc.rect(cdx, y, ccs[i], 6);
+          doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(50, 50, 50);
+          doc.text(String(val), cdx + ccs[i] / 2, y + 4.5, { align: "center" });
+          cdx += ccs[i];
         });
-        y += rowHeight;
+        y += 6;
       });
     }
+
+    // ── FOOTER ──
+    doc.setFillColor(...OG.primary);
+    doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "normal").setFontSize(7);
+    const year = new Date().getFullYear();
+    doc.text(`© ${year} EndDay Reports • enddayreports.com • All Rights Reserved`, pageWidth / 2, pageHeight - 4, { align: "center" });
 
     return doc;
   };
@@ -265,107 +372,7 @@ function App() {
         createdAt: new Date(),
       });
 
-      // Generate PDF on frontend
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const startX = 10;
-      const tableWidth = pageWidth - 20;
-      const col1Width = tableWidth * 0.6;
-      const col2Width = tableWidth - col1Width;
-      const rowHeight = 8;
-      let y = 30;
-
-      const formatMoney = (v) => `$${Number(v || 0).toFixed(2)}`;
-
-      doc.setFontSize(16).setFont("helvetica", "bold");
-      doc.text("Spice Malabar Sales Report", pageWidth / 2, 15, { align: "center" });
-      doc.setFontSize(10).setFont("helvetica", "normal");
-      doc.text(`Date: ${form.date}`, pageWidth / 2, 22, { align: "center" });
-
-      const drawSection = (title) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.setFillColor(238, 238, 238);
-        doc.rect(startX, y, tableWidth, rowHeight, "F");
-        doc.setDrawColor(0);
-        doc.rect(startX, y, tableWidth, rowHeight);
-        doc.setFont("helvetica", "bold").setFontSize(10);
-        doc.text(title, pageWidth / 2, y + 5.5, { align: "center" });
-        doc.setTextColor(0);
-        y += rowHeight;
-      };
-
-      const drawRow = (label, value, isMoney = true, bold = false) => {
-        if (y > 270) { doc.addPage(); y = 20; }
-        doc.rect(startX, y, col1Width, rowHeight);
-        doc.rect(startX + col1Width, y, col2Width, rowHeight);
-        doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(9);
-        doc.text(label, startX + 2, y + 5.5);
-        const display = isMoney ? formatMoney(value) : `${value || 0}`;
-        doc.text(display, startX + tableWidth - 2, y + 5.5, { align: "right" });
-        y += rowHeight;
-      };
-
-      drawSection("Guests");
-      drawRow("Lunch Guests", form.lunchGuests, false);
-      drawRow("Dinner Guests", form.dinnerGuests, false);
-      drawRow("Dine In Sales", form.dineInSales);
-
-      drawSection("Cash");
-      drawRow("Cash Sale", form.cashSale);
-      drawRow("Cash Tip", form.cashTip);
-      drawRow("Cash Catering", form.cashCatering);
-      drawRow("Total Cash", form.totalCashWithTip, true, true);
-
-      drawSection("Credit Card");
-      drawRow("Total Credit Card Settle", form.totalSettle);
-      drawRow("Credit Card Tip", form.creditCardTip);
-      drawRow("Credit Card Sale", form.creditCardSale, true, true);
-
-      drawSection("Sales Channels");
-      drawRow("System Gross Sale", form.systemGross);
-      drawRow("Gift Card Redeemed", form.giftCard);
-      drawRow("Total In House", form.totalInHouse, true, true);
-
-      drawSection("Online Sales");
-      drawRow("Restaurant Online", form.restaurantOnline);
-      drawRow("Grubhub", form.grubhub);
-      drawRow("DoorDash", form.doordash);
-      drawRow("Uber Eats", form.uberEats);
-      drawRow("Total Online Sales", form.totalRestaurantOnline, true, true);
-
-      drawSection("Final Totals");
-      drawRow("Total Restaurant Sales", form.totalRestaurantSales, true, true);
-      drawRow("Cash Catering", form.cashCatering);
-      drawRow("Total Sales of the Day", form.totalSalesDay, true, true);
-
-      // Catering Notes
-      const validCatering = cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
-      if (validCatering.length > 0) {
-        drawSection("Catering Notes");
-        const cCol = tableWidth / 4;
-        const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
-        // Header row
-        cHeaders.forEach((h, i) => {
-          doc.setFillColor(213, 232, 212);
-          doc.rect(startX + i * cCol, y, cCol, rowHeight, "FD");
-          doc.setTextColor(0, 0, 0);
-          doc.setFont("helvetica", "bold").setFontSize(8);
-          doc.text(h, startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
-        });
-        y += rowHeight;
-        // Data rows
-        validCatering.forEach((c) => {
-          if (y > 270) { doc.addPage(); y = 20; }
-          const cells = [c.cateringDate || "—", c.name || "—", c.paymentType || "—", c.amount ? formatMoney(c.amount) : "—"];
-          cells.forEach((val, i) => {
-            doc.rect(startX + i * cCol, y, cCol, rowHeight);
-            doc.setFont("helvetica", "normal").setFontSize(8);
-            doc.text(val, startX + i * cCol + cCol / 2, y + 5.5, { align: "center" });
-          });
-          y += rowHeight;
-        });
-      }
-
+      const doc = generatePDF();
       const pdfBase64 = doc.output("datauristring").split(",")[1];
 
       const response = await fetch("/generate-report", {
@@ -394,539 +401,143 @@ function App() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');
-
         * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-          background: #f0f2f0;
-          font-family: 'DM Sans', sans-serif;
-        }
-
-        .rs-wrapper {
-          min-height: 100vh;
-          display: flex;
-          justify-content: center;
-          padding: 2rem 1rem;
-        }
-
-        .rs-card {
-          width: 100%;
-          max-width: 520px;
-          background: #fff;
-          border-radius: 20px;
-          border: 0.5px solid rgba(0,0,0,0.08);
-          overflow: hidden;
-          height: fit-content;
-        }
-
-        .rs-header {
-          background: #1a3d2b;
-          padding: 2rem 2rem 1.5rem;
-          text-align: center;
-        }
-
-        .rs-header::after {
-          content: '';
-          display: block;
-          width: 40px;
-          height: 3px;
-          background: #e8c97e;
-          border-radius: 2px;
-          margin: 1rem auto 0;
-        }
-
-        .rs-brand-name {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 22px;
-          font-weight: 600;
-          color: #fff;
-          letter-spacing: 0.5px;
-        }
-
-        .rs-brand-sub {
-          font-size: 11px;
-          letter-spacing: 3px;
-          color: #e8c97e;
-          text-transform: uppercase;
-          margin-top: 4px;
-        }
-
-        .rs-date-pill {
-          display: inline-block;
-          margin-top: 1rem;
-          background: rgba(255,255,255,0.12);
-          border: 0.5px solid rgba(255,255,255,0.25);
-          border-radius: 20px;
-          padding: 5px 16px;
-          font-size: 13px;
-          color: rgba(255,255,255,0.85);
-        }
-
+        body { background: #fdf3ec; font-family: 'DM Sans', sans-serif; }
+        .rs-wrapper { min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+        .rs-card { width: 100%; max-width: 520px; background: #fff; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.08); overflow: hidden; height: fit-content; }
+        .rs-header { background: #C45200; padding: 2rem 2rem 1.5rem; text-align: center; }
+        .rs-header::after { content: ''; display: block; width: 40px; height: 3px; background: #ffc864; border-radius: 2px; margin: 1rem auto 0; }
+        .rs-brand-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+        .rs-brand-sub { font-size: 11px; letter-spacing: 3px; color: #ffc864; text-transform: uppercase; margin-top: 4px; }
+        .rs-date-pill { display: inline-block; margin-top: 1rem; background: rgba(255,255,255,0.15); border: 0.5px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 5px 16px; font-size: 13px; color: rgba(255,255,255,0.9); }
         .rs-body { padding: 1.5rem 1.75rem 2rem; }
-
-        .rs-section { margin-bottom: 1.75rem; }
-
-        .rs-section-label {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #333;
-          margin-bottom: 0.75rem;
-          padding-bottom: 6px;
-          border-bottom: 1px solid #ddd;
-        }
-
-        .rs-grid-2 {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
-        .rs-field {
-          display: flex;
-          flex-direction: column;
-          gap: 5px;
-          margin-bottom: 10px;
-        }
-
+        .rs-section { margin-bottom: 1.25rem; }
+        .rs-section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8C3700; margin-bottom: 0.75rem; padding-bottom: 6px; border-bottom: 1px solid #f5d5b8; }
+        .rs-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .rs-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .rs-field:last-child { margin-bottom: 0; }
-
-        .rs-field label {
-          font-size: 11px;
-          font-weight: 500;
-          color: #666;
-        }
-
-        .rs-field input {
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 14px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          outline: none;
-          width: 100%;
-        }
-
-        .rs-field input:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.12);
-        }
-
-        .rs-field select {
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 14px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          transition: border-color 0.15s, box-shadow 0.15s;
-          outline: none;
-          width: 100%;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 12px center;
-        }
-
-        .rs-field select:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.12);
-        }
-
-        .rs-btn {
-          width: 100%;
-          padding: 14px;
-          background: #1a3d2b;
-          color: #fff;
-          border: none;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 500;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          letter-spacing: 0.5px;
-          margin-top: 0.5rem;
+        .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
+        .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
+        .rs-input-money {
+          position: relative;
           display: flex;
           align-items: center;
-          justify-content: center;
-          gap: 8px;
-          transition: opacity 0.15s;
         }
-
-        .rs-btn:hover { opacity: 0.88; }
-        .rs-btn:disabled { opacity: 0.75; cursor: not-allowed; }
-
-        .rs-notes-toggle {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 10px;
-          padding: 12px 16px;
-          cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 13px;
+        .rs-input-money span {
+          position: absolute;
+          left: 10px;
+          color: #C45200;
           font-weight: 600;
-          color: #333;
-          letter-spacing: 0.5px;
-          transition: background 0.15s;
-          outline: none;
-        }
-
-        .rs-notes-toggle:hover { background: #eef0ee; }
-
-        .rs-notes-arrow {
-          transition: transform 0.25s ease;
-          display: flex;
-          align-items: center;
-        }
-
-        .rs-notes-arrow.open { transform: rotate(180deg); }
-
-        .rs-notes-body {
-          overflow: hidden;
-          max-height: 0;
-          transition: max-height 0.4s ease, opacity 0.25s ease;
-          opacity: 0;
+          font-size: 14px;
           pointer-events: none;
         }
-
-        .rs-notes-body.open {
-          max-height: 2000px;
-          opacity: 1;
-          pointer-events: all;
+        .rs-input-money input {
+          padding-left: 20px !important;
         }
-
-        .rs-notes-inner {
-          padding-top: 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .rs-catering-entry {
-          border: 0.5px solid #e0e0e0;
-          border-radius: 10px;
-          padding: 14px;
-          position: relative;
-        }
-
-        .rs-entry-label {
-          font-size: 10px;
-          font-weight: 700;
-          color: #999;
-          letter-spacing: 1.5px;
-          text-transform: uppercase;
-          margin-bottom: 10px;
-        }
-
-        .rs-remove-btn {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: #bbb;
-          font-size: 15px;
-          line-height: 1;
-          padding: 2px 5px;
-          border-radius: 4px;
-          transition: color 0.15s;
-        }
-
+        .rs-field input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
+        .rs-field select { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+        .rs-field select:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
+        .rs-btn { width: 100%; padding: 14px; background: #C45200; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.5px; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
+        .rs-btn:hover { opacity: 0.88; }
+        .rs-btn:disabled { opacity: 0.75; cursor: not-allowed; }
+        .rs-notes-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 12px 16px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #333; letter-spacing: 0.5px; transition: background 0.15s; outline: none; }
+        .rs-notes-toggle:hover { background: #fdeede; }
+        .rs-notes-arrow { transition: transform 0.25s ease; display: flex; align-items: center; }
+        .rs-notes-arrow.open { transform: rotate(180deg); }
+        .rs-notes-body { overflow: hidden; max-height: 0; transition: max-height 0.4s ease, opacity 0.25s ease; opacity: 0; pointer-events: none; }
+        .rs-notes-body.open { max-height: 2000px; opacity: 1; pointer-events: all; }
+        .rs-notes-inner { padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+        .rs-catering-entry { border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 14px; position: relative; }
+        .rs-entry-label { font-size: 10px; font-weight: 700; color: #C45200; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+        .rs-remove-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: #bbb; font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 4px; transition: color 0.15s; }
         .rs-remove-btn:hover { color: #e05555; }
-
-        .rs-add-btn {
-          width: 100%;
-          padding: 10px;
-          background: none;
-          border: 1px dashed #bbb;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 13px;
-          color: #555;
-          font-family: 'DM Sans', sans-serif;
-          font-weight: 500;
-          transition: border-color 0.15s, color 0.15s;
-        }
-
-        .rs-add-btn:hover { border-color: #1a3d2b; color: #1a3d2b; }
-
-        .rs-loading-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.6);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          z-index: 9999;
-          gap: 16px;
-        }
-
-        .rs-loading-spinner {
-          width: 52px;
-          height: 52px;
-          border: 4px solid rgba(255,255,255,0.2);
-          border-top-color: #e8c97e;
-          border-radius: 50%;
-          animation: rs-spin 0.8s linear infinite;
-        }
-
-        .rs-loading-text {
-          color: #fff;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 15px;
-          font-weight: 500;
-          letter-spacing: 0.5px;
-        }
-
-        .rs-loading-sub {
-          color: rgba(255,255,255,0.6);
-          font-family: 'DM Sans', sans-serif;
-          font-size: 12px;
-          margin-top: -8px;
-        }
-
-        @keyframes rs-spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-
-        .rs-modal-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.45);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-          padding: 1rem;
-          animation: rs-fade-in 0.2s ease;
-        }
-
-        @keyframes rs-fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .rs-modal {
-          background: #fff;
-          border-radius: 16px;
-          padding: 2rem;
-          width: 100%;
-          max-width: 360px;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-          animation: rs-slide-up 0.25s ease;
-          text-align: center;
-        }
-
-        @keyframes rs-slide-up {
-          from { transform: translateY(20px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-
-        .rs-modal-icon {
-          width: 52px;
-          height: 52px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 1rem;
-          font-size: 22px;
-        }
-
-        .rs-modal-icon.success { background: #e8f5e9; }
+        .rs-add-btn { width: 100%; padding: 10px; background: none; border: 1px dashed #f5c9a0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #C45200; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: border-color 0.15s; }
+        .rs-add-btn:hover { border-color: #C45200; }
+        .rs-loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+        .rs-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #ffc864; border-radius: 50%; animation: rs-spin 0.8s linear infinite; }
+        .rs-loading-text { color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; }
+        .rs-loading-sub { color: rgba(255,255,255,0.6); font-family: 'DM Sans', sans-serif; font-size: 12px; margin-top: -8px; }
+        @keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .rs-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; animation: rs-fade-in 0.2s ease; }
+        @keyframes rs-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .rs-modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: rs-slide-up 0.25s ease; text-align: center; }
+        @keyframes rs-slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .rs-modal-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 22px; }
+        .rs-modal-icon.success { background: #fff3e0; }
         .rs-modal-icon.error { background: #fdecea; }
-
-        .rs-modal-title {
-          font-family: 'Playfair Display', Georgia, serif;
-          font-size: 18px;
-          font-weight: 600;
-          color: #111;
-          margin-bottom: 8px;
-        }
-
-        .rs-modal-message {
-          font-size: 13px;
-          color: #666;
-          line-height: 1.6;
-          margin-bottom: 1.5rem;
-          white-space: pre-line;
-        }
-
-        .rs-modal-input {
-          width: 100%;
-          background: #f7f8f7;
-          border: 0.5px solid #ddd;
-          border-radius: 8px;
-          padding: 9px 12px;
-          font-size: 13px;
-          color: #111;
-          font-family: 'DM Sans', sans-serif;
-          outline: none;
-          resize: vertical;
-          min-height: 80px;
-          margin-bottom: 1rem;
-          transition: border-color 0.15s;
-        }
-
-        .rs-modal-input:focus {
-          border-color: #1a3d2b;
-          box-shadow: 0 0 0 2px rgba(26,61,43,0.1);
-        }
-
-        .rs-modal-actions {
-          display: flex;
-          gap: 8px;
-        }
-
-        .rs-modal-btn {
-          flex: 1;
-          padding: 11px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 600;
-          font-family: 'DM Sans', sans-serif;
-          cursor: pointer;
-          border: none;
-          transition: opacity 0.15s;
-        }
-
+        .rs-modal-title { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #111; margin-bottom: 8px; }
+        .rs-modal-message { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 1.5rem; white-space: pre-line; }
+        .rs-modal-input { width: 100%; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; resize: vertical; min-height: 80px; margin-bottom: 1rem; transition: border-color 0.15s; }
+        .rs-modal-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
+        .rs-modal-actions { display: flex; gap: 8px; }
+        .rs-modal-btn { flex: 1; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: opacity 0.15s; }
         .rs-modal-btn:hover { opacity: 0.85; }
-        .rs-modal-btn.primary { background: #1a3d2b; color: #fff; }
-        .rs-modal-btn.secondary { background: #f0f2f0; color: #333; }
+        .rs-modal-btn.primary { background: #C45200; color: #fff; }
+        .rs-modal-btn.secondary { background: #f5ece4; color: #333; }
       `}</style>
 
       <div className="rs-wrapper">
         <div className="rs-card">
-
-          {/* Header */}
           <div className="rs-header">
-            {logo && <img src={logo} alt="logo" style={{ width: 160, marginBottom: 12 }} />}
+            {logo && <img src={logo} alt="logo" style={{ width: 130, marginBottom: 10, borderRadius: "12px" }} />}
             <div className="rs-brand-name">Restaurant Sales</div>
             <div className="rs-brand-sub">Daily Report</div>
             <div className="rs-date-pill">{formatDate(form.date)}</div>
           </div>
 
           <div className="rs-body">
-
-            {/* Guests */}
             <div className="rs-section">
               <div className="rs-section-label">Guests</div>
               <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Lunch Guests</label>
-                  <input name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Dinner Guests</label>
-                  <input name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" />
-                </div>
+                <div className="rs-field"><label>Lunch Guests</label><input name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" /></div>
+                <div className="rs-field"><label>Dinner Guests</label><input name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" /></div>
               </div>
-              <div className="rs-field">
-                <label>Dine-in Sales</label>
-                <input name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
+              <div className="rs-field"><label>Dine-in Sales</label><div className="rs-input-money"><span>$</span><input name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
             </div>
 
-            {/* Cash */}
             <div className="rs-section">
               <div className="rs-section-label">Cash</div>
               <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Cash Sale</label>
-                  <input name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Cash Tip</label>
-                  <input name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
+                <div className="rs-field"><label>Cash Sale</label><div className="rs-input-money"><span>$</span><input name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Cash Tip</label><div className="rs-input-money"><span>$</span><input name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
               </div>
-              <div className="rs-field">
-                <label>Cash Catering</label>
-                <input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
+              <div className="rs-field"><label>Cash Catering</label><div className="rs-input-money"><span>$</span><input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
             </div>
 
-            {/* Credit Card */}
             <div className="rs-section">
               <div className="rs-section-label">Credit Card</div>
               <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Total Settle Amount</label>
-                  <input name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Credit Card Tip</label>
-                  <input name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
+                <div className="rs-field"><label>Total Settle Amount</label><div className="rs-input-money"><span>$</span><input name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Credit Card Tip</label><div className="rs-input-money"><span>$</span><input name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
               </div>
             </div>
 
-            {/* Gift Cards & Online */}
             <div className="rs-section">
               <div className="rs-section-label">Gift Cards & Online</div>
-              <div className="rs-field">
-                <label>Gift Card Redeemed</label>
-                <input name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" />
-              </div>
+              <div className="rs-field"><label>Gift Card Redeemed</label><div className="rs-input-money"><span>$</span><input name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
               <div className="rs-grid-2">
-                <div className="rs-field">
-                  <label>Restaurant Online</label>
-                  <input name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Grubhub</label>
-                  <input name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>DoorDash</label>
-                  <input name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
-                <div className="rs-field">
-                  <label>Uber Eats</label>
-                  <input name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" />
-                </div>
+                <div className="rs-field"><label>Restaurant Online</label><div className="rs-input-money"><span>$</span><input name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Grubhub</label><div className="rs-input-money"><span>$</span><input name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>DoorDash</label><div className="rs-input-money"><span>$</span><input name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Uber Eats</label><div className="rs-input-money"><span>$</span><input name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
               </div>
             </div>
 
-            {/* Catering Notes */}
             <div className="rs-section">
               <button type="button" className="rs-notes-toggle" onClick={() => setNotesOpen(!notesOpen)}>
                 <span>📋 Notes — Catering</span>
                 <span className={`rs-notes-arrow${notesOpen ? " open" : ""}`}>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 5l5 5 5-5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
               </button>
-
               <div className={`rs-notes-body${notesOpen ? " open" : ""}`}>
                 <div className="rs-notes-inner">
                   {cateringNotes.map((note, index) => (
                     <div key={index} className="rs-catering-entry">
-                      {cateringNotes.length > 1 && (
-                        <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>
-                      )}
+                      {cateringNotes.length > 1 && <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>}
                       <div className="rs-entry-label">Entry {index + 1}</div>
-                      <div className="rs-field">
-                        <label>Catering Date</label>
-                        <input type="date" name="cateringDate" value={note.cateringDate} onChange={(e) => handleCateringChange(index, e)} />
-                      </div>
-                      <div className="rs-field">
-                        <label>Name</label>
-                        <input type="text" name="name" value={note.name} onChange={(e) => handleCateringChange(index, e)} placeholder="Client name" />
-                      </div>
+                      <div className="rs-field"><label>Catering Date</label><input type="date" name="cateringDate" value={note.cateringDate} onChange={(e) => handleCateringChange(index, e)} /></div>
+                      <div className="rs-field"><label>Name</label><input type="text" name="name" value={note.name} onChange={(e) => handleCateringChange(index, e)} placeholder="Client name" /></div>
                       <div className="rs-field">
                         <label>Payment Type</label>
                         <select name="paymentType" value={note.paymentType} onChange={(e) => handleCateringChange(index, e)}>
@@ -934,49 +545,27 @@ function App() {
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
-                          <option value="Zelle">Zelle</option>
-                          <option value="Venmo">Venmo</option>
-                          <option value="Other">Other</option>
                         </select>
                       </div>
-                      <div className="rs-field">
-                        <label>Amount ($)</label>
-                        <input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" />
-                      </div>
+                      <div className="rs-field"><label>Amount ($)</label><input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" /></div>
                     </div>
                   ))}
-                  <button type="button" className="rs-add-btn" onClick={addCateringEntry}>
-                    + Add Another Entry
-                  </button>
+                  <button type="button" className="rs-add-btn" onClick={addCateringEntry}>+ Add Another Entry</button>
                 </div>
               </div>
             </div>
 
-            {/* Submit */}
             <button className="rs-btn" onClick={saveData} disabled={loading}>
               {loading ? (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}>
-                    <circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/>
-                    <path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                  Generating...
-                </>
+                <><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}><circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/><path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>Generating...</>
               ) : (
-                <>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Generate Report
-                </>
+                <><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Generate Report</>
               )}
             </button>
-
           </div>
         </div>
       </div>
 
-      {/* Loading Overlay */}
       {loading && (
         <div className="rs-loading-overlay">
           <div className="rs-loading-spinner" />
@@ -985,64 +574,32 @@ function App() {
         </div>
       )}
 
-      {/* Modal */}
       {modal.open && (
         <div className="rs-modal-overlay" onClick={closeModal}>
           <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
-            <div className={`rs-modal-icon ${modal.type}`}>
-              {modal.type === "success" ? "✅" : "⚠️"}
-            </div>
+            <div className={`rs-modal-icon ${modal.type}`}>{modal.type === "success" ? "✅" : "⚠️"}</div>
             <div className="rs-modal-title">{modal.title}</div>
             <div className="rs-modal-message">{modal.message}</div>
-
             {modal.type === "success" && (
               <>
-                <textarea
-                  className="rs-modal-input"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Did anything look wrong? Let us know (optional)..."
-                />
+                <textarea className="rs-modal-input" value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Did anything look wrong? Let us know (optional)..." />
                 <div className="rs-modal-actions">
                   <button className="rs-modal-btn secondary" onClick={closeModal}>Skip</button>
-                  <button
-                    className="rs-modal-btn primary"
-                    onClick={async () => {
-                      if (feedback.trim()) {
-                        try {
-                          await addDoc(collection(db, "feedback"), {
-                            feedback,
-                            date: getToday(),
-                            createdAt: new Date(),
-                          });
-                          await fetch("/send-feedback", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              feedback,
-                              date: getToday(),
-                              ownerEmails: import.meta.env.VITE_OWNER_EMAILS || "",
-                            }),
-                          });
-                        } catch (err) {
-                          console.error("Feedback error:", err);
-                        }
-                      }
-                      closeModal();
-                    }}
-                  >Submit</button>
+                  <button className="rs-modal-btn primary" onClick={async () => {
+                    if (feedback.trim()) {
+                      try {
+                        await addDoc(collection(db, "feedback"), { feedback, date: getToday(), createdAt: new Date() });
+                        await fetch("/send-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ feedback, date: getToday(), ownerEmails: import.meta.env.VITE_OWNER_EMAILS || "" }) });
+                      } catch (err) { console.error("Feedback error:", err); }
+                    }
+                    closeModal();
+                  }}>Submit</button>
                 </div>
               </>
             )}
-
             {modal.type === "error" && (
               <>
-                <textarea
-                  className="rs-modal-input"
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Describe what went wrong (optional)..."
-                />
+                <textarea className="rs-modal-input" value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Describe what went wrong (optional)..." />
                 <div className="rs-modal-actions">
                   <button className="rs-modal-btn secondary" onClick={closeModal}>Dismiss</button>
                   <button className="rs-modal-btn primary" onClick={closeModal}>Got it</button>
