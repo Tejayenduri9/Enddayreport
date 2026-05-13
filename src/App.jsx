@@ -39,27 +39,23 @@ const blankForm = () => ({
   totalSalesDay: "",
 });
 
-// Orange theme colors
 const OG = {
-  primary:   [196, 82,  0],    // #C45200 burnt orange
-  dark:      [140, 55,  0],    // darker orange
-  light:     [232, 121, 58],   // #E8793A light orange
-  accent:    [255, 200, 100],  // gold accent
-  cash:      [180, 90,  20],   // cash section
-  cc:        [150, 60,  10],   // credit card section
-  guests:    [100, 70,  30],   // guests section
-  online:    [196, 110, 30],   // online section
-  channels:  [160, 80,  10],   // sales channels
+  primary:  [196, 82,  0],
+  dark:     [140, 55,  0],
+  light:    [232, 121, 58],
+  accent:   [255, 200, 100],
+  cash:     [180, 90,  20],
+  cc:       [150, 60,  10],
+  guests:   [100, 70,  30],
+  online:   [196, 110, 30],
+  channels: [160, 80,  10],
 };
 
 function App() {
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
     return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
   };
 
@@ -69,6 +65,9 @@ function App() {
   const [modal, setModal] = useState({ open: false, type: "", title: "", message: "" });
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [standaloneFeedback, setStandaloneFeedback] = useState("");
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
@@ -86,7 +85,6 @@ function App() {
   };
 
   const addCateringEntry = () => setCateringNotes([...cateringNotes, emptyCatering()]);
-
   const removeCateringEntry = (index) => {
     if (cateringNotes.length === 1) return;
     setCateringNotes(cateringNotes.filter((_, i) => i !== index));
@@ -127,29 +125,29 @@ function App() {
     const pageHeight = doc.internal.pageSize.getHeight();
     const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
     const margin = 14;
-    const cw = pageWidth - margin * 2; // contentWidth
+    const cw = pageWidth - margin * 2;
 
-    // ── HEADER ──
+    // HEADER
     doc.setFillColor(...OG.primary);
     doc.rect(0, 0, pageWidth, 36, "F");
     try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch(e) {}
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold").setFontSize(11);
     doc.text("DAILY SALES REPORT", pageWidth / 2, 23, { align: "center" });
-    doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "normal").setFontSize(8.5);
     const dateText = new Date(form.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     doc.text(dateText, pageWidth / 2, 31, { align: "center" });
 
     let y = 42;
 
-    // ── SUMMARY BOX ──
-    const colWBase = Math.floor(cw / 3);
-    const colWs = [colWBase, colWBase, cw - colWBase * 2];
-    const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62]];
-    const summaryLabels = ["TOTAL SALES", "TOTAL GUESTS", "IN-HOUSE SALES"];
+    // SUMMARY BOX - 4 columns
+    const colWBase = Math.floor(cw / 4);
+    const colWs = [colWBase, colWBase, colWBase, cw - colWBase * 3];
+    const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [26, 61, 43]];
+    const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "TOTAL GUESTS", "IN-HOUSE SALES"];
     const summaryValues = [
       fmt(form.totalSalesDay),
+      fmt((Number(form.cashSale) || 0) + (Number(form.cashCatering) || 0)),
       String((Number(form.lunchGuests) || 0) + (Number(form.dinnerGuests) || 0)),
       fmt(form.totalInHouse),
     ];
@@ -160,16 +158,16 @@ function App() {
       doc.setDrawColor(255, 200, 100);
       doc.rect(sumX, y, sw, 18, "FD");
       doc.setTextColor(...OG.accent);
-      doc.setFont("helvetica", "normal").setFontSize(6.5);
+      doc.setFont("helvetica", "normal").setFontSize(5.5);
       doc.text(summaryLabels[i], sumX + sw / 2, y + 6, { align: "center" });
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold").setFontSize(11);
+      doc.setFont("helvetica", "bold").setFontSize(9);
       doc.text(summaryValues[i], sumX + sw / 2, y + 14, { align: "center" });
       sumX += sw;
     });
     y += 24;
 
-    // ── HELPERS ──
+    // HELPERS
     const secHeader = (title, color, x, w) => {
       doc.setFillColor(...color);
       doc.rect(x, y, w, 7, "F");
@@ -190,7 +188,7 @@ function App() {
       y += 6;
     };
 
-    // ── GUESTS ──
+    // GUESTS
     secHeader("GUESTS & DINE-IN", [26, 61, 43], margin, cw);
     const gcb = Math.floor(cw / 3);
     const gcs = [gcb, gcb, cw - gcb * 2];
@@ -205,7 +203,7 @@ function App() {
     doc.text(`Dine-in: ${fmt(form.dineInSales)}`, margin + gcs[0] + gcs[1] + gcs[2] / 2, y + 4.5, { align: "center" });
     y += 8;
 
-    // ── CASH + CC SIDE BY SIDE ──
+    // CASH + CC
     const hw = cw / 2;
     const rx = margin + hw;
     const hy = y;
@@ -240,14 +238,14 @@ function App() {
     doc.rect(margin, hy, cw, y - hy);
     y += 4;
 
-    // ── SALES CHANNELS ──
+    // SALES CHANNELS
     secHeader("SALES CHANNELS", [26, 61, 43], margin, cw);
     row("System Gross Sale", fmt(form.systemGross), margin, cw);
     row("Gift Card Redeemed", fmt(form.giftCard), margin, cw);
     row("Total In House", fmt(form.totalInHouse), margin, cw, true);
     y += 2;
 
-    // ── ONLINE SALES ──
+    // ONLINE SALES
     secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
     const ocb = Math.floor(cw / 4);
     const ocs = [ocb, ocb, ocb, cw - ocb * 3];
@@ -278,13 +276,13 @@ function App() {
     doc.text(fmt(form.totalRestaurantOnline), margin + cw - 2, y + 4.5, { align: "right" });
     y += 8;
 
-    // ── FINAL TOTALS ──
+    // FINAL TOTALS
     secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
     row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
     row("Cash Catering", fmt(form.cashCatering), margin, cw);
     y += 2;
 
-    // ── TOTAL SALES BAR ──
+    // TOTAL SALES BAR
     doc.setFillColor(...OG.primary);
     doc.rect(margin, y, cw, 12, "F");
     doc.setTextColor(255, 255, 255);
@@ -293,7 +291,7 @@ function App() {
     doc.text(fmt(form.totalSalesDay), margin + cw - 3, y + 8, { align: "right" });
     y += 16;
 
-    // ── CATERING NOTES ──
+    // CATERING NOTES
     const validCatering = cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
     if (validCatering.length > 0) {
       if (y > pageHeight - 40) { doc.addPage(); y = 15; }
@@ -327,66 +325,43 @@ function App() {
       });
     }
 
-    // ── FOOTER ──
+    // FOOTER
     doc.setFillColor(...OG.primary);
     doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "normal").setFontSize(7);
-    const year = new Date().getFullYear();
-    doc.text(`© ${year} EndDay Reports • enddayreports.com • All Rights Reserved`, pageWidth / 2, pageHeight - 4, { align: "center" });
+    const yr = new Date().getFullYear();
+    doc.text(`© ${yr} EndDay Reports • enddayreports.com • All Rights Reserved`, pageWidth / 2, pageHeight - 4, { align: "center" });
 
     return doc;
   };
 
   const saveData = async () => {
     const requiredFields = {
-      lunchGuests: "Lunch Guests",
-      dinnerGuests: "Dinner Guests",
-      dineInSales: "Dine-in Sales",
-      cashSale: "Cash Sale",
-      cashTip: "Cash Tip",
-      cashCatering: "Cash Catering",
-      totalSettle: "Total Settle Amount",
-      creditCardTip: "Credit Card Tip",
-      giftCard: "Gift Card Redeemed",
-      restaurantOnline: "Restaurant Online",
-      grubhub: "Grubhub",
-      doordash: "DoorDash",
-      uberEats: "Uber Eats",
+      lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
+      cashSale: "Cash Sale", cashTip: "Cash Tip", cashCatering: "Cash Catering",
+      totalSettle: "Total Settle Amount", creditCardTip: "Credit Card Tip",
+      giftCard: "Gift Card Redeemed", restaurantOnline: "Restaurant Online",
+      grubhub: "Grubhub", doordash: "DoorDash", uberEats: "Uber Eats",
     };
-
     const missing = Object.entries(requiredFields)
       .filter(([key]) => form[key] === "" || form[key] === null || form[key] === undefined)
       .map(([, label]) => label);
-
     if (missing.length > 0) {
       showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${missing.join("\n• ")}`);
       return;
     }
-
     setLoading(true);
     try {
-      await addDoc(collection(db, "restaurants"), {
-        ...form,
-        cateringNotes,
-        createdAt: new Date(),
-      });
-
+      await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
       const doc = generatePDF();
       const pdfBase64 = doc.output("datauristring").split(",")[1];
-
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pdfBase64,
-          reportDate: form.date,
-          ownerEmails: form.ownerEmails,
-        }),
+        body: JSON.stringify({ pdfBase64, reportDate: form.date, ownerEmails: form.ownerEmails }),
       });
-
       if (!response.ok) throw new Error("Backend request failed");
-
       resetForm();
       setLoading(false);
       showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
@@ -397,6 +372,21 @@ function App() {
     }
   };
 
+  const submitStandaloneFeedback = async () => {
+    if (standaloneFeedback.trim()) {
+      try {
+        await addDoc(collection(db, "feedback"), { feedback: standaloneFeedback, date: getToday(), createdAt: new Date() });
+        await fetch("/send-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ feedback: standaloneFeedback, date: getToday(), ownerEmails: import.meta.env.VITE_OWNER_EMAILS || "" }),
+        });
+      } catch (err) { console.error("Feedback error:", err); }
+    }
+    setFeedbackOpen(false);
+    setStandaloneFeedback("");
+  };
+
   return (
     <>
       <style>{`
@@ -405,7 +395,7 @@ function App() {
         body { background: #fdf3ec; font-family: 'DM Sans', sans-serif; }
         .rs-wrapper { min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
         .rs-card { width: 100%; max-width: 520px; background: #fff; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.08); overflow: hidden; height: fit-content; }
-        .rs-header { background: #C45200; padding: 2rem 2rem 1.5rem; text-align: center; }
+        .rs-header { background: #C45200; padding: 2rem 2rem 1.5rem; text-align: center; position: relative; }
         .rs-header::after { content: ''; display: block; width: 40px; height: 3px; background: #ffc864; border-radius: 2px; margin: 1rem auto 0; }
         .rs-brand-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
         .rs-brand-sub { font-size: 11px; letter-spacing: 3px; color: #ffc864; text-transform: uppercase; margin-top: 4px; }
@@ -418,22 +408,9 @@ function App() {
         .rs-field:last-child { margin-bottom: 0; }
         .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
         .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
-        .rs-input-money {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-        .rs-input-money span {
-          position: absolute;
-          left: 10px;
-          color: #C45200;
-          font-weight: 600;
-          font-size: 14px;
-          pointer-events: none;
-        }
-        .rs-input-money input {
-          padding-left: 20px !important;
-        }
+        .rs-input-money { position: relative; display: flex; align-items: center; }
+        .rs-input-money span { position: absolute; left: 10px; color: #C45200; font-weight: 600; font-size: 14px; pointer-events: none; }
+        .rs-input-money input { padding-left: 20px !important; }
         .rs-field input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
         .rs-field select { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
         .rs-field select:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
@@ -453,6 +430,15 @@ function App() {
         .rs-remove-btn:hover { color: #e05555; }
         .rs-add-btn { width: 100%; padding: 10px; background: none; border: 1px dashed #f5c9a0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #C45200; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: border-color 0.15s; }
         .rs-add-btn:hover { border-color: #C45200; }
+        .rs-burger { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
+        .rs-burger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.25s ease; }
+        .rs-burger.open span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
+        .rs-burger.open span:nth-child(2) { opacity: 0; }
+        .rs-burger.open span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
+        .rs-menu { position: absolute; top: 56px; right: 16px; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); overflow: hidden; z-index: 100; min-width: 180px; }
+        .rs-menu-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #333; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+        .rs-menu-item:hover { background: #fff8f4; color: #C45200; }
+        .rs-menu-divider { height: 0.5px; background: #eee; margin: 4px 0; }
         .rs-loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
         .rs-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #ffc864; border-radius: 50%; animation: rs-spin 0.8s linear infinite; }
         .rs-loading-text { color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; }
@@ -479,6 +465,18 @@ function App() {
       <div className="rs-wrapper">
         <div className="rs-card">
           <div className="rs-header">
+            {/* Burger Menu */}
+            <button className={`rs-burger${menuOpen ? " open" : ""}`} onClick={() => setMenuOpen(!menuOpen)}>
+              <span /><span /><span />
+            </button>
+            {menuOpen && (
+              <div className="rs-menu">
+                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}>
+                  💬 Send Feedback
+                </button>
+              </div>
+            )}
+
             {logo && <img src={logo} alt="logo" style={{ width: 130, marginBottom: 10, borderRadius: "12px" }} />}
             <div className="rs-brand-name">Restaurant Sales</div>
             <div className="rs-brand-sub">Daily Report</div>
@@ -555,6 +553,7 @@ function App() {
               </div>
             </div>
 
+            {/* Generate Report */}
             <button className="rs-btn" onClick={saveData} disabled={loading}>
               {loading ? (
                 <><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}><circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/><path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>Generating...</>
@@ -566,6 +565,23 @@ function App() {
         </div>
       </div>
 
+      {/* Standalone Feedback Modal */}
+      {feedbackOpen && (
+        <div className="rs-modal-overlay" onClick={() => setFeedbackOpen(false)}>
+          <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rs-modal-icon success">💬</div>
+            <div className="rs-modal-title">Send Feedback</div>
+            <div className="rs-modal-message">Found an issue or have a suggestion? Let us know!</div>
+            <textarea className="rs-modal-input" value={standaloneFeedback} onChange={(e) => setStandaloneFeedback(e.target.value)} placeholder="Describe your feedback..." />
+            <div className="rs-modal-actions">
+              <button className="rs-modal-btn secondary" onClick={() => { setFeedbackOpen(false); setStandaloneFeedback(""); }}>Cancel</button>
+              <button className="rs-modal-btn primary" onClick={submitStandaloneFeedback}>Submit</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Loading Overlay */}
       {loading && (
         <div className="rs-loading-overlay">
           <div className="rs-loading-spinner" />
@@ -574,6 +590,7 @@ function App() {
         </div>
       )}
 
+      {/* Main Modal */}
       {modal.open && (
         <div className="rs-modal-overlay" onClick={closeModal}>
           <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
