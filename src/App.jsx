@@ -140,28 +140,31 @@ function App() {
 
     let y = 42;
 
-    // SUMMARY BOX - 4 columns
-    const colWBase = Math.floor(cw / 4);
-    const colWs = [colWBase, colWBase, colWBase, cw - colWBase * 3];
-    const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [26, 61, 43]];
-    const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "TOTAL GUESTS", "IN-HOUSE SALES"];
+    // SUMMARY BOX - 5 columns, 2 rows
+    const col5Base = Math.floor(cw / 5);
+    const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
+    const summaryColors = [
+      [26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]
+    ];
+    const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
     const summaryValues = [
       fmt(form.totalSalesDay),
       fmt((Number(form.cashSale) || 0) + (Number(form.cashCatering) || 0)),
-      String((Number(form.lunchGuests) || 0) + (Number(form.dinnerGuests) || 0)),
       fmt(form.totalInHouse),
+      fmt(form.totalRestaurantOnline),
+      fmt(form.cashCatering),
     ];
     let sumX = margin;
     summaryColors.forEach(([r, g, b], i) => {
-      const sw = colWs[i];
+      const sw = col5s[i];
       doc.setFillColor(r, g, b);
       doc.setDrawColor(255, 200, 100);
       doc.rect(sumX, y, sw, 18, "FD");
       doc.setTextColor(...OG.accent);
-      doc.setFont("helvetica", "normal").setFontSize(5.5);
+      doc.setFont("helvetica", "normal").setFontSize(4.8);
       doc.text(summaryLabels[i], sumX + sw / 2, y + 6, { align: "center" });
       doc.setTextColor(255, 255, 255);
-      doc.setFont("helvetica", "bold").setFontSize(9);
+      doc.setFont("helvetica", "bold").setFontSize(8);
       doc.text(summaryValues[i], sumX + sw / 2, y + 14, { align: "center" });
       sumX += sw;
     });
