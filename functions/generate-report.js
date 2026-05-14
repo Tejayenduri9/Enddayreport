@@ -25,7 +25,7 @@ export async function onRequest(context) {
       subject: `Daily Report - ${reportDate}`,
       text: "Attached is your daily sales report.",
       attachments: [{
-        filename: `${reportDate}_daily_report.pdf`,
+        filename: `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
         content: pdfBase64,
       }]
     });

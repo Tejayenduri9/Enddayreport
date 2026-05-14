@@ -93,9 +93,9 @@ function App() {
   const handleChange = (e) => {
     const updated = { ...form, [e.target.name]: e.target.value };
     const cashSale = Number(updated.cashSale) || 0;
-    const cashTip = Number(updated.cashTip) || 0;
     const cashCatering = Number(updated.cashCatering) || 0;
-    const totalCash = cashSale + cashTip + cashCatering;
+    const totalCash = Number(updated.totalCashWithTip) || 0;
+    const cashTip = totalCash - cashSale;
     const totalSettle = Number(updated.totalSettle) || 0;
     const creditCardTip = Number(updated.creditCardTip) || 0;
     const creditCardSale = totalSettle - creditCardTip;
@@ -109,6 +109,7 @@ function App() {
     const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + cashCatering;
+    updated.cashTip = cashTip >= 0 ? cashTip : 0;
     updated.totalCashWithTip = totalCash;
     updated.creditCardSale = creditCardSale;
     updated.systemGross = systemGross;
@@ -140,16 +141,14 @@ function App() {
 
     let y = 42;
 
-    // SUMMARY BOX - 5 columns, 2 rows
+    // SUMMARY BOX - 5 columns
     const col5Base = Math.floor(cw / 5);
     const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
-    const summaryColors = [
-      [26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]
-    ];
+    const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
     const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
     const summaryValues = [
       fmt(form.totalSalesDay),
-      fmt((Number(form.cashSale) || 0) + (Number(form.cashCatering) || 0)),
+      fmt(form.totalCashWithTip),
       fmt(form.totalInHouse),
       fmt(form.totalRestaurantOnline),
       fmt(form.cashCatering),
@@ -224,7 +223,7 @@ function App() {
     row("Cash Sale", fmt(form.cashSale), margin, hw);
     row("Cash Tip", fmt(form.cashTip), margin, hw);
     row("Cash Catering", fmt(form.cashCatering), margin, hw);
-    row("Total Cash", fmt(form.totalCashWithTip), margin, hw, true);
+    row("Total Cash", fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)), margin, hw, true);
     const cyEnd = y;
 
     y = cy0;
@@ -342,7 +341,7 @@ function App() {
   const saveData = async () => {
     const requiredFields = {
       lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
-      cashSale: "Cash Sale", cashTip: "Cash Tip", cashCatering: "Cash Catering",
+      cashSale: "Cash Sale", cashCatering: "Cash Catering", totalCashWithTip: "Total Cash",
       totalSettle: "Total Settle Amount", creditCardTip: "Credit Card Tip",
       giftCard: "Gift Card Redeemed", restaurantOnline: "Restaurant Online",
       grubhub: "Grubhub", doordash: "DoorDash", uberEats: "Uber Eats",
@@ -359,10 +358,15 @@ function App() {
       await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
       const doc = generatePDF();
       const pdfBase64 = doc.output("datauristring").split(",")[1];
+      const d = new Date(form.date + "T00:00:00");
+      const day = d.getDate();
+      const suffix = day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const pdfName = `${day}${suffix} ${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdfBase64, reportDate: form.date, ownerEmails: form.ownerEmails }),
+        body: JSON.stringify({ pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails }),
       });
       if (!response.ok) throw new Error("Backend request failed");
       resetForm();
@@ -468,18 +472,16 @@ function App() {
       <div className="rs-wrapper">
         <div className="rs-card">
           <div className="rs-header">
-            {/* Burger Menu */}
             <button className={`rs-burger${menuOpen ? " open" : ""}`} onClick={() => setMenuOpen(!menuOpen)}>
               <span /><span /><span />
             </button>
             {menuOpen && (
               <div className="rs-menu">
-                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}>
-                  💬 Send Feedback
-                </button>
+                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}>💬 Send Feedback</button>
+                <div className="rs-menu-divider" />
+                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); window.open("mailto:support@enddayreports.com"); }}>📧 Contact Support</button>
               </div>
             )}
-
             {logo && <img src={logo} alt="logo" style={{ width: 130, marginBottom: 10, borderRadius: "12px" }} />}
             <div className="rs-brand-name">Restaurant Sales</div>
             <div className="rs-brand-sub">Daily Report</div>
@@ -500,9 +502,9 @@ function App() {
               <div className="rs-section-label">Cash</div>
               <div className="rs-grid-2">
                 <div className="rs-field"><label>Cash Sale</label><div className="rs-input-money"><span>$</span><input name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>Cash Tip</label><div className="rs-input-money"><span>$</span><input name="cashTip" value={form.cashTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Cash Catering</label><div className="rs-input-money"><span>$</span><input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
               </div>
-              <div className="rs-field"><label>Cash Catering</label><div className="rs-input-money"><span>$</span><input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+              <div className="rs-field"><label>Total Cash</label><div className="rs-input-money"><span>$</span><input name="totalCashWithTip" value={form.totalCashWithTip === 0 ? "" : form.totalCashWithTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
             </div>
 
             <div className="rs-section">
