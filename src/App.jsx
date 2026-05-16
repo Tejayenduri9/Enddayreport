@@ -433,43 +433,37 @@ function App() {
       let emailBody = "Attached is your daily sales report.";
       if (isEditMode) {
         const fieldLabels = {
-          lunchGuests: "Lunch Guests",
-          dinnerGuests: "Dinner Guests",
-          dineInSales: "Dine-in Sales",
-          cashSale: "Cash Sale",
-          cashTip: "Cash Tip",
-          cashCatering: "Cash Catering",
-          totalCashWithTip: "Total Cash",
-          totalSettle: "Total CC Settle",
-          creditCardTip: "CC Tip",
-          creditCardSale: "CC Sale",
-          giftCard: "Gift Card Redeemed",
-          restaurantOnline: "Restaurant Online",
-          grubhub: "Grubhub",
-          doordash: "DoorDash",
-          uberEats: "Uber Eats",
-          totalRestaurantOnline: "Total Online Sales",
-          totalInHouse: "Total In House",
-          totalRestaurantSales: "Total Restaurant Sales",
-          totalSalesDay: "Total Sales of the Day",
+          lunchGuests: { label: "Lunch Guests", money: false },
+          dinnerGuests: { label: "Dinner Guests", money: false },
+          dineInSales: { label: "Dine-in Sales", money: true },
+          cashSale: { label: "Cash Sale", money: true },
+          cashTip: { label: "Cash Tip", money: true },
+          cashCatering: { label: "Cash Catering", money: true },
+          totalCashWithTip: { label: "Total Cash", money: true },
+          totalSettle: { label: "Total CC Settle", money: true },
+          creditCardTip: { label: "CC Tip", money: true },
+          creditCardSale: { label: "CC Sale", money: true },
+          giftCard: { label: "Gift Card Redeemed", money: true },
+          restaurantOnline: { label: "Restaurant Online", money: true },
+          grubhub: { label: "Grubhub", money: true },
+          doordash: { label: "DoorDash", money: true },
+          uberEats: { label: "Uber Eats", money: true },
+          totalRestaurantOnline: { label: "Total Online Sales", money: true },
+          totalInHouse: { label: "Total In House", money: true },
+          totalRestaurantSales: { label: "Total Restaurant Sales", money: true },
+          totalSalesDay: { label: "Total Sales of the Day", money: true },
         };
         const fmt2 = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-        const changes = [];
-        Object.entries(fieldLabels).forEach(([key, label]) => {
-          const oldVal = String(form[key] || 0);
-          const newVal = String(form[key] || 0);
-          if (oldVal !== newVal) {
-            changes.push(`• ${label}: changed to ${isNaN(form[key]) ? form[key] : fmt2(form[key])}`);
-          }
-        });
+
         // Compare with original and show what changed
         const changedLines = [];
         if (originalForm) {
-          Object.entries(fieldLabels).forEach(([key, label]) => {
+          Object.entries(fieldLabels).forEach(([key, { label, money }]) => {
             const oldV = Number(originalForm[key] || 0);
             const newV = Number(form[key] || 0);
             if (oldV !== newV) {
-              changedLines.push(`• ${label}: ${isNaN(oldV) ? oldV : fmt2(oldV)} → ${isNaN(newV) ? newV : fmt2(newV)}`);
+              const fmtVal = (v) => money ? fmt2(v) : String(v);
+              changedLines.push(`• ${label}: ${fmtVal(oldV)} → ${fmtVal(newV)}`);
             }
           });
         }
