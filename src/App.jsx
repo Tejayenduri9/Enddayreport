@@ -1,7 +1,7 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
 
 const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
@@ -63,8 +63,12 @@ const stripFormat = (val) => val.replace(/[^0-9.]/g, "");
 
 function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
   const [focused, setFocused] = useState(false);
-  const raw = stripFormat(String(value));
-  const display = focused ? raw : (raw ? formatMoney(raw) : "");
+  const rawVal = stripFormat(String(value ?? ""));
+  const display = focused ? rawVal : (rawVal ? formatMoney(rawVal) : "");
+
+  const handleInputChange = (evt) => {
+    onChange({ target: { name, value: evt.target.value } });
+  };
 
   return (
     <div className="rs-input-money">
@@ -76,10 +80,7 @@ function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
         placeholder={placeholder}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        onChange={(e) => {
-          const synthetic = { target: { name, value: e.target.value } };
-          onChange(synthetic);
-        }}
+        onChange={handleInputChange}
         inputMode="decimal"
       />
     </div>
@@ -103,6 +104,14 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [standaloneFeedback, setStandaloneFeedback] = useState("");
+  const [editDocId, setEditDocId] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [loadModalOpen, setLoadModalOpen] = useState(false);
+  const [loadDate, setLoadDate] = useState(getToday());
+  const [loadPin, setLoadPin] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const [loadLoading, setLoadLoading] = useState(false);
+  const [originalForm, setOriginalForm] = useState(null);
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
@@ -111,11 +120,12 @@ function App() {
     setForm(blankForm());
     setCateringNotes([emptyCatering()]);
     setNotesOpen(false);
+    setOriginalForm(null);
   };
 
-  const handleCateringChange = (index, e) => {
+  const handleCateringChange = (index, evt) => {
     const updated = [...cateringNotes];
-    updated[index] = { ...updated[index], [e.target.name]: e.target.value };
+    updated[index] = { ...updated[index], [evt.target.name]: evt.target.value };
     setCateringNotes(updated);
   };
 
@@ -125,8 +135,8 @@ function App() {
     setCateringNotes(cateringNotes.filter((_, i) => i !== index));
   };
 
-  const handleChange = (e) => {
-    const updated = { ...form, [e.target.name]: e.target.value };
+  const handleChange = (evt) => {
+    const updated = { ...form, [evt.target.name]: evt.target.value };
     const cashSale = Number(updated.cashSale) || 0;
     const cashCatering = Number(updated.cashCatering) || 0;
     const totalCash = Number(updated.totalCashWithTip) || 0;
@@ -356,6 +366,40 @@ function App() {
     return doc;
   };
 
+  const loadReport = async () => {
+    setLoadError("");
+    const correctPin = import.meta.env.VITE_REPORT_PIN || "1234";
+    if (loadPin !== correctPin) {
+      setLoadError("Incorrect PIN. Please try again.");
+      return;
+    }
+    setLoadLoading(true);
+    try {
+      const q = query(collection(db, "restaurants"), where("date", "==", loadDate));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        setLoadError("No report found for this date.");
+        setLoadLoading(false);
+        return;
+      }
+      const docData = snapshot.docs[0];
+      const data = docData.data();
+      const loadedForm = { ...blankForm(), ...data };
+      setForm(loadedForm);
+      setOriginalForm(loadedForm);
+      setCateringNotes(data.cateringNotes || [emptyCatering()]);
+      setEditDocId(docData.id);
+      setIsEditMode(true);
+      setLoadModalOpen(false);
+      setLoadPin("");
+      setLoadDate(getToday());
+    } catch (err) {
+      setLoadError("Failed to load report. Please try again.");
+      console.error(err);
+    }
+    setLoadLoading(false);
+  };
+
   const saveData = async () => {
     const requiredFields = {
       lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
@@ -373,7 +417,11 @@ function App() {
     }
     setLoading(true);
     try {
-      await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
+      if (isEditMode && editDocId) {
+        await updateDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() });
+      } else {
+        await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
+      }
       const doc = generatePDF();
       const pdfBase64 = doc.output("datauristring").split(",")[1];
       const d = new Date(form.date + "T00:00:00");
@@ -381,15 +429,67 @@ function App() {
       const suffix = day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
       const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
       const pdfName = `${day}${suffix} ${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
+      // Build changed fields summary for email body
+      let emailBody = "Attached is your daily sales report.";
+      if (isEditMode) {
+        const fieldLabels = {
+          lunchGuests: "Lunch Guests",
+          dinnerGuests: "Dinner Guests",
+          dineInSales: "Dine-in Sales",
+          cashSale: "Cash Sale",
+          cashTip: "Cash Tip",
+          cashCatering: "Cash Catering",
+          totalCashWithTip: "Total Cash",
+          totalSettle: "Total CC Settle",
+          creditCardTip: "CC Tip",
+          creditCardSale: "CC Sale",
+          giftCard: "Gift Card Redeemed",
+          restaurantOnline: "Restaurant Online",
+          grubhub: "Grubhub",
+          doordash: "DoorDash",
+          uberEats: "Uber Eats",
+          totalRestaurantOnline: "Total Online Sales",
+          totalInHouse: "Total In House",
+          totalRestaurantSales: "Total Restaurant Sales",
+          totalSalesDay: "Total Sales of the Day",
+        };
+        const fmt2 = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        const changes = [];
+        Object.entries(fieldLabels).forEach(([key, label]) => {
+          const oldVal = String(form[key] || 0);
+          const newVal = String(form[key] || 0);
+          if (oldVal !== newVal) {
+            changes.push(`• ${label}: changed to ${isNaN(form[key]) ? form[key] : fmt2(form[key])}`);
+          }
+        });
+        // Compare with original and show what changed
+        const changedLines = [];
+        if (originalForm) {
+          Object.entries(fieldLabels).forEach(([key, label]) => {
+            const oldV = Number(originalForm[key] || 0);
+            const newV = Number(form[key] || 0);
+            if (oldV !== newV) {
+              changedLines.push(`• ${label}: ${isNaN(oldV) ? oldV : fmt2(oldV)} → ${isNaN(newV) ? newV : fmt2(newV)}`);
+            }
+          });
+        }
+        const changedSummary = changedLines.length > 0
+          ? changedLines.join("\n")
+          : "No specific field changes detected.";
+        emailBody = `⚠️ UPDATED REPORT - ${form.date}\n\nThis report has been edited. Please discard the previous version.\n\nWhat Changed:\n${changedSummary}\n\nThe updated PDF is attached.`;
+      }
+
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails }),
+        body: JSON.stringify({ pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails, emailBody, isUpdate: isEditMode }),
       });
       if (!response.ok) throw new Error("Backend request failed");
       resetForm();
+      setEditDocId(null);
+      setIsEditMode(false);
       setLoading(false);
-      showModal("success", "Report Sent! 🎉", "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
+      showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", isEditMode ? "Your report has been updated and the revised PDF has been emailed." : "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
     } catch (err) {
       setLoading(false);
       console.error(err);
@@ -464,6 +564,11 @@ function App() {
         .rs-menu-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #333; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
         .rs-menu-item:hover { background: #fff8f4; color: #C45200; }
         .rs-menu-divider { height: 0.5px; background: #eee; margin: 4px 0; }
+        .rs-edit-banner { background: #fff3e0; border: 1px solid #f5c9a0; border-radius: 10px; padding: 10px 14px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #8C3700; font-weight: 500; }
+        .rs-edit-banner button { background: none; border: none; color: #C45200; font-size: 12px; cursor: pointer; font-weight: 600; text-decoration: underline; }
+        .rs-load-input { width: 100%; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 10px; }
+        .rs-load-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
+        .rs-load-error { color: #e05555; font-size: 12px; margin-bottom: 10px; }
         .rs-loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
         .rs-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #ffc864; border-radius: 50%; animation: rs-spin 0.8s linear infinite; }
         .rs-loading-text { color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; }
@@ -495,6 +600,8 @@ function App() {
             </button>
             {menuOpen && (
               <div className="rs-menu">
+                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setLoadModalOpen(true); }}>📂 Load & Edit Report</button>
+                <div className="rs-menu-divider" />
                 <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}>💬 Send Feedback</button>
                 <div className="rs-menu-divider" />
                 <button className="rs-menu-item" onClick={() => { setMenuOpen(false); window.open("mailto:support@enddayreports.com"); }}>📧 Contact Support</button>
@@ -507,6 +614,12 @@ function App() {
           </div>
 
           <div className="rs-body">
+            {isEditMode && (
+              <div className="rs-edit-banner">
+                ✏️ Editing report for {form.date}
+                <button onClick={() => { resetForm(); setIsEditMode(false); setEditDocId(null); }}>Cancel Edit</button>
+              </div>
+            )}
             <div className="rs-section">
               <div className="rs-section-label">Guests</div>
               <div className="rs-grid-2">
@@ -557,18 +670,18 @@ function App() {
                     <div key={index} className="rs-catering-entry">
                       {cateringNotes.length > 1 && <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>}
                       <div className="rs-entry-label">Entry {index + 1}</div>
-                      <div className="rs-field"><label>Catering Date</label><input type="date" name="cateringDate" value={note.cateringDate} onChange={(e) => handleCateringChange(index, e)} /></div>
-                      <div className="rs-field"><label>Name</label><input type="text" name="name" value={note.name} onChange={(e) => handleCateringChange(index, e)} placeholder="Client name" /></div>
+                      <div className="rs-field"><label>Catering Date</label><input type="date" name="cateringDate" value={note.cateringDate} onChange={(evt) => handleCateringChange(index, evt)} /></div>
+                      <div className="rs-field"><label>Name</label><input type="text" name="name" value={note.name} onChange={(evt) => handleCateringChange(index, evt)} placeholder="Client name" /></div>
                       <div className="rs-field">
                         <label>Payment Type</label>
-                        <select name="paymentType" value={note.paymentType} onChange={(e) => handleCateringChange(index, e)}>
+                        <select name="paymentType" value={note.paymentType} onChange={(evt) => handleCateringChange(index, evt)}>
                           <option value="">Select payment type</option>
                           <option value="Cash">Cash</option>
                           <option value="Credit Card">Credit Card</option>
                           <option value="Check">Check</option>
                         </select>
                       </div>
-                      <div className="rs-field"><label>Amount ($)</label><MoneyInput name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} /></div>
+                      <div className="rs-field"><label>Amount ($)</label><MoneyInput name="amount" value={note.amount} onChange={(evt) => handleCateringChange(index, evt)} /></div>
                     </div>
                   ))}
                   <button type="button" className="rs-add-btn" onClick={addCateringEntry}>+ Add Another Entry</button>
@@ -580,20 +693,42 @@ function App() {
               {loading ? (
                 <><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}><circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/><path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>Generating...</>
               ) : (
-                <><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>Generate Report</>
+                <><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>{isEditMode ? "Update Report" : "Generate Report"}</>
               )}
             </button>
           </div>
         </div>
       </div>
 
+      {/* Load Report Modal */}
+      {loadModalOpen && (
+        <div className="rs-modal-overlay" onClick={() => { setLoadModalOpen(false); setLoadPin(""); setLoadError(""); }}>
+          <div className="rs-modal" onClick={(evt) => evt.stopPropagation()}>
+            <div className="rs-modal-icon success">📂</div>
+            <div className="rs-modal-title">Load Report</div>
+            <div className="rs-modal-message">Enter the date and PIN to load and edit a report.</div>
+            <label style={{ fontSize: "11px", color: "#666", display: "block", textAlign: "left", marginBottom: "4px" }}>Report Date</label>
+            <input type="date" className="rs-load-input" value={loadDate} onChange={(evt) => setLoadDate(evt.target.value)} />
+            <label style={{ fontSize: "11px", color: "#666", display: "block", textAlign: "left", marginBottom: "4px" }}>PIN</label>
+            <input type="password" className="rs-load-input" value={loadPin} onChange={(evt) => setLoadPin(evt.target.value)} placeholder="Enter PIN" maxLength={10} />
+            {loadError && <div className="rs-load-error">⚠️ {loadError}</div>}
+            <div className="rs-modal-actions">
+              <button className="rs-modal-btn secondary" onClick={() => { setLoadModalOpen(false); setLoadPin(""); setLoadError(""); }}>Cancel</button>
+              <button className="rs-modal-btn primary" onClick={loadReport} disabled={loadLoading}>
+                {loadLoading ? "Loading..." : "Load Report"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {feedbackOpen && (
         <div className="rs-modal-overlay" onClick={() => setFeedbackOpen(false)}>
-          <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="rs-modal" onClick={(evt) => evt.stopPropagation()}>
             <div className="rs-modal-icon success">💬</div>
             <div className="rs-modal-title">Send Feedback</div>
             <div className="rs-modal-message">Found an issue or have a suggestion? Let us know!</div>
-            <textarea className="rs-modal-input" value={standaloneFeedback} onChange={(e) => setStandaloneFeedback(e.target.value)} placeholder="Describe your feedback..." />
+            <textarea className="rs-modal-input" value={standaloneFeedback} onChange={(evt) => setStandaloneFeedback(evt.target.value)} placeholder="Describe your feedback..." />
             <div className="rs-modal-actions">
               <button className="rs-modal-btn secondary" onClick={() => { setFeedbackOpen(false); setStandaloneFeedback(""); }}>Cancel</button>
               <button className="rs-modal-btn primary" onClick={submitStandaloneFeedback}>Submit</button>
@@ -612,13 +747,13 @@ function App() {
 
       {modal.open && (
         <div className="rs-modal-overlay" onClick={closeModal}>
-          <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="rs-modal" onClick={(evt) => evt.stopPropagation()}>
             <div className={`rs-modal-icon ${modal.type}`}>{modal.type === "success" ? "✅" : "⚠️"}</div>
             <div className="rs-modal-title">{modal.title}</div>
             <div className="rs-modal-message">{modal.message}</div>
             {modal.type === "success" && (
               <>
-                <textarea className="rs-modal-input" value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Did anything look wrong? Let us know (optional)..." />
+                <textarea className="rs-modal-input" value={feedback} onChange={(evt) => setFeedback(evt.target.value)} placeholder="Did anything look wrong? Let us know (optional)..." />
                 <div className="rs-modal-actions">
                   <button className="rs-modal-btn secondary" onClick={closeModal}>Skip</button>
                   <button className="rs-modal-btn primary" onClick={async () => {
@@ -635,7 +770,7 @@ function App() {
             )}
             {modal.type === "error" && (
               <>
-                <textarea className="rs-modal-input" value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Describe what went wrong (optional)..." />
+                <textarea className="rs-modal-input" value={feedback} onChange={(evt) => setFeedback(evt.target.value)} placeholder="Describe what went wrong (optional)..." />
                 <div className="rs-modal-actions">
                   <button className="rs-modal-btn secondary" onClick={closeModal}>Dismiss</button>
                   <button className="rs-modal-btn primary" onClick={closeModal}>Got it</button>

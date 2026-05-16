@@ -6,7 +6,7 @@ export async function onRequest(context) {
   }
 
   try {
-    const { pdfBase64, reportDate, ownerEmails } = await context.request.json();
+    const { pdfBase64, reportDate, ownerEmails, emailBody, isUpdate } = await context.request.json();
 
     const fallbackEmails = context.env.OWNER_EMAILS
       ? context.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
@@ -22,8 +22,8 @@ export async function onRequest(context) {
     await resend.emails.send({
       from: context.env.RESEND_FROM || "reports@enddayreports.com",
       to: allEmails,
-      subject: `Daily Report - ${reportDate}`,
-      text: "Attached is your daily sales report.",
+      subject: isUpdate ? `⚠️ UPDATED Report - ${reportDate}` : `Daily Report - ${reportDate}`,
+      text: emailBody || "Attached is your daily sales report.",
       attachments: [{
         filename: `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
         content: pdfBase64,
