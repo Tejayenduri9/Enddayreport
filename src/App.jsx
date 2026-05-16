@@ -51,6 +51,41 @@ const OG = {
   channels: [160, 80,  10],
 };
 
+// Format number as $1,234.00
+const formatMoney = (val) => {
+  const num = parseFloat(val);
+  if (isNaN(num)) return "";
+  return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+// Strip formatting to get raw number
+const stripFormat = (val) => val.replace(/[^0-9.]/g, "");
+
+function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
+  const [focused, setFocused] = useState(false);
+  const raw = stripFormat(String(value));
+  const display = focused ? raw : (raw ? formatMoney(raw) : "");
+
+  return (
+    <div className="rs-input-money">
+      <span>$</span>
+      <input
+        type={focused ? "number" : "text"}
+        name={name}
+        value={display}
+        placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onChange={(e) => {
+          const synthetic = { target: { name, value: e.target.value } };
+          onChange(synthetic);
+        }}
+        inputMode="decimal"
+      />
+    </div>
+  );
+}
+
 function App() {
   const formatDate = (dateStr) => {
     const [year, month, day] = dateStr.split("-").map(Number);
@@ -128,7 +163,6 @@ function App() {
     const margin = 14;
     const cw = pageWidth - margin * 2;
 
-    // HEADER
     doc.setFillColor(...OG.primary);
     doc.rect(0, 0, pageWidth, 36, "F");
     try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch(e) {}
@@ -141,18 +175,11 @@ function App() {
 
     let y = 42;
 
-    // SUMMARY BOX - 5 columns
     const col5Base = Math.floor(cw / 5);
     const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
     const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
     const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
-    const summaryValues = [
-      fmt(form.totalSalesDay),
-      fmt(form.totalCashWithTip),
-      fmt(form.totalInHouse),
-      fmt(form.totalRestaurantOnline),
-      fmt(form.cashCatering),
-    ];
+    const summaryValues = [fmt(form.totalSalesDay), fmt(form.totalCashWithTip), fmt(form.totalInHouse), fmt(form.totalRestaurantOnline), fmt(form.cashCatering)];
     let sumX = margin;
     summaryColors.forEach(([r, g, b], i) => {
       const sw = col5s[i];
@@ -169,7 +196,6 @@ function App() {
     });
     y += 24;
 
-    // HELPERS
     const secHeader = (title, color, x, w) => {
       doc.setFillColor(...color);
       doc.rect(x, y, w, 7, "F");
@@ -190,7 +216,6 @@ function App() {
       y += 6;
     };
 
-    // GUESTS
     secHeader("GUESTS & DINE-IN", [26, 61, 43], margin, cw);
     const gcb = Math.floor(cw / 3);
     const gcs = [gcb, gcb, cw - gcb * 2];
@@ -205,7 +230,6 @@ function App() {
     doc.text(`Dine-in: ${fmt(form.dineInSales)}`, margin + gcs[0] + gcs[1] + gcs[2] / 2, y + 4.5, { align: "center" });
     y += 8;
 
-    // CASH + CC
     const hw = cw / 2;
     const rx = margin + hw;
     const hy = y;
@@ -240,14 +264,12 @@ function App() {
     doc.rect(margin, hy, cw, y - hy);
     y += 4;
 
-    // SALES CHANNELS
     secHeader("SALES CHANNELS", [26, 61, 43], margin, cw);
     row("System Gross Sale", fmt(form.systemGross), margin, cw);
     row("Gift Card Redeemed", fmt(form.giftCard), margin, cw);
     row("Total In House", fmt(form.totalInHouse), margin, cw, true);
     y += 2;
 
-    // ONLINE SALES
     secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
     const ocb = Math.floor(cw / 4);
     const ocs = [ocb, ocb, ocb, cw - ocb * 3];
@@ -278,13 +300,11 @@ function App() {
     doc.text(fmt(form.totalRestaurantOnline), margin + cw - 2, y + 4.5, { align: "right" });
     y += 8;
 
-    // FINAL TOTALS
     secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
     row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
     row("Cash Catering", fmt(form.cashCatering), margin, cw);
     y += 2;
 
-    // TOTAL SALES BAR
     doc.setFillColor(...OG.primary);
     doc.rect(margin, y, cw, 12, "F");
     doc.setTextColor(255, 255, 255);
@@ -293,7 +313,6 @@ function App() {
     doc.text(fmt(form.totalSalesDay), margin + cw - 3, y + 8, { align: "right" });
     y += 16;
 
-    // CATERING NOTES
     const validCatering = cateringNotes.filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
     if (validCatering.length > 0) {
       if (y > pageHeight - 40) { doc.addPage(); y = 15; }
@@ -327,7 +346,6 @@ function App() {
       });
     }
 
-    // FOOTER
     doc.setFillColor(...OG.primary);
     doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
     doc.setTextColor(255, 255, 255);
@@ -416,7 +434,7 @@ function App() {
         .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
         .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
         .rs-input-money { position: relative; display: flex; align-items: center; }
-        .rs-input-money span { position: absolute; left: 10px; color: #C45200; font-weight: 600; font-size: 14px; pointer-events: none; }
+        .rs-input-money span { position: absolute; left: 10px; color: #C45200; font-weight: 600; font-size: 14px; pointer-events: none; z-index: 1; }
         .rs-input-money input { padding-left: 20px !important; }
         .rs-field input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
         .rs-field select { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
@@ -495,34 +513,34 @@ function App() {
                 <div className="rs-field"><label>Lunch Guests</label><input name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" /></div>
                 <div className="rs-field"><label>Dinner Guests</label><input name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" /></div>
               </div>
-              <div className="rs-field"><label>Dine-in Sales</label><div className="rs-input-money"><span>$</span><input name="dineInSales" value={form.dineInSales} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+              <div className="rs-field"><label>Dine-in Sales</label><MoneyInput name="dineInSales" value={form.dineInSales} onChange={handleChange} /></div>
             </div>
 
             <div className="rs-section">
               <div className="rs-section-label">Cash</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Cash Sale</label><div className="rs-input-money"><span>$</span><input name="cashSale" value={form.cashSale} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>Cash Catering</label><div className="rs-input-money"><span>$</span><input name="cashCatering" value={form.cashCatering} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Cash Sale</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
               </div>
-              <div className="rs-field"><label>Total Cash</label><div className="rs-input-money"><span>$</span><input name="totalCashWithTip" value={form.totalCashWithTip === 0 ? "" : form.totalCashWithTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+              <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
             </div>
 
             <div className="rs-section">
               <div className="rs-section-label">Credit Card</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Total Settle Amount</label><div className="rs-input-money"><span>$</span><input name="totalSettle" value={form.totalSettle} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>Credit Card Tip</label><div className="rs-input-money"><span>$</span><input name="creditCardTip" value={form.creditCardTip} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Total Settle Amount</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Credit Card Tip</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
               </div>
             </div>
 
             <div className="rs-section">
               <div className="rs-section-label">Gift Cards & Online</div>
-              <div className="rs-field"><label>Gift Card Redeemed</label><div className="rs-input-money"><span>$</span><input name="giftCard" value={form.giftCard} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+              <div className="rs-field"><label>Gift Card Redeemed</label><MoneyInput name="giftCard" value={form.giftCard} onChange={handleChange} /></div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Restaurant Online</label><div className="rs-input-money"><span>$</span><input name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>Grubhub</label><div className="rs-input-money"><span>$</span><input name="grubhub" value={form.grubhub} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>DoorDash</label><div className="rs-input-money"><span>$</span><input name="doordash" value={form.doordash} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
-                <div className="rs-field"><label>Uber Eats</label><div className="rs-input-money"><span>$</span><input name="uberEats" value={form.uberEats} onChange={handleChange} placeholder="0.00" type="number" /></div></div>
+                <div className="rs-field"><label>Restaurant Online</label><MoneyInput name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Grubhub</label><MoneyInput name="grubhub" value={form.grubhub} onChange={handleChange} /></div>
+                <div className="rs-field"><label>DoorDash</label><MoneyInput name="doordash" value={form.doordash} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Uber Eats</label><MoneyInput name="uberEats" value={form.uberEats} onChange={handleChange} /></div>
               </div>
             </div>
 
@@ -550,7 +568,7 @@ function App() {
                           <option value="Check">Check</option>
                         </select>
                       </div>
-                      <div className="rs-field"><label>Amount ($)</label><input type="number" name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} placeholder="0.00" /></div>
+                      <div className="rs-field"><label>Amount ($)</label><MoneyInput name="amount" value={note.amount} onChange={(e) => handleCateringChange(index, e)} /></div>
                     </div>
                   ))}
                   <button type="button" className="rs-add-btn" onClick={addCateringEntry}>+ Add Another Entry</button>
@@ -558,7 +576,6 @@ function App() {
               </div>
             </div>
 
-            {/* Generate Report */}
             <button className="rs-btn" onClick={saveData} disabled={loading}>
               {loading ? (
                 <><svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: "rs-spin 0.8s linear infinite" }}><circle cx="8" cy="8" r="6" stroke="rgba(255,255,255,0.3)" strokeWidth="2"/><path d="M8 2a6 6 0 0 1 6 6" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg>Generating...</>
@@ -570,7 +587,6 @@ function App() {
         </div>
       </div>
 
-      {/* Standalone Feedback Modal */}
       {feedbackOpen && (
         <div className="rs-modal-overlay" onClick={() => setFeedbackOpen(false)}>
           <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
@@ -586,7 +602,6 @@ function App() {
         </div>
       )}
 
-      {/* Loading Overlay */}
       {loading && (
         <div className="rs-loading-overlay">
           <div className="rs-loading-spinner" />
@@ -595,7 +610,6 @@ function App() {
         </div>
       )}
 
-      {/* Main Modal */}
       {modal.open && (
         <div className="rs-modal-overlay" onClick={closeModal}>
           <div className="rs-modal" onClick={(e) => e.stopPropagation()}>
