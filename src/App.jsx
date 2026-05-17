@@ -254,15 +254,15 @@ function App() {
     y = hy + 7;
 
     const cy0 = y;
-    row("Cash Sale", fmt(form.cashSale), margin, hw);
+    row("Cash Sale(Cash Paid Total)", fmt(form.cashSale), margin, hw);
     row("Cash Tip", fmt(form.cashTip), margin, hw);
     row("Cash Catering", fmt(form.cashCatering), margin, hw);
     row("Total Cash", fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)), margin, hw, true);
     const cyEnd = y;
 
     y = cy0;
-    row("Total CC Settle", fmt(form.totalSettle), rx, hw);
-    row("CC Tip", fmt(form.creditCardTip), rx, hw);
+    row("Total CC Settle(Credit & Debit Card Total)", fmt(form.totalSettle), rx, hw);
+    row("CC Tip(Tips Added)", fmt(form.creditCardTip), rx, hw);
     row("CC Sale", fmt(form.creditCardSale), rx, hw, true);
     if (y < cyEnd) {
       doc.setFillColor(255, 255, 255);
