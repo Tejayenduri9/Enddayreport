@@ -1,7 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
-// .wrangler/tmp/pages-xlC0EW/functionsWorker-0.674881775521878.mjs
+// .wrangler/tmp/pages-dK2wgT/functionsWorker-0.7864419577786372.mjs
 var __create = Object.create;
 var __defProp2 = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -235,7 +235,7 @@ var base64Chars;
 var base64Lookup;
 var init_decode_strings = __esm({
   "../node_modules/postal-mime/src/decode-strings.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     textEncoder = new TextEncoder();
     base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     base64Lookup = new Uint8Array(256);
@@ -255,7 +255,7 @@ var init_decode_strings = __esm({
 var PassThroughDecoder;
 var init_pass_through_decoder = __esm({
   "../node_modules/postal-mime/src/pass-through-decoder.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_decode_strings();
     PassThroughDecoder = class {
       static {
@@ -280,7 +280,7 @@ var init_pass_through_decoder = __esm({
 var Base64Decoder;
 var init_base64_decoder = __esm({
   "../node_modules/postal-mime/src/base64-decoder.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_decode_strings();
     Base64Decoder = class {
       static {
@@ -331,7 +331,7 @@ var PARTIAL_QP_ENDING_REGEX;
 var QPDecoder;
 var init_qp_decoder = __esm({
   "../node_modules/postal-mime/src/qp-decoder.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_decode_strings();
     VALID_QP_REGEX = /^=[a-f0-9]{2}$/i;
     QP_SPLIT_REGEX = /(?==[a-f0-9]{2})/i;
@@ -438,7 +438,7 @@ var defaultDecoder;
 var MimeNode;
 var init_mime_node = __esm({
   "../node_modules/postal-mime/src/mime-node.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_decode_strings();
     init_pass_through_decoder();
     init_base64_decoder();
@@ -728,7 +728,7 @@ var htmlEntities;
 var html_entities_default;
 var init_html_entities = __esm({
   "../node_modules/postal-mime/src/html-entities.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     htmlEntities = {
       "&AElig": "\xC6",
       "&AElig;": "\xC6",
@@ -3197,7 +3197,7 @@ function formatHtmlHeader(message) {
 __name(formatHtmlHeader, "formatHtmlHeader");
 var init_text_format = __esm({
   "../node_modules/postal-mime/src/text-format.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_html_entities();
     __name2(decodeHTMLEntities, "decodeHTMLEntities");
     __name2(escapeHtml, "escapeHtml");
@@ -3408,7 +3408,7 @@ var MAX_NESTED_GROUP_DEPTH;
 var address_parser_default;
 var init_address_parser = __esm({
   "../node_modules/postal-mime/src/address-parser.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_decode_strings();
     __name2(_handleAddress, "_handleAddress");
     Tokenizer = class {
@@ -3549,7 +3549,7 @@ function base64ArrayBuffer(arrayBuffer) {
 __name(base64ArrayBuffer, "base64ArrayBuffer");
 var init_base64_encoder = __esm({
   "../node_modules/postal-mime/src/base64-encoder.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     __name2(base64ArrayBuffer, "base64ArrayBuffer");
   }
 });
@@ -3562,7 +3562,7 @@ var MAX_HEADERS_SIZE;
 var PostalMime;
 var init_postal_mime = __esm({
   "../node_modules/postal-mime/src/postal-mime.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_mime_node();
     init_text_format();
     init_address_parser();
@@ -4007,7 +4007,7 @@ var init_postal_mime = __esm({
 var require_applicationIn = __commonJS({
   "../node_modules/svix/dist/models/applicationIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApplicationInSerializer = void 0;
     exports.ApplicationInSerializer = {
@@ -4035,7 +4035,7 @@ var require_applicationIn = __commonJS({
 var require_applicationOut = __commonJS({
   "../node_modules/svix/dist/models/applicationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApplicationOutSerializer = void 0;
     exports.ApplicationOutSerializer = {
@@ -4069,7 +4069,7 @@ var require_applicationOut = __commonJS({
 var require_applicationPatch = __commonJS({
   "../node_modules/svix/dist/models/applicationPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApplicationPatchSerializer = void 0;
     exports.ApplicationPatchSerializer = {
@@ -4095,7 +4095,7 @@ var require_applicationPatch = __commonJS({
 var require_listResponseApplicationOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseApplicationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseApplicationOutSerializer = void 0;
     var applicationOut_1 = require_applicationOut();
@@ -4122,7 +4122,7 @@ var require_listResponseApplicationOut = __commonJS({
 var require_util = __commonJS({
   "../node_modules/svix/dist/util.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApiException = void 0;
     var ApiException = class extends Error {
@@ -4149,7 +4149,7 @@ Headers: ${JSON.stringify(headers)}`);
 var require_request = __commonJS({
   "../node_modules/svix/dist/request.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     var __awaiter = exports && exports.__awaiter || function(thisArg, _arguments, P, generator) {
       function adopt(value) {
         return value instanceof P ? value : new P(function(resolve) {
@@ -4340,7 +4340,7 @@ var require_request = __commonJS({
 var require_application = __commonJS({
   "../node_modules/svix/dist/api/application.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Application = void 0;
     var applicationIn_1 = require_applicationIn();
@@ -4412,7 +4412,7 @@ var require_application = __commonJS({
 var require_apiTokenOut = __commonJS({
   "../node_modules/svix/dist/models/apiTokenOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApiTokenOutSerializer = void 0;
     exports.ApiTokenOutSerializer = {
@@ -4442,7 +4442,7 @@ var require_apiTokenOut = __commonJS({
 var require_appPortalCapability = __commonJS({
   "../node_modules/svix/dist/models/appPortalCapability.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AppPortalCapabilitySerializer = exports.AppPortalCapability = void 0;
     var AppPortalCapability;
@@ -4467,7 +4467,7 @@ var require_appPortalCapability = __commonJS({
 var require_appPortalAccessIn = __commonJS({
   "../node_modules/svix/dist/models/appPortalAccessIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AppPortalAccessInSerializer = void 0;
     var appPortalCapability_1 = require_appPortalCapability();
@@ -4501,7 +4501,7 @@ var require_appPortalAccessIn = __commonJS({
 var require_appPortalAccessOut = __commonJS({
   "../node_modules/svix/dist/models/appPortalAccessOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AppPortalAccessOutSerializer = void 0;
     exports.AppPortalAccessOutSerializer = {
@@ -4523,7 +4523,7 @@ var require_appPortalAccessOut = __commonJS({
 var require_applicationTokenExpireIn = __commonJS({
   "../node_modules/svix/dist/models/applicationTokenExpireIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ApplicationTokenExpireInSerializer = void 0;
     exports.ApplicationTokenExpireInSerializer = {
@@ -4545,7 +4545,7 @@ var require_applicationTokenExpireIn = __commonJS({
 var require_rotatePollerTokenIn = __commonJS({
   "../node_modules/svix/dist/models/rotatePollerTokenIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RotatePollerTokenInSerializer = void 0;
     exports.RotatePollerTokenInSerializer = {
@@ -4567,7 +4567,7 @@ var require_rotatePollerTokenIn = __commonJS({
 var require_streamPortalAccessIn = __commonJS({
   "../node_modules/svix/dist/models/streamPortalAccessIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamPortalAccessInSerializer = void 0;
     exports.StreamPortalAccessInSerializer = {
@@ -4591,7 +4591,7 @@ var require_streamPortalAccessIn = __commonJS({
 var require_streamTokenExpireIn = __commonJS({
   "../node_modules/svix/dist/models/streamTokenExpireIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamTokenExpireInSerializer = void 0;
     exports.StreamTokenExpireInSerializer = {
@@ -4613,7 +4613,7 @@ var require_streamTokenExpireIn = __commonJS({
 var require_dashboardAccessOut = __commonJS({
   "../node_modules/svix/dist/models/dashboardAccessOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DashboardAccessOutSerializer = void 0;
     exports.DashboardAccessOutSerializer = {
@@ -4635,7 +4635,7 @@ var require_dashboardAccessOut = __commonJS({
 var require_authentication = __commonJS({
   "../node_modules/svix/dist/api/authentication.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Authentication = void 0;
     var apiTokenOut_1 = require_apiTokenOut();
@@ -4722,7 +4722,7 @@ var require_authentication = __commonJS({
 var require_backgroundTaskStatus = __commonJS({
   "../node_modules/svix/dist/models/backgroundTaskStatus.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BackgroundTaskStatusSerializer = exports.BackgroundTaskStatus = void 0;
     var BackgroundTaskStatus;
@@ -4744,7 +4744,7 @@ var require_backgroundTaskStatus = __commonJS({
 var require_backgroundTaskType = __commonJS({
   "../node_modules/svix/dist/models/backgroundTaskType.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BackgroundTaskTypeSerializer = exports.BackgroundTaskType = void 0;
     var BackgroundTaskType;
@@ -4771,7 +4771,7 @@ var require_backgroundTaskType = __commonJS({
 var require_backgroundTaskOut = __commonJS({
   "../node_modules/svix/dist/models/backgroundTaskOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BackgroundTaskOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -4801,7 +4801,7 @@ var require_backgroundTaskOut = __commonJS({
 var require_listResponseBackgroundTaskOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseBackgroundTaskOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseBackgroundTaskOutSerializer = void 0;
     var backgroundTaskOut_1 = require_backgroundTaskOut();
@@ -4828,7 +4828,7 @@ var require_listResponseBackgroundTaskOut = __commonJS({
 var require_backgroundTask = __commonJS({
   "../node_modules/svix/dist/api/backgroundTask.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BackgroundTask = void 0;
     var backgroundTaskOut_1 = require_backgroundTaskOut();
@@ -4870,7 +4870,7 @@ var require_backgroundTask = __commonJS({
 var require_connectorKind = __commonJS({
   "../node_modules/svix/dist/models/connectorKind.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorKindSerializer = exports.ConnectorKind = void 0;
     var ConnectorKind;
@@ -4907,7 +4907,7 @@ var require_connectorKind = __commonJS({
 var require_connectorProduct = __commonJS({
   "../node_modules/svix/dist/models/connectorProduct.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorProductSerializer = exports.ConnectorProduct = void 0;
     var ConnectorProduct;
@@ -4928,7 +4928,7 @@ var require_connectorProduct = __commonJS({
 var require_connectorIn = __commonJS({
   "../node_modules/svix/dist/models/connectorIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorInSerializer = void 0;
     var connectorKind_1 = require_connectorKind();
@@ -4968,7 +4968,7 @@ var require_connectorIn = __commonJS({
 var require_connectorOut = __commonJS({
   "../node_modules/svix/dist/models/connectorOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorOutSerializer = void 0;
     var connectorKind_1 = require_connectorKind();
@@ -5018,7 +5018,7 @@ var require_connectorOut = __commonJS({
 var require_connectorPatch = __commonJS({
   "../node_modules/svix/dist/models/connectorPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorPatchSerializer = void 0;
     var connectorKind_1 = require_connectorKind();
@@ -5053,7 +5053,7 @@ var require_connectorPatch = __commonJS({
 var require_connectorUpdate = __commonJS({
   "../node_modules/svix/dist/models/connectorUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ConnectorUpdateSerializer = void 0;
     var connectorKind_1 = require_connectorKind();
@@ -5088,7 +5088,7 @@ var require_connectorUpdate = __commonJS({
 var require_listResponseConnectorOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseConnectorOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseConnectorOutSerializer = void 0;
     var connectorOut_1 = require_connectorOut();
@@ -5115,7 +5115,7 @@ var require_listResponseConnectorOut = __commonJS({
 var require_connector = __commonJS({
   "../node_modules/svix/dist/api/connector.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Connector = void 0;
     var connectorIn_1 = require_connectorIn();
@@ -5179,7 +5179,7 @@ var require_connector = __commonJS({
 var require_messageStatus = __commonJS({
   "../node_modules/svix/dist/models/messageStatus.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageStatusSerializer = exports.MessageStatus = void 0;
     var MessageStatus;
@@ -5202,7 +5202,7 @@ var require_messageStatus = __commonJS({
 var require_statusCodeClass = __commonJS({
   "../node_modules/svix/dist/models/statusCodeClass.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StatusCodeClassSerializer = exports.StatusCodeClass = void 0;
     var StatusCodeClass;
@@ -5227,7 +5227,7 @@ var require_statusCodeClass = __commonJS({
 var require_bulkReplayIn = __commonJS({
   "../node_modules/svix/dist/models/bulkReplayIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.BulkReplayInSerializer = void 0;
     var messageStatus_1 = require_messageStatus();
@@ -5261,7 +5261,7 @@ var require_bulkReplayIn = __commonJS({
 var require_endpointHeadersIn = __commonJS({
   "../node_modules/svix/dist/models/endpointHeadersIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointHeadersInSerializer = void 0;
     exports.EndpointHeadersInSerializer = {
@@ -5281,7 +5281,7 @@ var require_endpointHeadersIn = __commonJS({
 var require_endpointHeadersOut = __commonJS({
   "../node_modules/svix/dist/models/endpointHeadersOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointHeadersOutSerializer = void 0;
     exports.EndpointHeadersOutSerializer = {
@@ -5303,7 +5303,7 @@ var require_endpointHeadersOut = __commonJS({
 var require_endpointHeadersPatchIn = __commonJS({
   "../node_modules/svix/dist/models/endpointHeadersPatchIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointHeadersPatchInSerializer = void 0;
     exports.EndpointHeadersPatchInSerializer = {
@@ -5325,7 +5325,7 @@ var require_endpointHeadersPatchIn = __commonJS({
 var require_endpointIn = __commonJS({
   "../node_modules/svix/dist/models/endpointIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointInSerializer = void 0;
     exports.EndpointInSerializer = {
@@ -5367,7 +5367,7 @@ var require_endpointIn = __commonJS({
 var require_endpointOut = __commonJS({
   "../node_modules/svix/dist/models/endpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointOutSerializer = void 0;
     exports.EndpointOutSerializer = {
@@ -5411,7 +5411,7 @@ var require_endpointOut = __commonJS({
 var require_endpointPatch = __commonJS({
   "../node_modules/svix/dist/models/endpointPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointPatchSerializer = void 0;
     exports.EndpointPatchSerializer = {
@@ -5451,7 +5451,7 @@ var require_endpointPatch = __commonJS({
 var require_endpointSecretOut = __commonJS({
   "../node_modules/svix/dist/models/endpointSecretOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointSecretOutSerializer = void 0;
     exports.EndpointSecretOutSerializer = {
@@ -5471,7 +5471,7 @@ var require_endpointSecretOut = __commonJS({
 var require_endpointSecretRotateIn = __commonJS({
   "../node_modules/svix/dist/models/endpointSecretRotateIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointSecretRotateInSerializer = void 0;
     exports.EndpointSecretRotateInSerializer = {
@@ -5491,7 +5491,7 @@ var require_endpointSecretRotateIn = __commonJS({
 var require_endpointStats = __commonJS({
   "../node_modules/svix/dist/models/endpointStats.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointStatsSerializer = void 0;
     exports.EndpointStatsSerializer = {
@@ -5517,7 +5517,7 @@ var require_endpointStats = __commonJS({
 var require_endpointTransformationIn = __commonJS({
   "../node_modules/svix/dist/models/endpointTransformationIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointTransformationInSerializer = void 0;
     exports.EndpointTransformationInSerializer = {
@@ -5539,7 +5539,7 @@ var require_endpointTransformationIn = __commonJS({
 var require_endpointTransformationOut = __commonJS({
   "../node_modules/svix/dist/models/endpointTransformationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointTransformationOutSerializer = void 0;
     exports.EndpointTransformationOutSerializer = {
@@ -5563,7 +5563,7 @@ var require_endpointTransformationOut = __commonJS({
 var require_endpointTransformationPatch = __commonJS({
   "../node_modules/svix/dist/models/endpointTransformationPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointTransformationPatchSerializer = void 0;
     exports.EndpointTransformationPatchSerializer = {
@@ -5585,7 +5585,7 @@ var require_endpointTransformationPatch = __commonJS({
 var require_endpointUpdate = __commonJS({
   "../node_modules/svix/dist/models/endpointUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointUpdateSerializer = void 0;
     exports.EndpointUpdateSerializer = {
@@ -5623,7 +5623,7 @@ var require_endpointUpdate = __commonJS({
 var require_eventExampleIn = __commonJS({
   "../node_modules/svix/dist/models/eventExampleIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventExampleInSerializer = void 0;
     exports.EventExampleInSerializer = {
@@ -5645,7 +5645,7 @@ var require_eventExampleIn = __commonJS({
 var require_listResponseEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseEndpointOutSerializer = void 0;
     var endpointOut_1 = require_endpointOut();
@@ -5672,7 +5672,7 @@ var require_listResponseEndpointOut = __commonJS({
 var require_messageOut = __commonJS({
   "../node_modules/svix/dist/models/messageOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageOutSerializer = void 0;
     exports.MessageOutSerializer = {
@@ -5706,7 +5706,7 @@ var require_messageOut = __commonJS({
 var require_recoverIn = __commonJS({
   "../node_modules/svix/dist/models/recoverIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RecoverInSerializer = void 0;
     exports.RecoverInSerializer = {
@@ -5728,7 +5728,7 @@ var require_recoverIn = __commonJS({
 var require_recoverOut = __commonJS({
   "../node_modules/svix/dist/models/recoverOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RecoverOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -5756,7 +5756,7 @@ var require_recoverOut = __commonJS({
 var require_replayIn = __commonJS({
   "../node_modules/svix/dist/models/replayIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ReplayInSerializer = void 0;
     exports.ReplayInSerializer = {
@@ -5778,7 +5778,7 @@ var require_replayIn = __commonJS({
 var require_replayOut = __commonJS({
   "../node_modules/svix/dist/models/replayOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ReplayOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -5806,7 +5806,7 @@ var require_replayOut = __commonJS({
 var require_endpoint = __commonJS({
   "../node_modules/svix/dist/api/endpoint.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Endpoint = void 0;
     var bulkReplayIn_1 = require_bulkReplayIn();
@@ -5993,7 +5993,7 @@ var require_endpoint = __commonJS({
 var require_eventTypeIn = __commonJS({
   "../node_modules/svix/dist/models/eventTypeIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeInSerializer = void 0;
     exports.EventTypeInSerializer = {
@@ -6027,7 +6027,7 @@ var require_eventTypeIn = __commonJS({
 var require_environmentIn = __commonJS({
   "../node_modules/svix/dist/models/environmentIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EnvironmentInSerializer = void 0;
     var connectorIn_1 = require_connectorIn();
@@ -6055,7 +6055,7 @@ var require_environmentIn = __commonJS({
 var require_eventTypeOut = __commonJS({
   "../node_modules/svix/dist/models/eventTypeOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeOutSerializer = void 0;
     exports.EventTypeOutSerializer = {
@@ -6093,7 +6093,7 @@ var require_eventTypeOut = __commonJS({
 var require_environmentOut = __commonJS({
   "../node_modules/svix/dist/models/environmentOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EnvironmentOutSerializer = void 0;
     var connectorOut_1 = require_connectorOut();
@@ -6123,7 +6123,7 @@ var require_environmentOut = __commonJS({
 var require_environment = __commonJS({
   "../node_modules/svix/dist/api/environment.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Environment = void 0;
     var environmentIn_1 = require_environmentIn();
@@ -6157,7 +6157,7 @@ var require_environment = __commonJS({
 var require_eventTypeImportOpenApiIn = __commonJS({
   "../node_modules/svix/dist/models/eventTypeImportOpenApiIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeImportOpenApiInSerializer = void 0;
     exports.EventTypeImportOpenApiInSerializer = {
@@ -6183,7 +6183,7 @@ var require_eventTypeImportOpenApiIn = __commonJS({
 var require_eventTypeFromOpenApi = __commonJS({
   "../node_modules/svix/dist/models/eventTypeFromOpenApi.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeFromOpenApiSerializer = void 0;
     exports.EventTypeFromOpenApiSerializer = {
@@ -6215,7 +6215,7 @@ var require_eventTypeFromOpenApi = __commonJS({
 var require_eventTypeImportOpenApiOutData = __commonJS({
   "../node_modules/svix/dist/models/eventTypeImportOpenApiOutData.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeImportOpenApiOutDataSerializer = void 0;
     var eventTypeFromOpenApi_1 = require_eventTypeFromOpenApi();
@@ -6240,7 +6240,7 @@ var require_eventTypeImportOpenApiOutData = __commonJS({
 var require_eventTypeImportOpenApiOut = __commonJS({
   "../node_modules/svix/dist/models/eventTypeImportOpenApiOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeImportOpenApiOutSerializer = void 0;
     var eventTypeImportOpenApiOutData_1 = require_eventTypeImportOpenApiOutData();
@@ -6261,7 +6261,7 @@ var require_eventTypeImportOpenApiOut = __commonJS({
 var require_eventTypePatch = __commonJS({
   "../node_modules/svix/dist/models/eventTypePatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypePatchSerializer = void 0;
     exports.EventTypePatchSerializer = {
@@ -6293,7 +6293,7 @@ var require_eventTypePatch = __commonJS({
 var require_eventTypeUpdate = __commonJS({
   "../node_modules/svix/dist/models/eventTypeUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventTypeUpdateSerializer = void 0;
     exports.EventTypeUpdateSerializer = {
@@ -6325,7 +6325,7 @@ var require_eventTypeUpdate = __commonJS({
 var require_listResponseEventTypeOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseEventTypeOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseEventTypeOutSerializer = void 0;
     var eventTypeOut_1 = require_eventTypeOut();
@@ -6352,7 +6352,7 @@ var require_listResponseEventTypeOut = __commonJS({
 var require_eventType = __commonJS({
   "../node_modules/svix/dist/api/eventType.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventType = void 0;
     var eventTypeImportOpenApiIn_1 = require_eventTypeImportOpenApiIn();
@@ -6428,7 +6428,7 @@ var require_eventType = __commonJS({
 var require_health = __commonJS({
   "../node_modules/svix/dist/api/health.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Health = void 0;
     var request_1 = require_request();
@@ -6453,7 +6453,7 @@ var require_health = __commonJS({
 var require_ingestSourceConsumerPortalAccessIn = __commonJS({
   "../node_modules/svix/dist/models/ingestSourceConsumerPortalAccessIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestSourceConsumerPortalAccessInSerializer = void 0;
     exports.IngestSourceConsumerPortalAccessInSerializer = {
@@ -6475,7 +6475,7 @@ var require_ingestSourceConsumerPortalAccessIn = __commonJS({
 var require_ingestEndpointHeadersIn = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointHeadersIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointHeadersInSerializer = void 0;
     exports.IngestEndpointHeadersInSerializer = {
@@ -6495,7 +6495,7 @@ var require_ingestEndpointHeadersIn = __commonJS({
 var require_ingestEndpointHeadersOut = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointHeadersOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointHeadersOutSerializer = void 0;
     exports.IngestEndpointHeadersOutSerializer = {
@@ -6517,7 +6517,7 @@ var require_ingestEndpointHeadersOut = __commonJS({
 var require_ingestEndpointIn = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointInSerializer = void 0;
     exports.IngestEndpointInSerializer = {
@@ -6549,7 +6549,7 @@ var require_ingestEndpointIn = __commonJS({
 var require_ingestEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointOutSerializer = void 0;
     exports.IngestEndpointOutSerializer = {
@@ -6585,7 +6585,7 @@ var require_ingestEndpointOut = __commonJS({
 var require_ingestEndpointSecretIn = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointSecretIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointSecretInSerializer = void 0;
     exports.IngestEndpointSecretInSerializer = {
@@ -6605,7 +6605,7 @@ var require_ingestEndpointSecretIn = __commonJS({
 var require_ingestEndpointSecretOut = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointSecretOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointSecretOutSerializer = void 0;
     exports.IngestEndpointSecretOutSerializer = {
@@ -6625,7 +6625,7 @@ var require_ingestEndpointSecretOut = __commonJS({
 var require_ingestEndpointTransformationOut = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointTransformationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointTransformationOutSerializer = void 0;
     exports.IngestEndpointTransformationOutSerializer = {
@@ -6647,7 +6647,7 @@ var require_ingestEndpointTransformationOut = __commonJS({
 var require_ingestEndpointTransformationPatch = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointTransformationPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointTransformationPatchSerializer = void 0;
     exports.IngestEndpointTransformationPatchSerializer = {
@@ -6669,7 +6669,7 @@ var require_ingestEndpointTransformationPatch = __commonJS({
 var require_ingestEndpointUpdate = __commonJS({
   "../node_modules/svix/dist/models/ingestEndpointUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpointUpdateSerializer = void 0;
     exports.IngestEndpointUpdateSerializer = {
@@ -6699,7 +6699,7 @@ var require_ingestEndpointUpdate = __commonJS({
 var require_listResponseIngestEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseIngestEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseIngestEndpointOutSerializer = void 0;
     var ingestEndpointOut_1 = require_ingestEndpointOut();
@@ -6726,7 +6726,7 @@ var require_listResponseIngestEndpointOut = __commonJS({
 var require_ingestEndpoint = __commonJS({
   "../node_modules/svix/dist/api/ingestEndpoint.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestEndpoint = void 0;
     var ingestEndpointHeadersIn_1 = require_ingestEndpointHeadersIn();
@@ -6833,7 +6833,7 @@ var require_ingestEndpoint = __commonJS({
 var require_adobeSignConfig = __commonJS({
   "../node_modules/svix/dist/models/adobeSignConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AdobeSignConfigSerializer = void 0;
     exports.AdobeSignConfigSerializer = {
@@ -6853,7 +6853,7 @@ var require_adobeSignConfig = __commonJS({
 var require_airwallexConfig = __commonJS({
   "../node_modules/svix/dist/models/airwallexConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AirwallexConfigSerializer = void 0;
     exports.AirwallexConfigSerializer = {
@@ -6873,7 +6873,7 @@ var require_airwallexConfig = __commonJS({
 var require_checkbookConfig = __commonJS({
   "../node_modules/svix/dist/models/checkbookConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CheckbookConfigSerializer = void 0;
     exports.CheckbookConfigSerializer = {
@@ -6893,7 +6893,7 @@ var require_checkbookConfig = __commonJS({
 var require_cronConfig = __commonJS({
   "../node_modules/svix/dist/models/cronConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CronConfigSerializer = void 0;
     exports.CronConfigSerializer = {
@@ -6917,7 +6917,7 @@ var require_cronConfig = __commonJS({
 var require_docusignConfig = __commonJS({
   "../node_modules/svix/dist/models/docusignConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DocusignConfigSerializer = void 0;
     exports.DocusignConfigSerializer = {
@@ -6937,7 +6937,7 @@ var require_docusignConfig = __commonJS({
 var require_easypostConfig = __commonJS({
   "../node_modules/svix/dist/models/easypostConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EasypostConfigSerializer = void 0;
     exports.EasypostConfigSerializer = {
@@ -6957,7 +6957,7 @@ var require_easypostConfig = __commonJS({
 var require_githubConfig = __commonJS({
   "../node_modules/svix/dist/models/githubConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.GithubConfigSerializer = void 0;
     exports.GithubConfigSerializer = {
@@ -6977,7 +6977,7 @@ var require_githubConfig = __commonJS({
 var require_hubspotConfig = __commonJS({
   "../node_modules/svix/dist/models/hubspotConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HubspotConfigSerializer = void 0;
     exports.HubspotConfigSerializer = {
@@ -6997,7 +6997,7 @@ var require_hubspotConfig = __commonJS({
 var require_metaConfig = __commonJS({
   "../node_modules/svix/dist/models/metaConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MetaConfigSerializer = void 0;
     exports.MetaConfigSerializer = {
@@ -7019,7 +7019,7 @@ var require_metaConfig = __commonJS({
 var require_orumIoConfig = __commonJS({
   "../node_modules/svix/dist/models/orumIoConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OrumIoConfigSerializer = void 0;
     exports.OrumIoConfigSerializer = {
@@ -7039,7 +7039,7 @@ var require_orumIoConfig = __commonJS({
 var require_pandaDocConfig = __commonJS({
   "../node_modules/svix/dist/models/pandaDocConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PandaDocConfigSerializer = void 0;
     exports.PandaDocConfigSerializer = {
@@ -7059,7 +7059,7 @@ var require_pandaDocConfig = __commonJS({
 var require_portIoConfig = __commonJS({
   "../node_modules/svix/dist/models/portIoConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PortIoConfigSerializer = void 0;
     exports.PortIoConfigSerializer = {
@@ -7079,7 +7079,7 @@ var require_portIoConfig = __commonJS({
 var require_rutterConfig = __commonJS({
   "../node_modules/svix/dist/models/rutterConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RutterConfigSerializer = void 0;
     exports.RutterConfigSerializer = {
@@ -7099,7 +7099,7 @@ var require_rutterConfig = __commonJS({
 var require_segmentConfig = __commonJS({
   "../node_modules/svix/dist/models/segmentConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SegmentConfigSerializer = void 0;
     exports.SegmentConfigSerializer = {
@@ -7119,7 +7119,7 @@ var require_segmentConfig = __commonJS({
 var require_shopifyConfig = __commonJS({
   "../node_modules/svix/dist/models/shopifyConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ShopifyConfigSerializer = void 0;
     exports.ShopifyConfigSerializer = {
@@ -7139,7 +7139,7 @@ var require_shopifyConfig = __commonJS({
 var require_slackConfig = __commonJS({
   "../node_modules/svix/dist/models/slackConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SlackConfigSerializer = void 0;
     exports.SlackConfigSerializer = {
@@ -7159,7 +7159,7 @@ var require_slackConfig = __commonJS({
 var require_stripeConfig = __commonJS({
   "../node_modules/svix/dist/models/stripeConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StripeConfigSerializer = void 0;
     exports.StripeConfigSerializer = {
@@ -7179,7 +7179,7 @@ var require_stripeConfig = __commonJS({
 var require_svixConfig = __commonJS({
   "../node_modules/svix/dist/models/svixConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SvixConfigSerializer = void 0;
     exports.SvixConfigSerializer = {
@@ -7199,7 +7199,7 @@ var require_svixConfig = __commonJS({
 var require_telnyxConfig = __commonJS({
   "../node_modules/svix/dist/models/telnyxConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TelnyxConfigSerializer = void 0;
     exports.TelnyxConfigSerializer = {
@@ -7219,7 +7219,7 @@ var require_telnyxConfig = __commonJS({
 var require_vapiConfig = __commonJS({
   "../node_modules/svix/dist/models/vapiConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VapiConfigSerializer = void 0;
     exports.VapiConfigSerializer = {
@@ -7239,7 +7239,7 @@ var require_vapiConfig = __commonJS({
 var require_veriffConfig = __commonJS({
   "../node_modules/svix/dist/models/veriffConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VeriffConfigSerializer = void 0;
     exports.VeriffConfigSerializer = {
@@ -7259,7 +7259,7 @@ var require_veriffConfig = __commonJS({
 var require_zoomConfig = __commonJS({
   "../node_modules/svix/dist/models/zoomConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ZoomConfigSerializer = void 0;
     exports.ZoomConfigSerializer = {
@@ -7279,7 +7279,7 @@ var require_zoomConfig = __commonJS({
 var require_ingestSourceIn = __commonJS({
   "../node_modules/svix/dist/models/ingestSourceIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestSourceInSerializer = void 0;
     var adobeSignConfig_1 = require_adobeSignConfig();
@@ -7536,7 +7536,7 @@ var require_ingestSourceIn = __commonJS({
 var require_adobeSignConfigOut = __commonJS({
   "../node_modules/svix/dist/models/adobeSignConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AdobeSignConfigOutSerializer = void 0;
     exports.AdobeSignConfigOutSerializer = {
@@ -7552,7 +7552,7 @@ var require_adobeSignConfigOut = __commonJS({
 var require_airwallexConfigOut = __commonJS({
   "../node_modules/svix/dist/models/airwallexConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AirwallexConfigOutSerializer = void 0;
     exports.AirwallexConfigOutSerializer = {
@@ -7568,7 +7568,7 @@ var require_airwallexConfigOut = __commonJS({
 var require_checkbookConfigOut = __commonJS({
   "../node_modules/svix/dist/models/checkbookConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CheckbookConfigOutSerializer = void 0;
     exports.CheckbookConfigOutSerializer = {
@@ -7584,7 +7584,7 @@ var require_checkbookConfigOut = __commonJS({
 var require_docusignConfigOut = __commonJS({
   "../node_modules/svix/dist/models/docusignConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.DocusignConfigOutSerializer = void 0;
     exports.DocusignConfigOutSerializer = {
@@ -7600,7 +7600,7 @@ var require_docusignConfigOut = __commonJS({
 var require_easypostConfigOut = __commonJS({
   "../node_modules/svix/dist/models/easypostConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EasypostConfigOutSerializer = void 0;
     exports.EasypostConfigOutSerializer = {
@@ -7616,7 +7616,7 @@ var require_easypostConfigOut = __commonJS({
 var require_githubConfigOut = __commonJS({
   "../node_modules/svix/dist/models/githubConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.GithubConfigOutSerializer = void 0;
     exports.GithubConfigOutSerializer = {
@@ -7632,7 +7632,7 @@ var require_githubConfigOut = __commonJS({
 var require_hubspotConfigOut = __commonJS({
   "../node_modules/svix/dist/models/hubspotConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HubspotConfigOutSerializer = void 0;
     exports.HubspotConfigOutSerializer = {
@@ -7648,7 +7648,7 @@ var require_hubspotConfigOut = __commonJS({
 var require_metaConfigOut = __commonJS({
   "../node_modules/svix/dist/models/metaConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MetaConfigOutSerializer = void 0;
     exports.MetaConfigOutSerializer = {
@@ -7664,7 +7664,7 @@ var require_metaConfigOut = __commonJS({
 var require_orumIoConfigOut = __commonJS({
   "../node_modules/svix/dist/models/orumIoConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OrumIoConfigOutSerializer = void 0;
     exports.OrumIoConfigOutSerializer = {
@@ -7684,7 +7684,7 @@ var require_orumIoConfigOut = __commonJS({
 var require_pandaDocConfigOut = __commonJS({
   "../node_modules/svix/dist/models/pandaDocConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PandaDocConfigOutSerializer = void 0;
     exports.PandaDocConfigOutSerializer = {
@@ -7700,7 +7700,7 @@ var require_pandaDocConfigOut = __commonJS({
 var require_portIoConfigOut = __commonJS({
   "../node_modules/svix/dist/models/portIoConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PortIoConfigOutSerializer = void 0;
     exports.PortIoConfigOutSerializer = {
@@ -7716,7 +7716,7 @@ var require_portIoConfigOut = __commonJS({
 var require_rutterConfigOut = __commonJS({
   "../node_modules/svix/dist/models/rutterConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RutterConfigOutSerializer = void 0;
     exports.RutterConfigOutSerializer = {
@@ -7732,7 +7732,7 @@ var require_rutterConfigOut = __commonJS({
 var require_segmentConfigOut = __commonJS({
   "../node_modules/svix/dist/models/segmentConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SegmentConfigOutSerializer = void 0;
     exports.SegmentConfigOutSerializer = {
@@ -7748,7 +7748,7 @@ var require_segmentConfigOut = __commonJS({
 var require_shopifyConfigOut = __commonJS({
   "../node_modules/svix/dist/models/shopifyConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ShopifyConfigOutSerializer = void 0;
     exports.ShopifyConfigOutSerializer = {
@@ -7764,7 +7764,7 @@ var require_shopifyConfigOut = __commonJS({
 var require_slackConfigOut = __commonJS({
   "../node_modules/svix/dist/models/slackConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SlackConfigOutSerializer = void 0;
     exports.SlackConfigOutSerializer = {
@@ -7780,7 +7780,7 @@ var require_slackConfigOut = __commonJS({
 var require_stripeConfigOut = __commonJS({
   "../node_modules/svix/dist/models/stripeConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StripeConfigOutSerializer = void 0;
     exports.StripeConfigOutSerializer = {
@@ -7796,7 +7796,7 @@ var require_stripeConfigOut = __commonJS({
 var require_svixConfigOut = __commonJS({
   "../node_modules/svix/dist/models/svixConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SvixConfigOutSerializer = void 0;
     exports.SvixConfigOutSerializer = {
@@ -7812,7 +7812,7 @@ var require_svixConfigOut = __commonJS({
 var require_telnyxConfigOut = __commonJS({
   "../node_modules/svix/dist/models/telnyxConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.TelnyxConfigOutSerializer = void 0;
     exports.TelnyxConfigOutSerializer = {
@@ -7832,7 +7832,7 @@ var require_telnyxConfigOut = __commonJS({
 var require_vapiConfigOut = __commonJS({
   "../node_modules/svix/dist/models/vapiConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VapiConfigOutSerializer = void 0;
     exports.VapiConfigOutSerializer = {
@@ -7848,7 +7848,7 @@ var require_vapiConfigOut = __commonJS({
 var require_veriffConfigOut = __commonJS({
   "../node_modules/svix/dist/models/veriffConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.VeriffConfigOutSerializer = void 0;
     exports.VeriffConfigOutSerializer = {
@@ -7864,7 +7864,7 @@ var require_veriffConfigOut = __commonJS({
 var require_zoomConfigOut = __commonJS({
   "../node_modules/svix/dist/models/zoomConfigOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ZoomConfigOutSerializer = void 0;
     exports.ZoomConfigOutSerializer = {
@@ -7880,7 +7880,7 @@ var require_zoomConfigOut = __commonJS({
 var require_ingestSourceOut = __commonJS({
   "../node_modules/svix/dist/models/ingestSourceOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestSourceOutSerializer = void 0;
     var adobeSignConfigOut_1 = require_adobeSignConfigOut();
@@ -8145,7 +8145,7 @@ var require_ingestSourceOut = __commonJS({
 var require_listResponseIngestSourceOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseIngestSourceOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseIngestSourceOutSerializer = void 0;
     var ingestSourceOut_1 = require_ingestSourceOut();
@@ -8172,7 +8172,7 @@ var require_listResponseIngestSourceOut = __commonJS({
 var require_rotateTokenOut = __commonJS({
   "../node_modules/svix/dist/models/rotateTokenOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.RotateTokenOutSerializer = void 0;
     exports.RotateTokenOutSerializer = {
@@ -8192,7 +8192,7 @@ var require_rotateTokenOut = __commonJS({
 var require_ingestSource = __commonJS({
   "../node_modules/svix/dist/api/ingestSource.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IngestSource = void 0;
     var ingestSourceIn_1 = require_ingestSourceIn();
@@ -8254,7 +8254,7 @@ var require_ingestSource = __commonJS({
 var require_ingest = __commonJS({
   "../node_modules/svix/dist/api/ingest.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Ingest = void 0;
     var dashboardAccessOut_1 = require_dashboardAccessOut();
@@ -8292,7 +8292,7 @@ var require_ingest = __commonJS({
 var require_integrationIn = __commonJS({
   "../node_modules/svix/dist/models/integrationIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IntegrationInSerializer = void 0;
     exports.IntegrationInSerializer = {
@@ -8314,7 +8314,7 @@ var require_integrationIn = __commonJS({
 var require_integrationKeyOut = __commonJS({
   "../node_modules/svix/dist/models/integrationKeyOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IntegrationKeyOutSerializer = void 0;
     exports.IntegrationKeyOutSerializer = {
@@ -8334,7 +8334,7 @@ var require_integrationKeyOut = __commonJS({
 var require_integrationOut = __commonJS({
   "../node_modules/svix/dist/models/integrationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IntegrationOutSerializer = void 0;
     exports.IntegrationOutSerializer = {
@@ -8362,7 +8362,7 @@ var require_integrationOut = __commonJS({
 var require_integrationUpdate = __commonJS({
   "../node_modules/svix/dist/models/integrationUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.IntegrationUpdateSerializer = void 0;
     exports.IntegrationUpdateSerializer = {
@@ -8384,7 +8384,7 @@ var require_integrationUpdate = __commonJS({
 var require_listResponseIntegrationOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseIntegrationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseIntegrationOutSerializer = void 0;
     var integrationOut_1 = require_integrationOut();
@@ -8411,7 +8411,7 @@ var require_listResponseIntegrationOut = __commonJS({
 var require_integration = __commonJS({
   "../node_modules/svix/dist/api/integration.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Integration = void 0;
     var integrationIn_1 = require_integrationIn();
@@ -8486,7 +8486,7 @@ var require_integration = __commonJS({
 var require_expungeAllContentsOut = __commonJS({
   "../node_modules/svix/dist/models/expungeAllContentsOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ExpungeAllContentsOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -8514,7 +8514,7 @@ var require_expungeAllContentsOut = __commonJS({
 var require_listResponseMessageOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseMessageOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseMessageOutSerializer = void 0;
     var messageOut_1 = require_messageOut();
@@ -8541,7 +8541,7 @@ var require_listResponseMessageOut = __commonJS({
 var require_messagePrecheckIn = __commonJS({
   "../node_modules/svix/dist/models/messagePrecheckIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessagePrecheckInSerializer = void 0;
     exports.MessagePrecheckInSerializer = {
@@ -8563,7 +8563,7 @@ var require_messagePrecheckIn = __commonJS({
 var require_messagePrecheckOut = __commonJS({
   "../node_modules/svix/dist/models/messagePrecheckOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessagePrecheckOutSerializer = void 0;
     exports.MessagePrecheckOutSerializer = {
@@ -8583,7 +8583,7 @@ var require_messagePrecheckOut = __commonJS({
 var require_pollingEndpointConsumerSeekIn = __commonJS({
   "../node_modules/svix/dist/models/pollingEndpointConsumerSeekIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PollingEndpointConsumerSeekInSerializer = void 0;
     exports.PollingEndpointConsumerSeekInSerializer = {
@@ -8603,7 +8603,7 @@ var require_pollingEndpointConsumerSeekIn = __commonJS({
 var require_pollingEndpointConsumerSeekOut = __commonJS({
   "../node_modules/svix/dist/models/pollingEndpointConsumerSeekOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PollingEndpointConsumerSeekOutSerializer = void 0;
     exports.PollingEndpointConsumerSeekOutSerializer = {
@@ -8623,7 +8623,7 @@ var require_pollingEndpointConsumerSeekOut = __commonJS({
 var require_pollingEndpointMessageOut = __commonJS({
   "../node_modules/svix/dist/models/pollingEndpointMessageOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PollingEndpointMessageOutSerializer = void 0;
     exports.PollingEndpointMessageOutSerializer = {
@@ -8659,7 +8659,7 @@ var require_pollingEndpointMessageOut = __commonJS({
 var require_pollingEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/pollingEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.PollingEndpointOutSerializer = void 0;
     var pollingEndpointMessageOut_1 = require_pollingEndpointMessageOut();
@@ -8684,7 +8684,7 @@ var require_pollingEndpointOut = __commonJS({
 var require_messagePoller = __commonJS({
   "../node_modules/svix/dist/api/messagePoller.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessagePoller = void 0;
     var pollingEndpointConsumerSeekIn_1 = require_pollingEndpointConsumerSeekIn();
@@ -8741,7 +8741,7 @@ var require_messagePoller = __commonJS({
 var require_messageIn = __commonJS({
   "../node_modules/svix/dist/models/messageIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageInSerializer = void 0;
     var applicationIn_1 = require_applicationIn();
@@ -8780,7 +8780,7 @@ var require_messageIn = __commonJS({
 var require_message = __commonJS({
   "../node_modules/svix/dist/api/message.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.messageInRaw = exports.Message = void 0;
     var expungeAllContentsOut_1 = require_expungeAllContentsOut();
@@ -8878,7 +8878,7 @@ var require_message = __commonJS({
 var require_emptyResponse = __commonJS({
   "../node_modules/svix/dist/models/emptyResponse.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EmptyResponseSerializer = void 0;
     exports.EmptyResponseSerializer = {
@@ -8894,7 +8894,7 @@ var require_emptyResponse = __commonJS({
 var require_messageStatusText = __commonJS({
   "../node_modules/svix/dist/models/messageStatusText.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageStatusTextSerializer = exports.MessageStatusText = void 0;
     var MessageStatusText;
@@ -8917,7 +8917,7 @@ var require_messageStatusText = __commonJS({
 var require_endpointMessageOut = __commonJS({
   "../node_modules/svix/dist/models/endpointMessageOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointMessageOutSerializer = void 0;
     var messageStatus_1 = require_messageStatus();
@@ -8959,7 +8959,7 @@ var require_endpointMessageOut = __commonJS({
 var require_listResponseEndpointMessageOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseEndpointMessageOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseEndpointMessageOutSerializer = void 0;
     var endpointMessageOut_1 = require_endpointMessageOut();
@@ -8986,7 +8986,7 @@ var require_listResponseEndpointMessageOut = __commonJS({
 var require_messageAttemptTriggerType = __commonJS({
   "../node_modules/svix/dist/models/messageAttemptTriggerType.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageAttemptTriggerTypeSerializer = exports.MessageAttemptTriggerType = void 0;
     var MessageAttemptTriggerType;
@@ -9007,7 +9007,7 @@ var require_messageAttemptTriggerType = __commonJS({
 var require_messageAttemptOut = __commonJS({
   "../node_modules/svix/dist/models/messageAttemptOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageAttemptOutSerializer = void 0;
     var messageAttemptTriggerType_1 = require_messageAttemptTriggerType();
@@ -9053,7 +9053,7 @@ var require_messageAttemptOut = __commonJS({
 var require_listResponseMessageAttemptOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseMessageAttemptOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseMessageAttemptOutSerializer = void 0;
     var messageAttemptOut_1 = require_messageAttemptOut();
@@ -9080,7 +9080,7 @@ var require_listResponseMessageAttemptOut = __commonJS({
 var require_messageEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/messageEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageEndpointOutSerializer = void 0;
     var messageStatus_1 = require_messageStatus();
@@ -9130,7 +9130,7 @@ var require_messageEndpointOut = __commonJS({
 var require_listResponseMessageEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseMessageEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseMessageEndpointOutSerializer = void 0;
     var messageEndpointOut_1 = require_messageEndpointOut();
@@ -9157,7 +9157,7 @@ var require_listResponseMessageEndpointOut = __commonJS({
 var require_messageAttempt = __commonJS({
   "../node_modules/svix/dist/api/messageAttempt.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.MessageAttempt = void 0;
     var emptyResponse_1 = require_emptyResponse();
@@ -9270,7 +9270,7 @@ var require_messageAttempt = __commonJS({
 var require_operationalWebhookEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointOutSerializer = void 0;
     exports.OperationalWebhookEndpointOutSerializer = {
@@ -9308,7 +9308,7 @@ var require_operationalWebhookEndpointOut = __commonJS({
 var require_listResponseOperationalWebhookEndpointOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseOperationalWebhookEndpointOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseOperationalWebhookEndpointOutSerializer = void 0;
     var operationalWebhookEndpointOut_1 = require_operationalWebhookEndpointOut();
@@ -9335,7 +9335,7 @@ var require_listResponseOperationalWebhookEndpointOut = __commonJS({
 var require_operationalWebhookEndpointHeadersIn = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointHeadersIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointHeadersInSerializer = void 0;
     exports.OperationalWebhookEndpointHeadersInSerializer = {
@@ -9355,7 +9355,7 @@ var require_operationalWebhookEndpointHeadersIn = __commonJS({
 var require_operationalWebhookEndpointHeadersOut = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointHeadersOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointHeadersOutSerializer = void 0;
     exports.OperationalWebhookEndpointHeadersOutSerializer = {
@@ -9377,7 +9377,7 @@ var require_operationalWebhookEndpointHeadersOut = __commonJS({
 var require_operationalWebhookEndpointIn = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointInSerializer = void 0;
     exports.OperationalWebhookEndpointInSerializer = {
@@ -9411,7 +9411,7 @@ var require_operationalWebhookEndpointIn = __commonJS({
 var require_operationalWebhookEndpointSecretIn = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointSecretIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointSecretInSerializer = void 0;
     exports.OperationalWebhookEndpointSecretInSerializer = {
@@ -9431,7 +9431,7 @@ var require_operationalWebhookEndpointSecretIn = __commonJS({
 var require_operationalWebhookEndpointSecretOut = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointSecretOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointSecretOutSerializer = void 0;
     exports.OperationalWebhookEndpointSecretOutSerializer = {
@@ -9451,7 +9451,7 @@ var require_operationalWebhookEndpointSecretOut = __commonJS({
 var require_operationalWebhookEndpointUpdate = __commonJS({
   "../node_modules/svix/dist/models/operationalWebhookEndpointUpdate.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpointUpdateSerializer = void 0;
     exports.OperationalWebhookEndpointUpdateSerializer = {
@@ -9483,7 +9483,7 @@ var require_operationalWebhookEndpointUpdate = __commonJS({
 var require_operationalWebhookEndpoint = __commonJS({
   "../node_modules/svix/dist/api/operationalWebhookEndpoint.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhookEndpoint = void 0;
     var listResponseOperationalWebhookEndpointOut_1 = require_listResponseOperationalWebhookEndpointOut();
@@ -9566,7 +9566,7 @@ var require_operationalWebhookEndpoint = __commonJS({
 var require_operationalWebhook = __commonJS({
   "../node_modules/svix/dist/api/operationalWebhook.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OperationalWebhook = void 0;
     var operationalWebhookEndpoint_1 = require_operationalWebhookEndpoint();
@@ -9590,7 +9590,7 @@ var require_operationalWebhook = __commonJS({
 var require_aggregateEventTypesOut = __commonJS({
   "../node_modules/svix/dist/models/aggregateEventTypesOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AggregateEventTypesOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -9618,7 +9618,7 @@ var require_aggregateEventTypesOut = __commonJS({
 var require_appUsageStatsIn = __commonJS({
   "../node_modules/svix/dist/models/appUsageStatsIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AppUsageStatsInSerializer = void 0;
     exports.AppUsageStatsInSerializer = {
@@ -9642,7 +9642,7 @@ var require_appUsageStatsIn = __commonJS({
 var require_appUsageStatsOut = __commonJS({
   "../node_modules/svix/dist/models/appUsageStatsOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AppUsageStatsOutSerializer = void 0;
     var backgroundTaskStatus_1 = require_backgroundTaskStatus();
@@ -9672,7 +9672,7 @@ var require_appUsageStatsOut = __commonJS({
 var require_statistics = __commonJS({
   "../node_modules/svix/dist/api/statistics.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Statistics = void 0;
     var aggregateEventTypesOut_1 = require_aggregateEventTypesOut();
@@ -9706,7 +9706,7 @@ var require_statistics = __commonJS({
 var require_httpSinkHeadersPatchIn = __commonJS({
   "../node_modules/svix/dist/models/httpSinkHeadersPatchIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HttpSinkHeadersPatchInSerializer = void 0;
     exports.HttpSinkHeadersPatchInSerializer = {
@@ -9726,7 +9726,7 @@ var require_httpSinkHeadersPatchIn = __commonJS({
 var require_sinkTransformationOut = __commonJS({
   "../node_modules/svix/dist/models/sinkTransformationOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkTransformationOutSerializer = void 0;
     exports.SinkTransformationOutSerializer = {
@@ -9748,7 +9748,7 @@ var require_sinkTransformationOut = __commonJS({
 var require_streamEventTypeOut = __commonJS({
   "../node_modules/svix/dist/models/streamEventTypeOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamEventTypeOutSerializer = void 0;
     exports.StreamEventTypeOutSerializer = {
@@ -9780,7 +9780,7 @@ var require_streamEventTypeOut = __commonJS({
 var require_listResponseStreamEventTypeOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseStreamEventTypeOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseStreamEventTypeOutSerializer = void 0;
     var streamEventTypeOut_1 = require_streamEventTypeOut();
@@ -9807,7 +9807,7 @@ var require_listResponseStreamEventTypeOut = __commonJS({
 var require_streamEventTypeIn = __commonJS({
   "../node_modules/svix/dist/models/streamEventTypeIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamEventTypeInSerializer = void 0;
     exports.StreamEventTypeInSerializer = {
@@ -9835,7 +9835,7 @@ var require_streamEventTypeIn = __commonJS({
 var require_streamEventTypePatch = __commonJS({
   "../node_modules/svix/dist/models/streamEventTypePatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamEventTypePatchSerializer = void 0;
     exports.StreamEventTypePatchSerializer = {
@@ -9863,7 +9863,7 @@ var require_streamEventTypePatch = __commonJS({
 var require_streamingEventType = __commonJS({
   "../node_modules/svix/dist/api/streamingEventType.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamingEventType = void 0;
     var listResponseStreamEventTypeOut_1 = require_listResponseStreamEventTypeOut();
@@ -9929,7 +9929,7 @@ var require_streamingEventType = __commonJS({
 var require_eventIn = __commonJS({
   "../node_modules/svix/dist/models/eventIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventInSerializer = void 0;
     exports.EventInSerializer = {
@@ -9951,7 +9951,7 @@ var require_eventIn = __commonJS({
 var require_streamIn = __commonJS({
   "../node_modules/svix/dist/models/streamIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamInSerializer = void 0;
     exports.StreamInSerializer = {
@@ -9975,7 +9975,7 @@ var require_streamIn = __commonJS({
 var require_createStreamEventsIn = __commonJS({
   "../node_modules/svix/dist/models/createStreamEventsIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CreateStreamEventsInSerializer = void 0;
     var eventIn_1 = require_eventIn();
@@ -9999,7 +9999,7 @@ var require_createStreamEventsIn = __commonJS({
 var require_createStreamEventsOut = __commonJS({
   "../node_modules/svix/dist/models/createStreamEventsOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.CreateStreamEventsOutSerializer = void 0;
     exports.CreateStreamEventsOutSerializer = {
@@ -10015,7 +10015,7 @@ var require_createStreamEventsOut = __commonJS({
 var require_eventOut = __commonJS({
   "../node_modules/svix/dist/models/eventOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventOutSerializer = void 0;
     exports.EventOutSerializer = {
@@ -10039,7 +10039,7 @@ var require_eventOut = __commonJS({
 var require_eventStreamOut = __commonJS({
   "../node_modules/svix/dist/models/eventStreamOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EventStreamOutSerializer = void 0;
     var eventOut_1 = require_eventOut();
@@ -10064,7 +10064,7 @@ var require_eventStreamOut = __commonJS({
 var require_streamingEvents = __commonJS({
   "../node_modules/svix/dist/api/streamingEvents.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamingEvents = void 0;
     var createStreamEventsIn_1 = require_createStreamEventsIn();
@@ -10106,7 +10106,7 @@ var require_streamingEvents = __commonJS({
 var require_azureBlobStorageConfig = __commonJS({
   "../node_modules/svix/dist/models/azureBlobStorageConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AzureBlobStorageConfigSerializer = void 0;
     exports.AzureBlobStorageConfigSerializer = {
@@ -10130,7 +10130,7 @@ var require_azureBlobStorageConfig = __commonJS({
 var require_googleCloudStorageConfig = __commonJS({
   "../node_modules/svix/dist/models/googleCloudStorageConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.GoogleCloudStorageConfigSerializer = void 0;
     exports.GoogleCloudStorageConfigSerializer = {
@@ -10152,7 +10152,7 @@ var require_googleCloudStorageConfig = __commonJS({
 var require_s3Config = __commonJS({
   "../node_modules/svix/dist/models/s3Config.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.S3ConfigSerializer = void 0;
     exports.S3ConfigSerializer = {
@@ -10180,7 +10180,7 @@ var require_s3Config = __commonJS({
 var require_sinkHttpConfig = __commonJS({
   "../node_modules/svix/dist/models/sinkHttpConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkHttpConfigSerializer = void 0;
     exports.SinkHttpConfigSerializer = {
@@ -10204,7 +10204,7 @@ var require_sinkHttpConfig = __commonJS({
 var require_sinkOtelV1Config = __commonJS({
   "../node_modules/svix/dist/models/sinkOtelV1Config.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkOtelV1ConfigSerializer = void 0;
     exports.SinkOtelV1ConfigSerializer = {
@@ -10226,7 +10226,7 @@ var require_sinkOtelV1Config = __commonJS({
 var require_sinkStatus = __commonJS({
   "../node_modules/svix/dist/models/sinkStatus.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkStatusSerializer = exports.SinkStatus = void 0;
     var SinkStatus;
@@ -10249,7 +10249,7 @@ var require_sinkStatus = __commonJS({
 var require_streamSinkOut = __commonJS({
   "../node_modules/svix/dist/models/streamSinkOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamSinkOutSerializer = void 0;
     var azureBlobStorageConfig_1 = require_azureBlobStorageConfig();
@@ -10343,7 +10343,7 @@ var require_streamSinkOut = __commonJS({
 var require_listResponseStreamSinkOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseStreamSinkOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseStreamSinkOutSerializer = void 0;
     var streamSinkOut_1 = require_streamSinkOut();
@@ -10370,7 +10370,7 @@ var require_listResponseStreamSinkOut = __commonJS({
 var require_sinkSecretOut = __commonJS({
   "../node_modules/svix/dist/models/sinkSecretOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkSecretOutSerializer = void 0;
     exports.SinkSecretOutSerializer = {
@@ -10390,7 +10390,7 @@ var require_sinkSecretOut = __commonJS({
 var require_sinkTransformIn = __commonJS({
   "../node_modules/svix/dist/models/sinkTransformIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkTransformInSerializer = void 0;
     exports.SinkTransformInSerializer = {
@@ -10410,7 +10410,7 @@ var require_sinkTransformIn = __commonJS({
 var require_sinkStatusIn = __commonJS({
   "../node_modules/svix/dist/models/sinkStatusIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.SinkStatusInSerializer = exports.SinkStatusIn = void 0;
     var SinkStatusIn;
@@ -10431,7 +10431,7 @@ var require_sinkStatusIn = __commonJS({
 var require_streamSinkIn = __commonJS({
   "../node_modules/svix/dist/models/streamSinkIn.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamSinkInSerializer = void 0;
     var azureBlobStorageConfig_1 = require_azureBlobStorageConfig();
@@ -10513,7 +10513,7 @@ var require_streamSinkIn = __commonJS({
 var require_amazonS3PatchConfig = __commonJS({
   "../node_modules/svix/dist/models/amazonS3PatchConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AmazonS3PatchConfigSerializer = void 0;
     exports.AmazonS3PatchConfigSerializer = {
@@ -10541,7 +10541,7 @@ var require_amazonS3PatchConfig = __commonJS({
 var require_azureBlobStoragePatchConfig = __commonJS({
   "../node_modules/svix/dist/models/azureBlobStoragePatchConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.AzureBlobStoragePatchConfigSerializer = void 0;
     exports.AzureBlobStoragePatchConfigSerializer = {
@@ -10565,7 +10565,7 @@ var require_azureBlobStoragePatchConfig = __commonJS({
 var require_googleCloudStoragePatchConfig = __commonJS({
   "../node_modules/svix/dist/models/googleCloudStoragePatchConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.GoogleCloudStoragePatchConfigSerializer = void 0;
     exports.GoogleCloudStoragePatchConfigSerializer = {
@@ -10587,7 +10587,7 @@ var require_googleCloudStoragePatchConfig = __commonJS({
 var require_httpPatchConfig = __commonJS({
   "../node_modules/svix/dist/models/httpPatchConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HttpPatchConfigSerializer = void 0;
     exports.HttpPatchConfigSerializer = {
@@ -10607,7 +10607,7 @@ var require_httpPatchConfig = __commonJS({
 var require_otelTracingPatchConfig = __commonJS({
   "../node_modules/svix/dist/models/otelTracingPatchConfig.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OtelTracingPatchConfigSerializer = void 0;
     exports.OtelTracingPatchConfigSerializer = {
@@ -10627,7 +10627,7 @@ var require_otelTracingPatchConfig = __commonJS({
 var require_streamSinkPatch = __commonJS({
   "../node_modules/svix/dist/models/streamSinkPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamSinkPatchSerializer = void 0;
     var amazonS3PatchConfig_1 = require_amazonS3PatchConfig();
@@ -10709,7 +10709,7 @@ var require_streamSinkPatch = __commonJS({
 var require_streamingSink = __commonJS({
   "../node_modules/svix/dist/api/streamingSink.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamingSink = void 0;
     var emptyResponse_1 = require_emptyResponse();
@@ -10802,7 +10802,7 @@ var require_streamingSink = __commonJS({
 var require_streamOut = __commonJS({
   "../node_modules/svix/dist/models/streamOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamOutSerializer = void 0;
     exports.StreamOutSerializer = {
@@ -10832,7 +10832,7 @@ var require_streamOut = __commonJS({
 var require_listResponseStreamOut = __commonJS({
   "../node_modules/svix/dist/models/listResponseStreamOut.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.ListResponseStreamOutSerializer = void 0;
     var streamOut_1 = require_streamOut();
@@ -10859,7 +10859,7 @@ var require_listResponseStreamOut = __commonJS({
 var require_streamPatch = __commonJS({
   "../node_modules/svix/dist/models/streamPatch.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamPatchSerializer = void 0;
     exports.StreamPatchSerializer = {
@@ -10883,7 +10883,7 @@ var require_streamPatch = __commonJS({
 var require_streamingStream = __commonJS({
   "../node_modules/svix/dist/api/streamingStream.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StreamingStream = void 0;
     var listResponseStreamOut_1 = require_listResponseStreamOut();
@@ -10945,7 +10945,7 @@ var require_streamingStream = __commonJS({
 var require_streaming = __commonJS({
   "../node_modules/svix/dist/api/streaming.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Streaming = void 0;
     var endpointHeadersOut_1 = require_endpointHeadersOut();
@@ -11004,7 +11004,7 @@ var require_streaming = __commonJS({
 var require_HttpErrors = __commonJS({
   "../node_modules/svix/dist/HttpErrors.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.HTTPValidationError = exports.ValidationError = exports.HttpErrorOut = void 0;
     var HttpErrorOut = class _HttpErrorOut {
@@ -11096,7 +11096,7 @@ var require_HttpErrors = __commonJS({
 var require_timing_safe_equal = __commonJS({
   "../node_modules/standardwebhooks/dist/timing_safe_equal.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.timingSafeEqual = void 0;
     function assert(expr, msg = "") {
@@ -11134,7 +11134,7 @@ var require_timing_safe_equal = __commonJS({
 var require_base64 = __commonJS({
   "../node_modules/@stablelib/base64/lib/base64.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     var __extends = exports && exports.__extends || /* @__PURE__ */ (function() {
       var extendStatics = /* @__PURE__ */ __name2(function(d, b) {
         extendStatics = Object.setPrototypeOf || { __proto__: [] } instanceof Array && function(d2, b2) {
@@ -11359,7 +11359,7 @@ var require_base64 = __commonJS({
 });
 var require_sha256 = __commonJS({
   "../node_modules/fast-sha256/sha256.js"(exports, module) {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     (function(root, factory) {
       var exports2 = {};
       factory(exports2);
@@ -11799,7 +11799,7 @@ var require_sha256 = __commonJS({
 var require_dist = __commonJS({
   "../node_modules/standardwebhooks/dist/index.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Webhook = exports.WebhookVerificationError = void 0;
     var timing_safe_equal_1 = require_timing_safe_equal();
@@ -11923,7 +11923,7 @@ var require_dist = __commonJS({
 var require_webhook = __commonJS({
   "../node_modules/svix/dist/webhook.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Webhook = exports.WebhookVerificationError = void 0;
     var standardwebhooks_1 = require_dist();
@@ -11962,7 +11962,7 @@ var require_webhook = __commonJS({
 var require_endpointDisabledTrigger = __commonJS({
   "../node_modules/svix/dist/models/endpointDisabledTrigger.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.EndpointDisabledTriggerSerializer = exports.EndpointDisabledTrigger = void 0;
     var EndpointDisabledTrigger;
@@ -11983,7 +11983,7 @@ var require_endpointDisabledTrigger = __commonJS({
 var require_ordering = __commonJS({
   "../node_modules/svix/dist/models/ordering.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.OrderingSerializer = exports.Ordering = void 0;
     var Ordering;
@@ -12004,7 +12004,7 @@ var require_ordering = __commonJS({
 var require_models = __commonJS({
   "../node_modules/svix/dist/models/index.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.StatusCodeClass = exports.SinkStatusIn = exports.SinkStatus = exports.Ordering = exports.MessageStatusText = exports.MessageStatus = exports.MessageAttemptTriggerType = exports.EndpointDisabledTrigger = exports.ConnectorProduct = exports.ConnectorKind = exports.BackgroundTaskType = exports.BackgroundTaskStatus = exports.AppPortalCapability = void 0;
     var appPortalCapability_1 = require_appPortalCapability();
@@ -12064,7 +12064,7 @@ var require_models = __commonJS({
 var require_dist2 = __commonJS({
   "../node_modules/svix/dist/index.js"(exports) {
     "use strict";
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     var __createBinding = exports && exports.__createBinding || (Object.create ? (function(o, m, k, k2) {
       if (k2 === void 0) k2 = k;
       var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -12450,7 +12450,7 @@ var userAgent;
 var Resend;
 var init_dist = __esm({
   "../node_modules/resend/dist/index.mjs"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_postal_mime();
     import_svix = __toESM(require_dist2(), 1);
     version = "6.12.3";
@@ -13561,7 +13561,7 @@ async function onRequest(context) {
 __name(onRequest, "onRequest");
 var init_generate_report = __esm({
   "generate-report.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_dist();
     __name2(onRequest, "onRequest");
   }
@@ -13600,14 +13600,14 @@ async function onRequest2(context) {
 __name(onRequest2, "onRequest2");
 var init_send_feedback = __esm({
   "send-feedback.js"() {
-    init_functionsRoutes_0_5970997832537308();
+    init_functionsRoutes_0_6566869609412365();
     init_dist();
     __name2(onRequest2, "onRequest");
   }
 });
 var routes;
-var init_functionsRoutes_0_5970997832537308 = __esm({
-  "../.wrangler/tmp/pages-xlC0EW/functionsRoutes-0.5970997832537308.mjs"() {
+var init_functionsRoutes_0_6566869609412365 = __esm({
+  "../.wrangler/tmp/pages-dK2wgT/functionsRoutes-0.6566869609412365.mjs"() {
     init_generate_report();
     init_send_feedback();
     routes = [
@@ -13628,10 +13628,10 @@ var init_functionsRoutes_0_5970997832537308 = __esm({
     ];
   }
 });
-init_functionsRoutes_0_5970997832537308();
-init_functionsRoutes_0_5970997832537308();
-init_functionsRoutes_0_5970997832537308();
-init_functionsRoutes_0_5970997832537308();
+init_functionsRoutes_0_6566869609412365();
+init_functionsRoutes_0_6566869609412365();
+init_functionsRoutes_0_6566869609412365();
+init_functionsRoutes_0_6566869609412365();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -14086,7 +14086,7 @@ var cloneResponse = /* @__PURE__ */ __name2((response) => (
     response
   )
 ), "cloneResponse");
-init_functionsRoutes_0_5970997832537308();
+init_functionsRoutes_0_6566869609412365();
 var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx) => {
   try {
     return await middlewareCtx.next(request, env);
@@ -14103,7 +14103,7 @@ var drainBody = /* @__PURE__ */ __name2(async (request, env, _ctx, middlewareCtx
   }
 }, "drainBody");
 var middleware_ensure_req_body_drained_default = drainBody;
-init_functionsRoutes_0_5970997832537308();
+init_functionsRoutes_0_6566869609412365();
 function reduceError(e) {
   return {
     name: e?.name,
@@ -14131,7 +14131,7 @@ var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_miniflare3_json_error_default
 ];
 var middleware_insertion_facade_default = pages_template_worker_default;
-init_functionsRoutes_0_5970997832537308();
+init_functionsRoutes_0_6566869609412365();
 var __facade_middleware__ = [];
 function __facade_register__(...args) {
   __facade_middleware__.push(...args.flat());
@@ -14300,7 +14300,7 @@ var jsonError2 = /* @__PURE__ */ __name(async (request, env, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default2 = jsonError2;
 
-// .wrangler/tmp/bundle-F5AWAX/middleware-insertion-facade.js
+// .wrangler/tmp/bundle-LSqjnf/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__2 = [
   middleware_ensure_req_body_drained_default2,
   middleware_miniflare3_json_error_default2
@@ -14332,7 +14332,7 @@ function __facade_invoke__2(request, env, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__2, "__facade_invoke__");
 
-// .wrangler/tmp/bundle-F5AWAX/middleware-loader.entry.ts
+// .wrangler/tmp/bundle-LSqjnf/middleware-loader.entry.ts
 var __Facade_ScheduledController__2 = class ___Facade_ScheduledController__2 {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;
@@ -14432,4 +14432,4 @@ export {
   __INTERNAL_WRANGLER_MIDDLEWARE__2 as __INTERNAL_WRANGLER_MIDDLEWARE__,
   middleware_loader_entry_default2 as default
 };
-//# sourceMappingURL=functionsWorker-0.674881775521878.js.map
+//# sourceMappingURL=functionsWorker-0.7864419577786372.js.map

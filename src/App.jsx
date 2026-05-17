@@ -254,15 +254,15 @@ function App() {
     y = hy + 7;
 
     const cy0 = y;
-    row("Cash Sale(Cash Paid Total)", fmt(form.cashSale), margin, hw);
+    row("Cash Sale", fmt(form.cashSale), margin, hw);
     row("Cash Tip", fmt(form.cashTip), margin, hw);
     row("Cash Catering", fmt(form.cashCatering), margin, hw);
     row("Total Cash", fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)), margin, hw, true);
     const cyEnd = y;
 
     y = cy0;
-    row("Total CC Settle(Credit & Debit Card Total)", fmt(form.totalSettle), rx, hw);
-    row("CC Tip(Gratuities Total)", fmt(form.creditCardTip), rx, hw);
+    row("Total CC Settle", fmt(form.totalSettle), rx, hw);
+    row("CC Tip", fmt(form.creditCardTip), rx, hw);
     row("CC Sale", fmt(form.creditCardSale), rx, hw, true);
     if (y < cyEnd) {
       doc.setFillColor(255, 255, 255);
@@ -626,7 +626,7 @@ function App() {
             <div className="rs-section">
               <div className="rs-section-label">Cash</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Cash Sale</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Cash Sale(Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
                 <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
               </div>
               <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
@@ -635,8 +635,8 @@ function App() {
             <div className="rs-section">
               <div className="rs-section-label">Credit Card</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Total Settle Amount</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
-                <div className="rs-field"><label>Credit Card Tip</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Total Settle Amount(Credit & Debit Card Total)</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Credit Card Tip(Gratuities Total)</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
               </div>
             </div>
 
