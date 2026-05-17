@@ -262,7 +262,7 @@ function App() {
 
     y = cy0;
     row("Total CC Settle(Credit & Debit Card Total)", fmt(form.totalSettle), rx, hw);
-    row("CC Tip(Tips Added)", fmt(form.creditCardTip), rx, hw);
+    row("CC Tip(Gratuities Total)", fmt(form.creditCardTip), rx, hw);
     row("CC Sale", fmt(form.creditCardSale), rx, hw, true);
     if (y < cyEnd) {
       doc.setFillColor(255, 255, 255);
