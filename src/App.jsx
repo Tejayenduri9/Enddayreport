@@ -1,7 +1,7 @@
 import { useState } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc, query, where, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
 
 const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
@@ -51,14 +51,12 @@ const OG = {
   channels: [160, 80,  10],
 };
 
-// Format number as $1,234.00
 const formatMoney = (val) => {
   const num = parseFloat(val);
   if (isNaN(num)) return "";
   return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
-// Strip formatting to get raw number
 const stripFormat = (val) => val.replace(/[^0-9.]/g, "");
 
 function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
@@ -180,7 +178,8 @@ function App() {
     doc.setFont("helvetica", "bold").setFontSize(11);
     doc.text("DAILY SALES REPORT", pageWidth / 2, 23, { align: "center" });
     doc.setFont("helvetica", "normal").setFontSize(8.5);
-    const dateText = new Date(form.date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    const [dYear, dMonth, dDay] = form.date.split("-").map(Number);
+    const dateText = new Date(dYear, dMonth - 1, dDay).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     doc.text(dateText, pageWidth / 2, 31, { align: "center" });
 
     let y = 42;
@@ -375,16 +374,36 @@ function App() {
     }
     setLoadLoading(true);
     try {
-      const q = query(collection(db, "restaurants"), where("date", "==", loadDate));
-      const snapshot = await getDocs(q);
-      if (snapshot.empty) {
+      const allDocs = await getDocs(collection(db, "restaurants"));
+
+      const matched = allDocs.docs.filter(d => {
+        const data = d.data();
+        if (data.date && data.date === loadDate) return true;
+        if (data.createdAt) {
+          const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds * 1000);
+          const y = createdDate.getFullYear();
+          const m = String(createdDate.getMonth() + 1).padStart(2, "0");
+          const dd = String(createdDate.getDate()).padStart(2, "0");
+          if (`${y}-${m}-${dd}` === loadDate) return true;
+        }
+        return false;
+      });
+
+      if (matched.length === 0) {
         setLoadError("No report found for this date.");
         setLoadLoading(false);
         return;
       }
-      const docData = snapshot.docs[0];
+
+      matched.sort((a, b) => {
+        const aTime = a.data().createdAt?.seconds || 0;
+        const bTime = b.data().createdAt?.seconds || 0;
+        return bTime - aTime;
+      });
+
+      const docData = matched[0];
       const data = docData.data();
-      const loadedForm = { ...blankForm(), ...data };
+      const loadedForm = { ...blankForm(), ...data, date: loadDate };
       setForm(loadedForm);
       setOriginalForm(loadedForm);
       setCateringNotes(data.cateringNotes || [emptyCatering()]);
@@ -422,14 +441,15 @@ function App() {
       } else {
         await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
       }
-      const doc = generatePDF();
-      const pdfBase64 = doc.output("datauristring").split(",")[1];
-      const d = new Date(form.date + "T00:00:00");
-      const day = d.getDate();
-      const suffix = day % 10 === 1 && day !== 11 ? "st" : day % 10 === 2 && day !== 12 ? "nd" : day % 10 === 3 && day !== 13 ? "rd" : "th";
+      const pdfDoc = generatePDF();
+      const pdfBase64 = pdfDoc.output("datauristring").split(",")[1];
+
+      // Fix: parse date directly from string to avoid timezone issues
+      const [pYear, pMonth, pDay] = form.date.split("-").map(Number);
+      const suffix = pDay % 10 === 1 && pDay !== 11 ? "st" : pDay % 10 === 2 && pDay !== 12 ? "nd" : pDay % 10 === 3 && pDay !== 13 ? "rd" : "th";
       const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      const pdfName = `${day}${suffix} ${monthNames[d.getMonth()]} ${String(d.getFullYear()).slice(2)}`;
-      // Build changed fields summary for email body
+      const pdfName = `${pDay}${suffix} ${monthNames[pMonth - 1]} ${String(pYear).slice(2)}`;
+
       let emailBody = "Attached is your daily sales report.";
       if (isEditMode) {
         const fieldLabels = {
@@ -454,8 +474,6 @@ function App() {
           totalSalesDay: { label: "Total Sales of the Day", money: true },
         };
         const fmt2 = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
-
-        // Compare with original and show what changed
         const changedLines = [];
         if (originalForm) {
           Object.entries(fieldLabels).forEach(([key, { label, money }]) => {
@@ -467,9 +485,7 @@ function App() {
             }
           });
         }
-        const changedSummary = changedLines.length > 0
-          ? changedLines.join("\n")
-          : "No specific field changes detected.";
+        const changedSummary = changedLines.length > 0 ? changedLines.join("\n") : "No specific field changes detected.";
         emailBody = `⚠️ UPDATED REPORT - ${form.date}\n\nThis report has been edited. Please discard the previous version.\n\nWhat Changed:\n${changedSummary}\n\nThe updated PDF is attached.`;
       }
 
@@ -614,6 +630,7 @@ function App() {
                 <button onClick={() => { resetForm(); setIsEditMode(false); setEditDocId(null); }}>Cancel Edit</button>
               </div>
             )}
+
             <div className="rs-section">
               <div className="rs-section-label">Guests</div>
               <div className="rs-grid-2">
@@ -626,7 +643,7 @@ function App() {
             <div className="rs-section">
               <div className="rs-section-label">Cash</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Cash Sale(Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Cash Sale (Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
                 <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
               </div>
               <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
@@ -635,8 +652,8 @@ function App() {
             <div className="rs-section">
               <div className="rs-section-label">Credit Card</div>
               <div className="rs-grid-2">
-                <div className="rs-field"><label>Total Settle Amount(Credit & Debit Card Total)</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
-                <div className="rs-field"><label>Credit Card Tip(Gratuities Total)</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Total Settle Amount (Credit & Debit Card Total)</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Credit Card Tip (Gratuities Total)</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
               </div>
             </div>
 
@@ -694,7 +711,6 @@ function App() {
         </div>
       </div>
 
-      {/* Load Report Modal */}
       {loadModalOpen && (
         <div className="rs-modal-overlay" onClick={() => { setLoadModalOpen(false); setLoadPin(""); setLoadError(""); }}>
           <div className="rs-modal" onClick={(evt) => evt.stopPropagation()}>
