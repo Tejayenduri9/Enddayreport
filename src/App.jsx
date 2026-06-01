@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
 import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
@@ -110,6 +110,17 @@ function App() {
   const [loadError, setLoadError] = useState("");
   const [loadLoading, setLoadLoading] = useState(false);
   const [originalForm, setOriginalForm] = useState(null);
+
+  // Auto-update date when user returns to the page
+  useEffect(() => {
+    const handleFocus = () => {
+      if (!isEditMode) {
+        setForm(prev => ({ ...prev, date: getToday() }));
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
+  }, [isEditMode]);
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
@@ -612,8 +623,6 @@ function App() {
               <div className="rs-menu">
                 <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setLoadModalOpen(true); }}>📂 Load & Edit Report</button>
                 <div className="rs-menu-divider" />
-                <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setFeedbackOpen(true); }}>💬 Send Feedback</button>
-                <div className="rs-menu-divider" />
                 <button className="rs-menu-item" onClick={() => { setMenuOpen(false); window.open("mailto:support@enddayreports.com"); }}>📧 Contact Support</button>
               </div>
             )}
@@ -630,6 +639,14 @@ function App() {
                 <button onClick={() => { resetForm(); setIsEditMode(false); setEditDocId(null); }}>Cancel Edit</button>
               </div>
             )}
+
+            <div className="rs-section">
+              <div className="rs-section-label">Report Date</div>
+              <div className="rs-field">
+                <label>Date</label>
+                <input type="date" name="date" value={form.date} onChange={handleChange} style={{ background: "#fff8f4" }} />
+              </div>
+            </div>
 
             <div className="rs-section">
               <div className="rs-section-label">Guests</div>
@@ -732,20 +749,7 @@ function App() {
         </div>
       )}
 
-      {feedbackOpen && (
-        <div className="rs-modal-overlay" onClick={() => setFeedbackOpen(false)}>
-          <div className="rs-modal" onClick={(evt) => evt.stopPropagation()}>
-            <div className="rs-modal-icon success">💬</div>
-            <div className="rs-modal-title">Send Feedback</div>
-            <div className="rs-modal-message">Found an issue or have a suggestion? Let us know!</div>
-            <textarea className="rs-modal-input" value={standaloneFeedback} onChange={(evt) => setStandaloneFeedback(evt.target.value)} placeholder="Describe your feedback..." />
-            <div className="rs-modal-actions">
-              <button className="rs-modal-btn secondary" onClick={() => { setFeedbackOpen(false); setStandaloneFeedback(""); }}>Cancel</button>
-              <button className="rs-modal-btn primary" onClick={submitStandaloneFeedback}>Submit</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {loading && (
         <div className="rs-loading-overlay">
