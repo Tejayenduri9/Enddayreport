@@ -199,7 +199,14 @@ function App() {
     const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
     const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
     const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
-    const summaryValues = [fmt(form.totalSalesDay), fmt(form.totalCashWithTip), fmt(form.totalInHouse), fmt(form.totalRestaurantOnline), fmt(form.cashCatering)];
+    // FIX: TOTAL CASH now includes cash catering to match the Cash section rows below
+    const summaryValues = [
+      fmt(form.totalSalesDay),
+      fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)),
+      fmt(form.totalInHouse),
+      fmt(form.totalRestaurantOnline),
+      fmt(form.cashCatering),
+    ];
     let sumX = margin;
     summaryColors.forEach(([r, g, b], i) => {
       const sw = col5s[i];
@@ -748,8 +755,6 @@ function App() {
           </div>
         </div>
       )}
-
-
 
       {loading && (
         <div className="rs-loading-overlay">
