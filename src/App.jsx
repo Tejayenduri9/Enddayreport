@@ -710,10 +710,6 @@ function App() {
                     <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
                     <div className="rs-field"><label>Cheques Catering</label><MoneyInput name="chequesCatering" value={form.chequesCatering} onChange={handleChange} /></div>
                   </div>
-                  <div className="rs-field">
-                    <label style={{ color: "#8C3700", fontWeight: 700 }}>Total Catering</label>
-                    <MoneyInput name="totalCatering" value={form.totalCatering} onChange={() => {}} />
-                  </div>
                   <div style={{ height: "1px", background: "#f5d5b8", margin: "4px 0 8px" }} />
                   {cateringNotes.map((note, index) => (
                     <div key={index} className="rs-catering-entry">
