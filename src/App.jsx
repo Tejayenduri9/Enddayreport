@@ -23,6 +23,8 @@ const blankForm = () => ({
   cashSale: "",
   cashTip: "",
   cashCatering: "",
+  chequesCatering: "",
+  totalCatering: "",
   totalSettle: "",
   creditCardTip: "",
   giftCard: "",
@@ -148,6 +150,8 @@ function App() {
     const updated = { ...form, [evt.target.name]: evt.target.value };
     const cashSale = Number(updated.cashSale) || 0;
     const cashCatering = Number(updated.cashCatering) || 0;
+    const chequesCatering = Number(updated.chequesCatering) || 0;
+    const totalCatering = cashCatering + chequesCatering;
     const totalCash = Number(updated.totalCashWithTip) || 0;
     const cashTip = totalCash - cashSale;
     const totalSettle = Number(updated.totalSettle) || 0;
@@ -162,7 +166,7 @@ function App() {
     const uberEats = Number(updated.uberEats) || 0;
     const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
-    const totalSalesDay = totalRestaurantSales + cashCatering;
+    const totalSalesDay = totalRestaurantSales + totalCatering;
     updated.cashTip = cashTip >= 0 ? cashTip : 0;
     updated.totalCashWithTip = totalCash;
     updated.creditCardSale = creditCardSale;
@@ -170,6 +174,7 @@ function App() {
     updated.totalInHouse = totalInHouse;
     updated.totalRestaurantOnline = onlineSale;
     updated.totalRestaurantSales = totalRestaurantSales;
+    updated.totalCatering = totalCatering;
     updated.totalSalesDay = totalSalesDay;
     setForm(updated);
   };
@@ -199,13 +204,12 @@ function App() {
     const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
     const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
     const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
-    // FIX: TOTAL CASH now includes cash catering to match the Cash section rows below
     const summaryValues = [
       fmt(form.totalSalesDay),
       fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)),
       fmt(form.totalInHouse),
       fmt(form.totalRestaurantOnline),
-      fmt(form.cashCatering),
+      fmt(form.totalCatering),
     ];
     let sumX = margin;
     summaryColors.forEach(([r, g, b], i) => {
@@ -330,6 +334,8 @@ function App() {
     secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
     row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
     row("Cash Catering", fmt(form.cashCatering), margin, cw);
+    row("Cheques Catering", fmt(form.chequesCatering), margin, cw);
+    row("Total Catering", fmt(form.totalCatering), margin, cw, true);
     y += 2;
 
     doc.setFillColor(...OG.primary);
@@ -440,7 +446,7 @@ function App() {
   const saveData = async () => {
     const requiredFields = {
       lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
-      cashSale: "Cash Sale", cashCatering: "Cash Catering", totalCashWithTip: "Total Cash",
+      cashSale: "Cash Sale", cashCatering: "Cash Catering", chequesCatering: "Cheques Catering", totalCashWithTip: "Total Cash",
       totalSettle: "Total Settle Amount", creditCardTip: "Credit Card Tip",
       giftCard: "Gift Card Redeemed", restaurantOnline: "Restaurant Online",
       grubhub: "Grubhub", doordash: "DoorDash", uberEats: "Uber Eats",
@@ -477,6 +483,8 @@ function App() {
           cashSale: { label: "Cash Sale", money: true },
           cashTip: { label: "Cash Tip", money: true },
           cashCatering: { label: "Cash Catering", money: true },
+          chequesCatering: { label: "Cheques Catering", money: true },
+          totalCatering: { label: "Total Catering", money: true },
           totalCashWithTip: { label: "Total Cash", money: true },
           totalSettle: { label: "Total CC Settle", money: true },
           creditCardTip: { label: "CC Tip", money: true },
@@ -666,10 +674,7 @@ function App() {
 
             <div className="rs-section">
               <div className="rs-section-label">Cash</div>
-              <div className="rs-grid-2">
-                <div className="rs-field"><label>Cash Sale (Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
-                <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
-              </div>
+              <div className="rs-field"><label>Cash Sale (Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
               <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
             </div>
 
@@ -701,6 +706,15 @@ function App() {
               </button>
               <div className={`rs-notes-body${notesOpen ? " open" : ""}`}>
                 <div className="rs-notes-inner">
+                  <div className="rs-grid-2">
+                    <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
+                    <div className="rs-field"><label>Cheques Catering</label><MoneyInput name="chequesCatering" value={form.chequesCatering} onChange={handleChange} /></div>
+                  </div>
+                  <div className="rs-field">
+                    <label style={{ color: "#8C3700", fontWeight: 700 }}>Total Catering</label>
+                    <MoneyInput name="totalCatering" value={form.totalCatering} onChange={() => {}} />
+                  </div>
+                  <div style={{ height: "1px", background: "#f5d5b8", margin: "4px 0 8px" }} />
                   {cateringNotes.map((note, index) => (
                     <div key={index} className="rs-catering-entry">
                       {cateringNotes.length > 1 && <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>}
