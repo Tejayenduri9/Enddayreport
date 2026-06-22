@@ -724,7 +724,7 @@ function App() {
 
               <div className="rs-section">
                 <button type="button" className="rs-notes-toggle" onClick={() => setNotesOpen(!notesOpen)}>
-                  <span>📋 Notes — Catering</span>
+                  <span>Catering</span>
                   <span className={`rs-notes-arrow${notesOpen ? " open" : ""}`}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="#555" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   </span>
