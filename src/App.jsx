@@ -1,7 +1,18 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc as firestoreDoc,
+  updateDoc,
+  setDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+} from "firebase/firestore";
 import logo from "./assets/logo.png";
 
 const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
@@ -113,6 +124,8 @@ function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
+  const [pdfReports, setPdfReports] = useState([]);
+  const [pdfReportsLoading, setPdfReportsLoading] = useState(false);
 
   const handlePageUnlock = () => {
     const correct = import.meta.env.VITE_PAGE_PIN || "0000";
@@ -137,6 +150,54 @@ function App() {
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
+
+  const loadPdfReports = async () => {
+    setPdfReportsLoading(true);
+    try {
+      const reportsQuery = query(collection(db, "pdfReports"), orderBy("updatedAt", "desc"));
+      const snapshot = await getDocs(reportsQuery);
+      setPdfReports(snapshot.docs.map((reportDoc) => ({ id: reportDoc.id, ...reportDoc.data() })));
+    } catch (err) {
+      console.error("Failed to load PDF reports:", err);
+    }
+    setPdfReportsLoading(false);
+  };
+
+  useEffect(() => {
+    if (unlocked) loadPdfReports();
+  }, [unlocked]);
+
+  const saveLatestPdfReport = async ({ pdfBase64, pdfName, isUpdate }) => {
+    const reportId = form.date;
+    const sameDateQuery = query(collection(db, "pdfReports"), where("reportDate", "==", form.date));
+    const sameDateSnapshot = await getDocs(sameDateQuery);
+
+    await Promise.all(
+      sameDateSnapshot.docs
+        .filter((reportDoc) => reportDoc.id !== reportId)
+        .map((reportDoc) => deleteDoc(firestoreDoc(db, "pdfReports", reportDoc.id)))
+    );
+
+    await setDoc(firestoreDoc(db, "pdfReports", reportId), {
+      reportDate: form.date,
+      displayDate: formatDate(form.date),
+      pdfName,
+      pdfBase64,
+      ownerEmails: form.ownerEmails,
+      updatedAt: new Date(),
+      status: isUpdate ? "Updated" : "Generated",
+    });
+  };
+
+  const openPdfReport = (report) => {
+    const byteCharacters = atob(report.pdfBase64);
+    const byteNumbers = Array.from(byteCharacters, (char) => char.charCodeAt(0));
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
 
   const resetForm = () => {
     setForm(blankForm());
@@ -524,6 +585,8 @@ function App() {
         body: JSON.stringify({ pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails, emailBody, isUpdate: isEditMode }),
       });
       if (!response.ok) throw new Error("Backend request failed");
+      await saveLatestPdfReport({ pdfBase64, pdfName, isUpdate: isEditMode });
+      await loadPdfReports();
       resetForm();
       setEditDocId(null);
       setIsEditMode(false);
@@ -626,6 +689,14 @@ function App() {
         .rs-lock-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
         .rs-lock-input.error { border-color: #e05555; box-shadow: 0 0 0 2px rgba(224,85,85,0.12); }
         .rs-lock-error { color: #e05555; font-size: 12px; margin-bottom: 12px; }
+        .rs-pdf-list { display: flex; flex-direction: column; gap: 8px; }
+        .rs-pdf-empty { background: #fff8f4; border: 0.5px dashed #f5c9a0; border-radius: 10px; padding: 14px; font-size: 13px; color: #777; text-align: center; }
+        .rs-pdf-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 12px; }
+        .rs-pdf-meta { min-width: 0; }
+        .rs-pdf-title { font-size: 13px; font-weight: 700; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rs-pdf-sub { font-size: 11px; color: #8C3700; margin-top: 2px; }
+        .rs-pdf-open { flex: 0 0 auto; background: #C45200; color: #fff; border: none; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; }
+        .rs-pdf-open:hover { opacity: 0.88; }
       `}</style>
 
       {!unlocked ? (
@@ -766,6 +837,25 @@ function App() {
                   <><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h12M9 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>{isEditMode ? "Update Report" : "Generate Report"}</>
                 )}
               </button>
+
+              <div className="rs-section" style={{ marginTop: "1.5rem" }}>
+                <div className="rs-section-label">PDF Reports</div>
+                <div className="rs-pdf-list">
+                  {pdfReportsLoading && <div className="rs-pdf-empty">Loading PDF reports...</div>}
+                  {!pdfReportsLoading && pdfReports.length === 0 && (
+                    <div className="rs-pdf-empty">Generated PDFs will appear here.</div>
+                  )}
+                  {!pdfReportsLoading && pdfReports.map((report) => (
+                    <div className="rs-pdf-item" key={report.id}>
+                      <div className="rs-pdf-meta">
+                        <div className="rs-pdf-title">{report.displayDate || report.reportDate}</div>
+                        <div className="rs-pdf-sub">{report.status || "Latest"} PDF • {report.pdfName}</div>
+                      </div>
+                      <button type="button" className="rs-pdf-open" onClick={() => openPdfReport(report)}>Open</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
