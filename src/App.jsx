@@ -120,6 +120,10 @@ function App() {
   const [loadPin, setLoadPin] = useState("");
   const [loadError, setLoadError] = useState("");
   const [loadLoading, setLoadLoading] = useState(false);
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [pdfPin, setPdfPin] = useState("");
+  const [pdfPinError, setPdfPinError] = useState("");
+  const [pdfUnlocked, setPdfUnlocked] = useState(false);
   const [originalForm, setOriginalForm] = useState(null);
   const [unlocked, setUnlocked] = useState(false);
   const [pagePin, setPagePin] = useState("");
@@ -163,10 +167,6 @@ function App() {
     setPdfReportsLoading(false);
   };
 
-  useEffect(() => {
-    if (unlocked) loadPdfReports();
-  }, [unlocked]);
-
   const saveLatestPdfReport = async ({ pdfBase64, pdfName, isUpdate }) => {
     const reportId = form.date;
     const sameDateQuery = query(collection(db, "pdfReports"), where("reportDate", "==", form.date));
@@ -197,6 +197,33 @@ function App() {
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank", "noopener,noreferrer");
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+  };
+
+  const openPdfReportsModal = () => {
+    setMenuOpen(false);
+    setPdfModalOpen(true);
+    setPdfPin("");
+    setPdfPinError("");
+    setPdfUnlocked(false);
+  };
+
+  const closePdfReportsModal = () => {
+    setPdfModalOpen(false);
+    setPdfPin("");
+    setPdfPinError("");
+    setPdfUnlocked(false);
+  };
+
+  const unlockPdfReports = async () => {
+    const correctPin = import.meta.env.VITE_REPORT_PIN || "1234";
+    if (pdfPin !== correctPin) {
+      setPdfPinError("Incorrect PIN. Please try again.");
+      setPdfPin("");
+      return;
+    }
+    setPdfPinError("");
+    setPdfUnlocked(true);
+    await loadPdfReports();
   };
 
   const resetForm = () => {
