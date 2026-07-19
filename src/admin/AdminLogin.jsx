@@ -55,7 +55,7 @@ export default function AdminLogin() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
+            placeholder=""
             required
           />
           {error && <div className="ad-lock-error">⚠️ {error}</div>}
