@@ -12,6 +12,7 @@ import AdminSettings from "./AdminSettings";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
+import useIdleLogout from "./useIdleLogout";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 const fmtShort = (v) => `$${Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
@@ -29,6 +30,7 @@ const RANGE_OPTIONS = [
 ];
 
 export default function AdminDashboard({ user }) {
+  useIdleLogout(5 * 60 * 1000); // 5 minutes
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
