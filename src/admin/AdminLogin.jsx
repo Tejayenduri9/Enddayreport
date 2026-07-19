@@ -45,7 +45,7 @@ export default function AdminLogin() {
             autoComplete="username"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@restaurant.com"
+            placeholder=""
             required
           />
           <label className="ad-lock-label">Password</label>
