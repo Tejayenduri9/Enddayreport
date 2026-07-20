@@ -19,6 +19,12 @@ const fmtShort = (v) => `$${Number(v || 0).toLocaleString("en-US", { maximumFrac
 
 const shortDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+// Compact version (no year) just for chart axis ticks, to avoid crowding
+const axisDate = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
@@ -26,7 +32,10 @@ const RANGE_OPTIONS = [
   { label: "Last 7 Days", days: 7 },
   { label: "Last 30 Days", days: 30 },
   { label: "Last 90 Days", days: 90 },
+  { label: "Last 180 Days", days: 180 },
+  { label: "Last 1 Year", days: 365 },
   { label: "All Time", days: null },
+  { label: "Custom", days: "custom" },
 ];
 
 export default function AdminDashboard({ user }) {
@@ -35,6 +44,8 @@ export default function AdminDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rangeIdx, setRangeIdx] = useState(1);
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -60,12 +71,16 @@ export default function AdminDashboard({ user }) {
 
   const filteredByRange = useMemo(() => {
     const days = RANGE_OPTIONS[rangeIdx].days;
+    if (days === "custom") {
+      if (!customStart || !customEnd) return [];
+      return reports.filter((r) => r.date >= customStart && r.date <= customEnd);
+    }
     if (!days) return reports;
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
     const cutoffStr = cutoff.toISOString().slice(0, 10);
     return reports.filter((r) => r.date >= cutoffStr);
-  }, [reports, rangeIdx]);
+  }, [reports, rangeIdx, customStart, customEnd]);
 
   const filteredBySearch = useMemo(() => {
     if (!search.trim()) return filteredByRange;
@@ -91,7 +106,7 @@ export default function AdminDashboard({ user }) {
     return [...filteredByRange]
       .sort((a, b) => (a.date > b.date ? 1 : -1))
       .map((r) => ({
-        date: shortDate(r.date),
+        date: axisDate(r.date),
         fullDate: r.date,
         total: Number(r.totalSalesDay) || 0,
         inHouse: Number(r.totalInHouse) || 0,
@@ -132,6 +147,14 @@ export default function AdminDashboard({ user }) {
               </button>
             ))}
           </div>
+
+          {RANGE_OPTIONS[rangeIdx].days === "custom" && (
+            <div className="ad-range-picker-row" style={{ marginBottom: "1.25rem" }}>
+              <input type="date" className="ad-load-input" value={customStart} onChange={(e) => setCustomStart(e.target.value)} />
+              <span className="ad-range-to">to</span>
+              <input type="date" className="ad-load-input" value={customEnd} onChange={(e) => setCustomEnd(e.target.value)} />
+            </div>
+          )}
 
           {error && <div className="ad-error-banner">⚠️ {error}</div>}
 

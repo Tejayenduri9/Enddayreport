@@ -71,7 +71,7 @@ function AdminApp() {
         .ad-summary-card.primary .ad-summary-label { color: #ffc864; }
         .ad-summary-card.primary .ad-summary-value { color: #fff; }
         .ad-summary-label { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #8C3700; margin-bottom: 6px; }
-        .ad-summary-value { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 600; color: #111; }
+        .ad-summary-value { font-family: 'DM Sans', sans-serif; font-size: 20px; font-weight: 700; color: #111; }
 
         .ad-panel { background: #fff; border-radius: 16px; border: 0.5px solid rgba(0,0,0,0.06); padding: 1.25rem; margin-bottom: 1.25rem; }
         .ad-overview-section { border-top: 1px solid #f5e7d8; padding-top: 1.25rem; margin-top: 1.25rem; }

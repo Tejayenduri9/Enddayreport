@@ -5,7 +5,7 @@ const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionD
 
 const shortDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
 const toISO = (d) => {
