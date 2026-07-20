@@ -1,6 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { useState, useMemo } from "react";
 import { generateWeeklyPDF } from "../reportPdfWeekly";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -28,9 +26,6 @@ const getMonday = (d) => {
 
 export default function WeeklyReport({ reports }) {
   const [weekStart, setWeekStart] = useState(() => toISO(getMonday(new Date())));
-  const [carryForward, setCarryForward] = useState("");
-  const [savedCarryForward, setSavedCarryForward] = useState(null);
-  const [saving, setSaving] = useState(false);
 
   const weekEnd = useMemo(() => {
     const [y, m, d] = weekStart.split("-").map(Number);
@@ -43,26 +38,6 @@ export default function WeeklyReport({ reports }) {
       .filter((r) => r.date >= weekStart && r.date <= weekEnd)
       .sort((a, b) => (a.date > b.date ? 1 : -1));
   }, [reports, weekStart, weekEnd]);
-
-  // Load any previously saved carry-forward value for this week
-  useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      setCarryForward("");
-      setSavedCarryForward(null);
-      try {
-        const snap = await getDoc(doc(db, "weeklyCarryForward", weekStart));
-        if (!cancelled && snap.exists()) {
-          setCarryForward(String(snap.data().amount ?? ""));
-          setSavedCarryForward(snap.data().amount ?? null);
-        }
-      } catch (err) {
-        console.error("Failed to load carry-forward value:", err);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [weekStart]);
 
   const summary = useMemo(() => {
     const sum = (key) => weekReports.reduce((s, r) => s + (Number(r[key]) || 0), 0);
@@ -92,22 +67,9 @@ export default function WeeklyReport({ reports }) {
     };
   }, [weekReports]);
 
-  const handleSaveCarryForward = async () => {
-    setSaving(true);
-    try {
-      const amount = carryForward === "" ? null : Number(carryForward);
-      await setDoc(doc(db, "weeklyCarryForward", weekStart), { amount, updatedAt: new Date() });
-      setSavedCarryForward(amount);
-    } catch (err) {
-      console.error("Failed to save carry-forward value:", err);
-    }
-    setSaving(false);
-  };
-
   const handleDownload = () => {
     const pdfDoc = generateWeeklyPDF({
       weekStart, weekEnd, summary, dailyReports: weekReports,
-      carryForward: carryForward === "" ? null : Number(carryForward),
     });
     pdfDoc.save(`Week of ${shortDate(weekStart)} Sales Report.pdf`);
   };
@@ -152,7 +114,7 @@ export default function WeeklyReport({ reports }) {
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Catering</div>
-              <div className="ad-summary-value">—</div>
+              <div className="ad-summary-value">{fmt(summary.totalCatering)}</div>
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Online</div>
@@ -165,7 +127,7 @@ export default function WeeklyReport({ reports }) {
               <div className="ad-detail-section-label">Cash</div>
               <div className="ad-detail-row"><span>Cash Sale</span><span>{fmt(summary.cashSale)}</span></div>
               <div className="ad-detail-row"><span>Cash Tip</span><span>{fmt(summary.cashTip)}</span></div>
-              <div className="ad-detail-row"><span>Cash Catering</span><span>—</span></div>
+              <div className="ad-detail-row"><span>Cash Catering</span><span>{fmt(summary.cashCatering)}</span></div>
               <div className="ad-detail-row bold"><span>Total Cash (incl. Tip)</span><span>{fmt(summary.totalCashIncTip)}</span></div>
             </div>
             <div className="ad-week-detail-col">
@@ -181,25 +143,6 @@ export default function WeeklyReport({ reports }) {
               <div className="ad-detail-row"><span>DoorDash</span><span>{fmt(summary.doordash)}</span></div>
               <div className="ad-detail-row"><span>Uber Eats</span><span>{fmt(summary.uberEats)}</span></div>
             </div>
-          </div>
-
-          <div className="ad-carry-forward">
-            <div className="ad-detail-section-label">Cash Carry Forward <span className="ad-carry-forward-note">(enter manually)</span></div>
-            <div className="ad-carry-forward-row">
-              <div className="ad-input-money">
-                <span>$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={carryForward}
-                  onChange={(e) => setCarryForward(e.target.value)}
-                />
-              </div>
-              <button className="ad-download-btn" onClick={handleSaveCarryForward} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-            {savedCarryForward !== null && <div className="ad-carry-forward-saved">Saved: {fmt(savedCarryForward)}</div>}
           </div>
 
           <button className="ad-btn" style={{ marginTop: "1rem" }} onClick={handleDownload}>

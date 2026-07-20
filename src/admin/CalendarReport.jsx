@@ -1,6 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
 import { generateCustomRangePDF } from "../reportPdfWeekly";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -36,9 +34,6 @@ export default function CalendarReport({ reports, onSelectReport }) {
   // --- Custom range (declared early so calendarCells below can reference it) ---
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
-  const [carryForward, setCarryForward] = useState("");
-  const [savedCarryForward, setSavedCarryForward] = useState(null);
-  const [saving, setSaving] = useState(false);
   const rangeSelected = Boolean(rangeStart && rangeEnd);
 
   const calendarCells = useMemo(() => {
@@ -73,8 +68,6 @@ export default function CalendarReport({ reports, onSelectReport }) {
     }
   }, [rangeStart]);
 
-  const rangeKey = `${rangeStart}_${rangeEnd}`;
-
   const rangeReports = useMemo(() => {
     if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
     return reports
@@ -82,30 +75,12 @@ export default function CalendarReport({ reports, onSelectReport }) {
       .sort((a, b) => (a.date > b.date ? 1 : -1));
   }, [reports, rangeStart, rangeEnd]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setCarryForward("");
-    setSavedCarryForward(null);
-    if (!rangeSelected) return;
-    const load = async () => {
-      try {
-        const snap = await getDoc(doc(db, "customRangeCarryForward", rangeKey));
-        if (!cancelled && snap.exists()) {
-          setCarryForward(String(snap.data().amount ?? ""));
-          setSavedCarryForward(snap.data().amount ?? null);
-        }
-      } catch (err) {
-        console.error("Failed to load range carry-forward value:", err);
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [rangeKey, rangeSelected]);
-
   const summary = useMemo(() => {
     const sum = (k) => rangeReports.reduce((s, r) => s + (Number(r[k]) || 0), 0);
     const cashSale = sum("cashSale");
     const cashTip = sum("cashTip");
+    const cashCatering = sum("cashCatering");
+    const chequesCatering = sum("chequesCatering");
     const creditCardTip = sum("creditCardTip");
     const creditCardSale = sum("creditCardSale");
     const totalSettle = sum("totalSettle");
@@ -114,36 +89,23 @@ export default function CalendarReport({ reports, onSelectReport }) {
     const doordash = sum("doordash");
     const uberEats = sum("uberEats");
     const totalOnline = sum("totalRestaurantOnline");
+    const totalCatering = sum("totalCatering");
     const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
     const totalSale = sum("totalSalesDay");
     const totalTips = cashTip + creditCardTip;
     const totalAmountIncTip = totalSale + totalTips;
-    const cashCatering = sum("cashCatering");
     const totalCashIncTip = cashSale + cashTip + cashCatering;
 
     return {
-      cashSale, cashTip, creditCardTip, creditCardSale, totalSettle,
-      restaurantOnline, grubhub, doordash, uberEats, totalOnline,
+      cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
+      totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
       totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
     };
   }, [rangeReports]);
 
-  const handleSaveCarryForward = async () => {
-    setSaving(true);
-    try {
-      const amount = carryForward === "" ? null : Number(carryForward);
-      await setDoc(doc(db, "customRangeCarryForward", rangeKey), { amount, updatedAt: new Date() });
-      setSavedCarryForward(amount);
-    } catch (err) {
-      console.error("Failed to save range carry-forward value:", err);
-    }
-    setSaving(false);
-  };
-
   const handleDownload = () => {
     const pdfDoc = generateCustomRangePDF({
       rangeStart, rangeEnd, summary, dailyReports: rangeReports,
-      carryForward: carryForward === "" ? null : Number(carryForward),
     });
     pdfDoc.save(`${shortDate(rangeStart)} to ${shortDate(rangeEnd)} Sales Report.pdf`);
   };
@@ -217,7 +179,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Catering</div>
-              <div className="ad-summary-value">—</div>
+              <div className="ad-summary-value">{fmt(summary.totalCatering)}</div>
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Online</div>
@@ -230,7 +192,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-section-label">Cash</div>
               <div className="ad-detail-row"><span>Cash Sale</span><span>{fmt(summary.cashSale)}</span></div>
               <div className="ad-detail-row"><span>Cash Tip</span><span>{fmt(summary.cashTip)}</span></div>
-              <div className="ad-detail-row"><span>Cash Catering</span><span>—</span></div>
+              <div className="ad-detail-row"><span>Cash Catering</span><span>{fmt(summary.cashCatering)}</span></div>
               <div className="ad-detail-row bold"><span>Total Cash (incl. Tip)</span><span>{fmt(summary.totalCashIncTip)}</span></div>
             </div>
             <div className="ad-week-detail-col">
@@ -246,25 +208,6 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-row"><span>DoorDash</span><span>{fmt(summary.doordash)}</span></div>
               <div className="ad-detail-row"><span>Uber Eats</span><span>{fmt(summary.uberEats)}</span></div>
             </div>
-          </div>
-
-          <div className="ad-carry-forward">
-            <div className="ad-detail-section-label">Cash Carry Forward <span className="ad-carry-forward-note">(enter manually)</span></div>
-            <div className="ad-carry-forward-row">
-              <div className="ad-input-money">
-                <span>$</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={carryForward}
-                  onChange={(e) => setCarryForward(e.target.value)}
-                />
-              </div>
-              <button className="ad-download-btn" onClick={handleSaveCarryForward} disabled={saving}>
-                {saving ? "Saving..." : "Save"}
-              </button>
-            </div>
-            {savedCarryForward !== null && <div className="ad-carry-forward-saved">Saved: {fmt(savedCarryForward)}</div>}
           </div>
 
           <button className="ad-btn" style={{ marginTop: "1rem" }} onClick={handleDownload}>

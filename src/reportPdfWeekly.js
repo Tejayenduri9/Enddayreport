@@ -8,7 +8,7 @@ const shortDate = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 };
 
-function buildReportPDF({ title, subtitle, summary, dailyReports, carryForward, totalLabel }) {
+function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -48,7 +48,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, carryForward, 
   secHeader("CASH");
   row("Cash Sale", fmt(summary.cashSale));
   row("Cash Tip", fmt(summary.cashTip));
-  row("Cash Catering", "—");
+  row("Cash Catering", fmt(summary.cashCatering));
   row("Total Cash (incl. Tip)", fmt(summary.totalCashIncTip), true);
   y += 2;
 
@@ -67,9 +67,9 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, carryForward, 
   y += 2;
 
   secHeader("CATERING");
-  row("Cash Catering", "—");
-  row("Cheques Catering", "—");
-  row("Total Catering", "—", true);
+  row("Cash Catering", fmt(summary.cashCatering));
+  row("Cheques Catering", fmt(summary.chequesCatering));
+  row("Total Catering", fmt(summary.totalCatering), true);
   y += 2;
 
   secHeader("GUESTS");
@@ -80,9 +80,6 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, carryForward, 
   row("Total Sale (excl. Tip)", fmt(summary.totalSale), true);
   row("Total Tips (Cash + CC)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
-  if (carryForward !== "" && carryForward !== null && carryForward !== undefined) {
-    row("Cash Carry Forward", fmt(carryForward));
-  }
   y += 4;
 
   doc.setFillColor(196, 82, 0);
@@ -138,13 +135,12 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, carryForward, 
  * (see WeeklyReport.jsx for the shape) plus the week's date range and
  * the list of daily reports included.
  */
-export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports, carryForward }) {
+export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports }) {
   return buildReportPDF({
     title: "WEEKLY SALES REPORT",
     subtitle: `${shortDate(weekStart)} — ${shortDate(weekEnd)}`,
     summary,
     dailyReports,
-    carryForward,
     totalLabel: { sectionTitle: "WEEKLY TOTALS", bannerTitle: "TOTAL SALE OF THE WEEK" },
   });
 }
@@ -152,13 +148,12 @@ export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports, c
 /**
  * Same layout as generateWeeklyPDF, but for a full calendar month.
  */
-export function generateMonthlyPDF({ monthLabel, summary, dailyReports, carryForward }) {
+export function generateMonthlyPDF({ monthLabel, summary, dailyReports }) {
   return buildReportPDF({
     title: "MONTHLY SALES REPORT",
     subtitle: monthLabel,
     summary,
     dailyReports,
-    carryForward,
     totalLabel: { sectionTitle: "MONTHLY TOTALS", bannerTitle: "TOTAL SALE OF THE MONTH" },
   });
 }
@@ -166,13 +161,12 @@ export function generateMonthlyPDF({ monthLabel, summary, dailyReports, carryFor
 /**
  * Same layout again, for an arbitrary custom date range.
  */
-export function generateCustomRangePDF({ rangeStart, rangeEnd, summary, dailyReports, carryForward }) {
+export function generateCustomRangePDF({ rangeStart, rangeEnd, summary, dailyReports }) {
   return buildReportPDF({
     title: "SALES REPORT",
     subtitle: `${shortDate(rangeStart)} — ${shortDate(rangeEnd)}`,
     summary,
     dailyReports,
-    carryForward,
     totalLabel: { sectionTitle: "RANGE TOTALS", bannerTitle: "TOTAL SALE OF THE RANGE" },
   });
 }
