@@ -192,7 +192,6 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-section-label">Cash</div>
               <div className="ad-detail-row"><span>Cash Sale</span><span>{fmt(summary.cashSale)}</span></div>
               <div className="ad-detail-row"><span>Cash Tip</span><span>{fmt(summary.cashTip)}</span></div>
-              <div className="ad-detail-row"><span>Cash Catering</span><span>{fmt(summary.cashCatering)}</span></div>
               <div className="ad-detail-row bold"><span>Total Cash (incl. Tip)</span><span>{fmt(summary.totalCashIncTip)}</span></div>
             </div>
             <div className="ad-week-detail-col">
@@ -207,6 +206,12 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-row"><span>Grubhub</span><span>{fmt(summary.grubhub)}</span></div>
               <div className="ad-detail-row"><span>DoorDash</span><span>{fmt(summary.doordash)}</span></div>
               <div className="ad-detail-row"><span>Uber Eats</span><span>{fmt(summary.uberEats)}</span></div>
+            </div>
+            <div className="ad-week-detail-col">
+              <div className="ad-detail-section-label">Catering</div>
+              <div className="ad-detail-row"><span>Cash Catering</span><span>{fmt(summary.cashCatering)}</span></div>
+              <div className="ad-detail-row"><span>Cheques Catering</span><span>{fmt(summary.chequesCatering)}</span></div>
+              <div className="ad-detail-row bold"><span>Total Catering</span><span>{fmt(summary.totalCatering)}</span></div>
             </div>
           </div>
 
