@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import { db } from "./firebase";
 import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
+import { generateWeeklyPDF } from "./reportPdfWeekly";
 
 const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
 
@@ -12,6 +13,54 @@ const getToday = () => {
   const month = String(now.getMonth() + 1).padStart(2, "0");
   const day = String(now.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+};
+
+const toISO = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const shortDate = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+// Business week = Tuesday through Sunday. Given a Sunday's date, find that
+// week's Tuesday (5 days earlier).
+const getWeekStartForSunday = (sundayDateStr) => {
+  const [y, m, d] = sundayDateStr.split("-").map(Number);
+  const start = new Date(y, m - 1, d - 5);
+  return toISO(start);
+};
+
+const summarizeWeek = (reports) => {
+  const sum = (key) => reports.reduce((s, r) => s + (Number(r[key]) || 0), 0);
+  const cashSale = sum("cashSale");
+  const cashTip = sum("cashTip");
+  const cashCatering = sum("cashCatering");
+  const chequesCatering = sum("chequesCatering");
+  const creditCardTip = sum("creditCardTip");
+  const creditCardSale = sum("creditCardSale");
+  const totalSettle = sum("totalSettle");
+  const restaurantOnline = sum("restaurantOnline");
+  const grubhub = sum("grubhub");
+  const doordash = sum("doordash");
+  const uberEats = sum("uberEats");
+  const totalOnline = sum("totalRestaurantOnline");
+  const totalCatering = sum("totalCatering");
+  const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
+  const totalSale = sum("totalSalesDay");
+  const totalTips = cashTip + creditCardTip;
+  const totalAmountIncTip = totalSale + totalTips;
+  const totalCashIncTip = cashSale + cashTip + cashCatering;
+
+  return {
+    cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
+    totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
+    totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
+  };
 };
 
 const blankForm = () => ({
@@ -472,8 +521,38 @@ function App() {
       } else {
         await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
       }
+
       const pdfDoc = generatePDF();
       const pdfBase64 = pdfDoc.output("datauristring").split(",")[1];
+
+      // --- If today is Sunday, also build the weekly (Tue–Sun) summary PDF ---
+      let weeklyPdfBase64 = null;
+      let weekLabel = null;
+      const [checkY, checkM, checkD] = form.date.split("-").map(Number);
+      const isSunday = new Date(checkY, checkM - 1, checkD).getDay() === 0;
+
+      if (isSunday && !isEditMode) {
+        try {
+          const weekStart = getWeekStartForSunday(form.date);
+          const weekEnd = form.date;
+          const allDocsSnap = await getDocs(collection(db, "restaurants"));
+          const weekReports = allDocsSnap.docs
+            .map((d) => d.data())
+            .filter((r) => r.date >= weekStart && r.date <= weekEnd)
+            .sort((a, b) => (a.date > b.date ? 1 : -1));
+
+          if (weekReports.length > 0) {
+            const weekSummary = summarizeWeek(weekReports);
+            const weeklyDoc = generateWeeklyPDF({ weekStart, weekEnd, summary: weekSummary, dailyReports: weekReports });
+            weeklyPdfBase64 = weeklyDoc.output("datauristring").split(",")[1];
+            weekLabel = `${shortDate(weekStart)} to ${shortDate(weekEnd)}`;
+          }
+        } catch (weeklyErr) {
+          // If the weekly PDF fails for any reason, don't block the daily report from sending
+          console.error("Weekly report generation failed:", weeklyErr);
+        }
+      }
+
       const [pYear, pMonth, pDay] = form.date.split("-").map(Number);
       const suffix = pDay % 10 === 1 && pDay !== 11 ? "st" : pDay % 10 === 2 && pDay !== 12 ? "nd" : pDay % 10 === 3 && pDay !== 13 ? "rd" : "th";
       const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -521,7 +600,10 @@ function App() {
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails, emailBody, isUpdate: isEditMode }),
+        body: JSON.stringify({
+          pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails, emailBody, isUpdate: isEditMode,
+          weeklyPdfBase64, weekLabel,
+        }),
       });
       if (!response.ok) throw new Error("Backend request failed");
       resetForm();

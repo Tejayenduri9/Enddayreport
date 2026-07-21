@@ -6,7 +6,10 @@ export async function onRequest(context) {
   }
 
   try {
-    const { pdfBase64, reportDate, ownerEmails, emailBody, isUpdate } = await context.request.json();
+    const {
+      pdfBase64, reportDate, ownerEmails, emailBody, isUpdate,
+      weeklyPdfBase64, weekLabel, // optional: only present when Sunday's report also triggers the weekly summary
+    } = await context.request.json();
 
     const fallbackEmails = context.env.OWNER_EMAILS
       ? context.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
@@ -18,16 +21,30 @@ export async function onRequest(context) {
 
     console.log("📧 Sending to:", allEmails);
 
+    const attachments = [{
+      filename: `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
+      content: pdfBase64,
+    }];
+
+    let subject = isUpdate ? `⚠️ UPDATED Report - ${reportDate}` : `Daily Report - ${reportDate}`;
+    let body = emailBody || "Attached is your daily sales report.";
+
+    if (weeklyPdfBase64) {
+      attachments.push({
+        filename: `Weekly_Report_${(weekLabel || reportDate).replace(/ /g, "_")}.pdf`,
+        content: weeklyPdfBase64,
+      });
+      subject += " + Weekly Summary";
+      body += `\n\nSince this closes out the week, your Weekly Sales Report (${weekLabel || "this week"}) is also attached.`;
+    }
+
     const resend = new Resend(context.env.RESEND_API_KEY);
     await resend.emails.send({
       from: context.env.RESEND_FROM || "reports@enddayreports.com",
       to: allEmails,
-      subject: isUpdate ? `⚠️ UPDATED Report - ${reportDate}` : `Daily Report - ${reportDate}`,
-      text: emailBody || "Attached is your daily sales report.",
-      attachments: [{
-        filename: `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
-        content: pdfBase64,
-      }]
+      subject,
+      text: body,
+      attachments,
     });
 
     console.log("✅ Email sent successfully");
