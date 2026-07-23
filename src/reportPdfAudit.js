@@ -4,7 +4,7 @@ import logo from "./assets/logo.png";
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
 
-const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering", "Cash Tip", "Credit\nTip", "Tax", "Grand\nTotal"];
+const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Cash Tip", "Credit\nTip", "Tax", "Grand\nTotal"];
 const COL_WIDTHS = [48, 40, 40, 40, 36, 36, 36, 44, 36, 36, 36, 44];
 
 /**
@@ -37,20 +37,12 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(13);
-  doc.text("MONTHLY AUDIT REPORT", pageWidth / 2, logoCardY + logoCardH + 8, { align: "center" });
-
-  doc.setTextColor(255, 200, 100);
-  doc.setFont("helvetica", "normal").setFontSize(8.5);
-  try {
-    doc.text(monthLabel.toUpperCase(), pageWidth / 2, logoCardY + logoCardH + 14, { align: "center", charSpace: 1 });
-  } catch (e) {
-    doc.text(monthLabel, pageWidth / 2, logoCardY + logoCardH + 14, { align: "center" });
-  }
+  doc.text(`MONTHLY AUDIT REPORT - ${monthLabel.toUpperCase()}`, pageWidth / 2, logoCardY + logoCardH + 10, { align: "center" });
 
   y = headerH + 10;
 
   // --- Summary strip ---
-  const sumLabels = ["Total Taxable Sale", "Total Tax (7%)", "Net Sale (Tax Removed)"];
+  const sumLabels = ["Total Taxable Sale", "Total Tax (7%)", "Net Sale"];
   const sumValues = [fmt(summary.totalTaxableSale), fmt(summary.totalTax), fmt(summary.totalNetSale)];
   const sumW = cw / 3;
   let sx = margin;
