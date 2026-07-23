@@ -84,7 +84,8 @@ export default function TaxAuditDashboard({ reports, onBack }) {
 
       const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
       const tax = taxableBase * 0.07;
-      const grandTotal = taxableBase - tax;
+      // Sale amounts already include tax, so Grand Total = the recorded total itself (no add/subtract)
+      const grandTotal = taxableBase;
 
       rows.push({
         dayLabel: fullDateLabel(dateStr),
@@ -230,8 +231,8 @@ export default function TaxAuditDashboard({ reports, onBack }) {
           <div className="ad-detail-row"><span>Uber Eats</span><TaxedValue value={summary.uberEats} /></div>
         </div>
         <div className="ad-week-detail-col">
-          <div className="ad-detail-section-label">Catering (excl. cash)</div>
-          <div className="ad-detail-row bold"><span>Cheques Catering</span><TaxedValue value={summary.chequesCatering} /></div>
+          <div className="ad-detail-section-label">Catering</div>
+          <div className="ad-detail-row bold"><span>Catering</span><TaxedValue value={summary.chequesCatering} /></div>
         </div>
       </div>
 
@@ -272,7 +273,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
               <th>Grubhub</th>
               <th>DoorDash</th>
               <th>Uber Eats</th>
-              <th>Catering<br />(excl. cash)</th>
+              <th>Catering</th>
               <th>Cash Tip</th>
               <th>Credit Tip</th>
               <th>Tax</th>
