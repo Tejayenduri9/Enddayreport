@@ -225,7 +225,7 @@ export default function AdminDashboard({ user }) {
     <div className="ad-wrapper">
       {/* TOP BAR */}
       <div className="ad-topbar">
-        <div className="ad-topbar-left">
+        <div className="ad-topbar-left" onClick={() => setTaxView(null)} style={{ cursor: "pointer" }} title="Back to main dashboard">
           {logo && (
             <img
               src={logo}
@@ -251,7 +251,6 @@ export default function AdminDashboard({ user }) {
             onClick={() => setTaxModalOpen(true)}
             title="Tax Dashboard"
           >
-            <span className="ad-tax-btn-icon">🧾</span>
             Tax
           </button>
 

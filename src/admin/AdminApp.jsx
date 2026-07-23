@@ -173,7 +173,7 @@ function AdminApp() {
         .ad-catering-note { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #444; margin-bottom: 6px; }
 
         /* --- New: redesigned Tax button + profile avatar dropdown --- */
-        .ad-tax-btn { display: flex; align-items: center; gap: 6px; background: #ffc864; border: none; color: #6b3600; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.3px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .ad-tax-btn { display: flex; align-items: center; gap: 6px; background: #fff; border: none; color: #C45200; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.3px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
         .ad-tax-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
         .ad-tax-btn-icon { font-size: 14px; }
 
