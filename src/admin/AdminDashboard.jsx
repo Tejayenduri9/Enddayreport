@@ -21,6 +21,9 @@ import AdminSettings from "./AdminSettings";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
+import TaxSelectModal from "./TaxSelectModal";
+import TaxGeneralDashboard from "./TaxGeneralDashboard";
+import TaxAuditDashboard from "./TaxAuditDashboard";
 import useIdleLogout from "./useIdleLogout";
 
 const fmt = (v) =>
@@ -80,6 +83,13 @@ export default function AdminDashboard({ user }) {
 
   // Weekly Report selected by default
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // Tax dashboard state
+  const [taxModalOpen, setTaxModalOpen] = useState(false);
+  const [taxView, setTaxView] = useState(null); // null | "general" | "audit"
+
+  // Profile dropdown (email / settings / sign out)
+  const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -206,6 +216,11 @@ export default function AdminDashboard({ user }) {
 
   const handleLogout = () => signOut(auth);
 
+  const handleTaxSelect = (view) => {
+    setTaxView(view);
+    setTaxModalOpen(false);
+  };
+
   return (
     <div className="ad-wrapper">
       {/* TOP BAR */}
@@ -231,453 +246,482 @@ export default function AdminDashboard({ user }) {
         </div>
 
         <div className="ad-topbar-right">
-          <span className="ad-user-email">
-            {user?.email}
-          </span>
-
           <button
-            className="ad-settings-btn"
-            onClick={() => setSettingsOpen(true)}
-            title="Account Settings"
+            className="ad-tax-btn"
+            onClick={() => setTaxModalOpen(true)}
+            title="Tax Dashboard"
           >
-            ⚙️
+            <span className="ad-tax-btn-icon">🧾</span>
+            Tax
           </button>
 
-          <button
-            className="ad-logout-btn"
-            onClick={handleLogout}
-          >
-            Sign Out
-          </button>
+          <div className="ad-profile-wrap">
+            <button
+              className="ad-profile-avatar"
+              onClick={() => setProfileOpen((v) => !v)}
+              title={user?.email}
+            >
+              {(user?.email || "?").charAt(0).toUpperCase()}
+            </button>
+
+            {profileOpen && (
+              <>
+                <div className="ad-profile-backdrop" onClick={() => setProfileOpen(false)} />
+                <div className="ad-profile-menu">
+                  <div className="ad-profile-menu-email">{user?.email}</div>
+                  <button
+                    className="ad-profile-menu-item"
+                    onClick={() => { setSettingsOpen(true); setProfileOpen(false); }}
+                  >
+                    ⚙️ Account Settings
+                  </button>
+                  <button
+                    className="ad-profile-menu-item danger"
+                    onClick={handleLogout}
+                  >
+                    ⏻ Sign Out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="ad-content">
-        {/* OVERVIEW */}
-        <div className="ad-panel ad-overview-panel">
-
-          {/* DATE RANGE BUTTONS */}
-          <div className="ad-range-row">
-            {RANGE_OPTIONS.map((opt, i) => (
-              <button
-                key={opt.label}
-                className={`ad-range-btn${
-                  i === rangeIdx ? " active" : ""
-                }`}
-                onClick={() => setRangeIdx(i)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-
-          {/* CUSTOM DATE RANGE */}
-          {RANGE_OPTIONS[rangeIdx].days === "custom" && (
-            <div
-              className="ad-range-picker-row"
-              style={{ marginBottom: "1.25rem" }}
-            >
-              <input
-                type="date"
-                className="ad-load-input"
-                value={customStart}
-                onChange={(e) =>
-                  setCustomStart(e.target.value)
-                }
-              />
-
-              <span className="ad-range-to">
-                to
-              </span>
-
-              <input
-                type="date"
-                className="ad-load-input"
-                value={customEnd}
-                onChange={(e) =>
-                  setCustomEnd(e.target.value)
-                }
-              />
-            </div>
-          )}
-
-          {/* ERROR */}
-          {error && (
-            <div className="ad-error-banner">
-              ⚠️ {error}
-            </div>
-          )}
-
-          {/* SUMMARY CARDS */}
-          <div className="ad-summary-grid">
-            <div className="ad-summary-card primary">
-              <div className="ad-summary-label">
-                Total Sales
-              </div>
-
-              <div className="ad-summary-value">
-                {fmt(summary.totalSales)}
-              </div>
-            </div>
-
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">
-                Avg Daily Sales
-              </div>
-
-              <div className="ad-summary-value">
-                {fmt(summary.avgDaily)}
-              </div>
-            </div>
-
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">
-                Total Guests
-              </div>
-
-              <div className="ad-summary-value">
-                {summary.totalGuests.toLocaleString()}
-              </div>
-            </div>
-
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">
-                Online Sales
-              </div>
-
-              <div className="ad-summary-value">
-                {fmt(summary.totalOnline)}
-              </div>
-            </div>
-
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">
-                Catering
-              </div>
-
-              <div className="ad-summary-value">
-                {fmt(summary.totalCatering)}
-              </div>
-            </div>
-
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">
-                Reports
-              </div>
-
-              <div className="ad-summary-value">
-                {summary.count}
-              </div>
-            </div>
-          </div>
-
-          {/* CHARTS */}
-          {loading ? (
-            <div className="ad-loading-block">
-              Loading reports…
-            </div>
-          ) : (
-            <>
-              {/* TOTAL SALES CHART */}
-              {chartData.length > 0 && (
-                <div className="ad-overview-section">
-                  <div className="ad-panel-title">
-                    Total Sales Over Time
-                  </div>
-
-                  <ResponsiveContainer
-                    width="100%"
-                    height={260}
-                  >
-                    <LineChart
-                      data={chartData}
-                      margin={{
-                        top: 10,
-                        right: 20,
-                        left: 0,
-                        bottom: 0,
-                      }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="#f5d5b8"
-                      />
-
-                      <XAxis
-                        dataKey="date"
-                        tick={{
-                          fontSize: 11,
-                          fill: "#8C3700",
-                        }}
-                      />
-
-                      <YAxis
-                        tickFormatter={fmtShort}
-                        tick={{
-                          fontSize: 11,
-                          fill: "#8C3700",
-                        }}
-                        width={60}
-                      />
-
-                      <Tooltip
-                        formatter={(v) => fmt(v)}
-                        labelFormatter={(l, p) =>
-                          p?.[0]?.payload?.fullDate
-                            ? shortDate(
-                                p[0].payload.fullDate
-                              )
-                            : l
-                        }
-                      />
-
-                      <Line
-                        type="monotone"
-                        dataKey="total"
-                        stroke="#C45200"
-                        strokeWidth={2.5}
-                        dot={{ r: 3 }}
-                        name="Total Sales"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-
-              {/* SALES CHANNEL CHART */}
-              {chartData.length > 0 && (
-                <div className="ad-overview-section">
-                  <div className="ad-panel-title">
-                    Sales Channel Breakdown
-                  </div>
-
-                  <ResponsiveContainer
-                    width="100%"
-                    height={260}
-                  >
-                    <BarChart
-                      data={chartData}
-                      margin={{
-                        top: 10,
-                        right: 20,
-                        left: 0,
-                        bottom: 0,
-                      }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="#f5d5b8"
-                      />
-
-                      <XAxis
-                        dataKey="date"
-                        tick={{
-                          fontSize: 11,
-                          fill: "#8C3700",
-                        }}
-                      />
-
-                      <YAxis
-                        tickFormatter={fmtShort}
-                        tick={{
-                          fontSize: 11,
-                          fill: "#8C3700",
-                        }}
-                        width={60}
-                      />
-
-                      <Tooltip
-                        formatter={(v) => fmt(v)}
-                      />
-
-                      <Legend
-                        wrapperStyle={{
-                          fontSize: 11,
-                        }}
-                      />
-
-                      <Bar
-                        dataKey="inHouse"
-                        stackId="a"
-                        fill="#8C3700"
-                        name="In-House"
-                      />
-
-                      <Bar
-                        dataKey="online"
-                        stackId="a"
-                        fill="#C45200"
-                        name="Online"
-                      />
-
-                      <Bar
-                        dataKey="catering"
-                        stackId="a"
-                        fill="#ffc864"
-                        name="Catering"
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {!loading && (
+        {taxView === "general" ? (
+          <TaxGeneralDashboard reports={reports} onBack={() => setTaxView(null)} onSelectReport={setSelected} />
+        ) : taxView === "audit" ? (
+          <TaxAuditDashboard reports={reports} onBack={() => setTaxView(null)} />
+        ) : (
           <>
-            {/* REPORTS */}
-            <div className="ad-panel">
-              <div className="ad-panel-title-row">
-                <div className="ad-panel-title">
-                  Reports
-                </div>
+            {/* OVERVIEW */}
+            <div className="ad-panel ad-overview-panel">
 
-                <input
-                  className="ad-search-input"
-                  placeholder="Search by date…"
-                  value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
-                />
+              {/* DATE RANGE BUTTONS */}
+              <div className="ad-range-row">
+                {RANGE_OPTIONS.map((opt, i) => (
+                  <button
+                    key={opt.label}
+                    className={`ad-range-btn${
+                      i === rangeIdx ? " active" : ""
+                    }`}
+                    onClick={() => setRangeIdx(i)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
               </div>
 
-              {filteredBySearch.length === 0 ? (
-                <div className="ad-empty-state">
-                  No reports found for this range.
+              {/* CUSTOM DATE RANGE */}
+              {RANGE_OPTIONS[rangeIdx].days === "custom" && (
+                <div
+                  className="ad-range-picker-row"
+                  style={{ marginBottom: "1.25rem" }}
+                >
+                  <input
+                    type="date"
+                    className="ad-load-input"
+                    value={customStart}
+                    onChange={(e) =>
+                      setCustomStart(e.target.value)
+                    }
+                  />
+
+                  <span className="ad-range-to">
+                    to
+                  </span>
+
+                  <input
+                    type="date"
+                    className="ad-load-input"
+                    value={customEnd}
+                    onChange={(e) =>
+                      setCustomEnd(e.target.value)
+                    }
+                  />
+                </div>
+              )}
+
+              {/* ERROR */}
+              {error && (
+                <div className="ad-error-banner">
+                  ⚠️ {error}
+                </div>
+              )}
+
+              {/* SUMMARY CARDS */}
+              <div className="ad-summary-grid">
+                <div className="ad-summary-card primary">
+                  <div className="ad-summary-label">
+                    Total Sales
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {fmt(summary.totalSales)}
+                  </div>
+                </div>
+
+                <div className="ad-summary-card">
+                  <div className="ad-summary-label">
+                    Avg Daily Sales
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {fmt(summary.avgDaily)}
+                  </div>
+                </div>
+
+                <div className="ad-summary-card">
+                  <div className="ad-summary-label">
+                    Total Guests
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {summary.totalGuests.toLocaleString()}
+                  </div>
+                </div>
+
+                <div className="ad-summary-card">
+                  <div className="ad-summary-label">
+                    Online Sales
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {fmt(summary.totalOnline)}
+                  </div>
+                </div>
+
+                <div className="ad-summary-card">
+                  <div className="ad-summary-label">
+                    Catering
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {fmt(summary.totalCatering)}
+                  </div>
+                </div>
+
+                <div className="ad-summary-card">
+                  <div className="ad-summary-label">
+                    Reports
+                  </div>
+
+                  <div className="ad-summary-value">
+                    {summary.count}
+                  </div>
+                </div>
+              </div>
+
+              {/* CHARTS */}
+              {loading ? (
+                <div className="ad-loading-block">
+                  Loading reports…
                 </div>
               ) : (
-                <div className="ad-table">
-                  <div className="ad-table-header">
-                    <span>Date</span>
-                    <span>Guests</span>
-                    <span>Total Sales</span>
-                    <span></span>
+                <>
+                  {/* TOTAL SALES CHART */}
+                  {chartData.length > 0 && (
+                    <div className="ad-overview-section">
+                      <div className="ad-panel-title">
+                        Total Sales Over Time
+                      </div>
+
+                      <ResponsiveContainer
+                        width="100%"
+                        height={260}
+                      >
+                        <LineChart
+                          data={chartData}
+                          margin={{
+                            top: 10,
+                            right: 20,
+                            left: 0,
+                            bottom: 0,
+                          }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f5d5b8"
+                          />
+
+                          <XAxis
+                            dataKey="date"
+                            tick={{
+                              fontSize: 11,
+                              fill: "#8C3700",
+                            }}
+                          />
+
+                          <YAxis
+                            tickFormatter={fmtShort}
+                            tick={{
+                              fontSize: 11,
+                              fill: "#8C3700",
+                            }}
+                            width={60}
+                          />
+
+                          <Tooltip
+                            formatter={(v) => fmt(v)}
+                            labelFormatter={(l, p) =>
+                              p?.[0]?.payload?.fullDate
+                                ? shortDate(
+                                    p[0].payload.fullDate
+                                  )
+                                : l
+                            }
+                          />
+
+                          <Line
+                            type="monotone"
+                            dataKey="total"
+                            stroke="#C45200"
+                            strokeWidth={2.5}
+                            dot={{ r: 3 }}
+                            name="Total Sales"
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+
+                  {/* SALES CHANNEL CHART */}
+                  {chartData.length > 0 && (
+                    <div className="ad-overview-section">
+                      <div className="ad-panel-title">
+                        Sales Channel Breakdown
+                      </div>
+
+                      <ResponsiveContainer
+                        width="100%"
+                        height={260}
+                      >
+                        <BarChart
+                          data={chartData}
+                          margin={{
+                            top: 10,
+                            right: 20,
+                            left: 0,
+                            bottom: 0,
+                          }}
+                        >
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f5d5b8"
+                          />
+
+                          <XAxis
+                            dataKey="date"
+                            tick={{
+                              fontSize: 11,
+                              fill: "#8C3700",
+                            }}
+                          />
+
+                          <YAxis
+                            tickFormatter={fmtShort}
+                            tick={{
+                              fontSize: 11,
+                              fill: "#8C3700",
+                            }}
+                            width={60}
+                          />
+
+                          <Tooltip
+                            formatter={(v) => fmt(v)}
+                          />
+
+                          <Legend
+                            wrapperStyle={{
+                              fontSize: 11,
+                            }}
+                          />
+
+                          <Bar
+                            dataKey="inHouse"
+                            stackId="a"
+                            fill="#8C3700"
+                            name="In-House"
+                          />
+
+                          <Bar
+                            dataKey="online"
+                            stackId="a"
+                            fill="#C45200"
+                            name="Online"
+                          />
+
+                          <Bar
+                            dataKey="catering"
+                            stackId="a"
+                            fill="#ffc864"
+                            name="Catering"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {!loading && (
+              <>
+                {/* REPORTS */}
+                <div className="ad-panel">
+                  <div className="ad-panel-title-row">
+                    <div className="ad-panel-title">
+                      Reports
+                    </div>
+
+                    <input
+                      className="ad-search-input"
+                      placeholder="Search by date…"
+                      value={search}
+                      onChange={(e) =>
+                        setSearch(e.target.value)
+                      }
+                    />
                   </div>
 
-                  {filteredBySearch.map((r) => (
-                    <div
-                      key={r.id}
-                      className="ad-table-row"
-                      onClick={() =>
-                        setSelected(r)
-                      }
-                    >
-                      <span>
-                        {shortDate(r.date)}
-                      </span>
-
-                      <span>
-                        {(Number(
-                          r.lunchGuests
-                        ) || 0) +
-                          (Number(
-                            r.dinnerGuests
-                          ) || 0)}
-                      </span>
-
-                      <span className="ad-table-total">
-                        {fmt(
-                          r.totalSalesDay
-                        )}
-                      </span>
-
-                      <span className="ad-table-arrow">
-                        ›
-                      </span>
+                  {filteredBySearch.length === 0 ? (
+                    <div className="ad-empty-state">
+                      No reports found for this range.
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                  ) : (
+                    <div className="ad-table">
+                      <div className="ad-table-header">
+                        <span>Date</span>
+                        <span>Guests</span>
+                        <span>Total Sales</span>
+                        <span></span>
+                      </div>
 
-            {/* WEEKLY / MONTHLY / CUSTOM REPORTS */}
-            <div className="ad-carousel">
-              {activeSlide === 0 && (
-                <WeeklyReport
-                  reports={reports}
-                />
-              )}
+                      {filteredBySearch.map((r) => (
+                        <div
+                          key={r.id}
+                          className="ad-table-row"
+                          onClick={() =>
+                            setSelected(r)
+                          }
+                        >
+                          <span>
+                            {shortDate(r.date)}
+                          </span>
 
-              {activeSlide === 1 && (
-                <MonthlyReport
-                  reports={reports}
-                />
-              )}
+                          <span>
+                            {(Number(
+                              r.lunchGuests
+                            ) || 0) +
+                              (Number(
+                                r.dinnerGuests
+                              ) || 0)}
+                          </span>
 
-              {activeSlide === 2 && (
-                <CalendarReport
-                  reports={reports}
-                  onSelectReport={
-                    setSelected
-                  }
-                />
-              )}
+                          <span className="ad-table-total">
+                            {fmt(
+                              r.totalSalesDay
+                            )}
+                          </span>
 
-              {/* CENTERED REPORT NAVIGATION */}
-              <div
-                className="ad-carousel-navigation"
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  textAlign: "center",
-                  marginTop: "14px",
-                }}
-              >
-                <div
-                  className="ad-carousel-hint"
-                  style={{
-                    width: "100%",
-                    textAlign: "center",
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    color: "#8c3700",
-                    marginBottom: "10px",
-                  }}
-                >
-                  Switch between Weekly, Monthly, and Custom reports
+                          <span className="ad-table-arrow">
+                            ›
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div
-                  className="ad-carousel-dots"
-                  style={{
-                    position: "static",
-                    left: "auto",
-                    right: "auto",
-                    transform: "none",
-                    width: "auto",
-                    margin: "0",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {[
-                    "Weekly",
-                    "Monthly",
-                    "Custom",
-                  ].map((label, i) => (
-                    <button
-                      key={label}
-                      className={`ad-carousel-dot${
-                        i === activeSlide
-                          ? " active"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        setActiveSlide(i)
-                      }
-                      aria-label={`View ${label} report`}
-                      title={`View ${label} report`}
+                {/* WEEKLY / MONTHLY / CUSTOM REPORTS */}
+                <div className="ad-carousel">
+                  {activeSlide === 0 && (
+                    <WeeklyReport
+                      reports={reports}
                     />
-                  ))}
+                  )}
+
+                  {activeSlide === 1 && (
+                    <MonthlyReport
+                      reports={reports}
+                    />
+                  )}
+
+                  {activeSlide === 2 && (
+                    <CalendarReport
+                      reports={reports}
+                      onSelectReport={
+                        setSelected
+                      }
+                    />
+                  )}
+
+                  {/* CENTERED REPORT NAVIGATION */}
+                  <div
+                    className="ad-carousel-navigation"
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      textAlign: "center",
+                      marginTop: "14px",
+                    }}
+                  >
+                    <div
+                      className="ad-carousel-hint"
+                      style={{
+                        width: "100%",
+                        textAlign: "center",
+                        fontSize: "13px",
+                        fontWeight: "500",
+                        color: "#8c3700",
+                        marginBottom: "10px",
+                      }}
+                    >
+                      Switch between Weekly, Monthly, and Custom reports
+                    </div>
+
+                    <div
+                      className="ad-carousel-dots"
+                      style={{
+                        position: "static",
+                        left: "auto",
+                        right: "auto",
+                        transform: "none",
+                        width: "auto",
+                        margin: "0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {[
+                        "Weekly",
+                        "Monthly",
+                        "Custom",
+                      ].map((label, i) => (
+                        <button
+                          key={label}
+                          className={`ad-carousel-dot${
+                            i === activeSlide
+                              ? " active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            setActiveSlide(i)
+                          }
+                          aria-label={`View ${label} report`}
+                          title={`View ${label} report`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </>
         )}
       </div>
@@ -694,6 +738,13 @@ export default function AdminDashboard({ user }) {
           onClose={() =>
             setSettingsOpen(false)
           }
+        />
+      )}
+
+      {taxModalOpen && (
+        <TaxSelectModal
+          onClose={() => setTaxModalOpen(false)}
+          onSelect={handleTaxSelect}
         />
       )}
     </div>

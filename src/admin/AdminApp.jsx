@@ -41,7 +41,7 @@ function AdminApp() {
 
         /* Dashboard shell */
         .ad-wrapper { min-height: 100vh; background: #fdf3ec; }
-        .ad-topbar { background: #C45200; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .ad-topbar { background: #C45200; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; position: relative; z-index: 50; }
         .ad-topbar-left { display: flex; align-items: center; gap: 12px; }
         .ad-topbar-logo { height: 56px; width: auto; max-width: 140px; border-radius: 8px; object-fit: contain; background: #fff; padding: 4px; }
         .ad-topbar-title { font-family: 'Playfair Display', Georgia, serif; font-size: 17px; font-weight: 600; color: #fff; }
@@ -122,11 +122,36 @@ function AdminApp() {
         .ad-calendar-cell.has-report:hover { opacity: 0.85; }
         .ad-calendar-cell.has-report.in-range { background: #C45200; color: #fff; box-shadow: 0 0 0 2px #ffc864; }
 
+        .ad-back-btn { background: #fff8f4; border: 0.5px solid #f5c9a0; color: #C45200; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 600; transition: background 0.15s; }
+        .ad-back-btn:hover { background: #fdeede; }
+
+        .ad-tax-select-body { padding: 1rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 10px; }
+        .ad-tax-select-option { text-align: left; background: #fff8f4; border: 1px solid #f5c9a0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.15s; width: 100%; font-family: 'DM Sans', sans-serif; }
+        .ad-tax-select-option:hover { border-color: #C45200; background: #fdeede; }
+        .ad-tax-select-option.disabled { opacity: 0.55; cursor: not-allowed; }
+        .ad-tax-select-option.disabled:hover { border-color: #f5c9a0; background: #fff8f4; }
+        .ad-tax-select-option-title { font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-weight: 600; color: #111; margin-bottom: 4px; }
+        .ad-tax-select-option-desc { font-size: 12px; color: #666; line-height: 1.4; }
+
         /* Custom range picker */
         .ad-range-picker-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
         .ad-range-to { font-size: 12px; color: #999; }
         .ad-load-input { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; }
         .ad-load-input:focus { border-color: #C45200; }
+
+        .ad-taxed-value { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .ad-tax-badge { font-size: 10px; font-weight: 600; color: #C45200; background: #fdeede; padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+        .ad-tax-badge.net { color: #2c6b2c; background: #eef7ee; }
+
+        /* Audit table */
+        .ad-audit-table-wrap { overflow-x: auto; border: 1px solid #f5e7d8; border-radius: 12px; }
+        .ad-audit-table { border-collapse: collapse; width: 100%; min-width: 900px; font-size: 12px; }
+        .ad-audit-table thead th { background: #1a3d2b; color: #fff; font-size: 10px; font-weight: 700; padding: 8px 6px; text-align: center; white-space: nowrap; position: sticky; top: 0; }
+        .ad-audit-table tbody td { padding: 6px; text-align: center; border-bottom: 0.5px solid #f5e7d8; color: #333; white-space: nowrap; }
+        .ad-audit-table tbody tr:nth-child(even) { background: #fffaf6; }
+        .ad-audit-table tbody tr.ad-audit-empty-row td { color: #ccc; }
+        .ad-audit-day { font-weight: 700; color: #8C3700 !important; }
+        .ad-audit-total-cell { font-weight: 700; color: #C45200 !important; background: #fdeede; }
 
         /* Report detail modal */
         .ad-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; animation: ad-fade-in 0.2s ease; }
@@ -146,6 +171,23 @@ function AdminApp() {
         .ad-detail-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: #444; }
         .ad-detail-row.bold { font-weight: 700; color: #111; border-top: 1px solid #f5e7d8; padding-top: 8px; margin-top: 2px; }
         .ad-catering-note { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #444; margin-bottom: 6px; }
+
+        /* --- New: redesigned Tax button + profile avatar dropdown --- */
+        .ad-tax-btn { display: flex; align-items: center; gap: 6px; background: #ffc864; border: none; color: #6b3600; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.3px; transition: transform 0.15s, box-shadow 0.15s; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .ad-tax-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+        .ad-tax-btn-icon { font-size: 14px; }
+
+        .ad-profile-wrap { position: relative; }
+        .ad-profile-avatar { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 1.5px solid rgba(255,255,255,0.4); color: #fff; font-family: 'Playfair Display', Georgia, serif; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .ad-profile-avatar:hover { background: rgba(255,255,255,0.3); }
+
+        .ad-profile-backdrop { position: fixed; inset: 0; z-index: 90; background: transparent; }
+        .ad-profile-menu { position: absolute; top: 48px; right: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.18); min-width: 220px; z-index: 100; overflow: hidden; animation: ad-fade-in 0.15s ease; }
+        .ad-profile-menu-email { padding: 12px 16px; font-size: 12px; color: #999; border-bottom: 1px solid #f5e7d8; word-break: break-all; }
+        .ad-profile-menu-item { width: 100%; text-align: left; background: none; border: none; padding: 12px 16px; font-size: 13.5px; font-weight: 500; color: #333; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+        .ad-profile-menu-item:hover { background: #fff8f4; }
+        .ad-profile-menu-item.danger { color: #c0392b; border-top: 1px solid #f5e7d8; }
+        .ad-profile-menu-item.danger:hover { background: #fdecea; }
       `}</style>
 
       {checking ? (

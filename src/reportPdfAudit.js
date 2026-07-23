@@ -1,0 +1,163 @@
+import jsPDF from "jspdf";
+import logo from "./assets/logo.png";
+
+const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
+
+const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering", "Cash Tip", "Credit\nTip", "Tax", "Grand\nTotal"];
+const COL_WIDTHS = [48, 40, 40, 40, 36, 36, 36, 44, 36, 36, 36, 44];
+
+/**
+ * dayRows: array of { dayLabel, cashSale, creditCardSale, restaurantOnline, grubhub,
+ *   doordash, uberEats, chequesCatering, cashTip, creditCardTip, tax, grandTotal, hasData }
+ * summary: { totalTaxableSale, totalTax, totalNetSale }
+ */
+export function generateAuditPDF({ monthLabel, dayRows, summary }) {
+  const doc = new jsPDF({ orientation: "landscape" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 12;
+  const cw = pageWidth - margin * 2;
+  const totalColW = COL_WIDTHS.reduce((a, b) => a + b, 0);
+  const scale = cw / totalColW;
+  const colW = COL_WIDTHS.map((w) => w * scale);
+  let y;
+
+  // --- Header ---
+  const headerH = 38;
+  doc.setFillColor(196, 82, 0);
+  doc.rect(0, 0, pageWidth, headerH, "F");
+
+  // compact white card behind the logo, tightly fitted
+  const logoCardW = 26, logoCardH = 16;
+  const logoCardX = pageWidth / 2 - logoCardW / 2, logoCardY = 4;
+  doc.setFillColor(255, 255, 255);
+  doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 2, 2, "F");
+  try { doc.addImage(logo, "PNG", logoCardX + 2, logoCardY + 2, logoCardW - 4, logoCardH - 4); } catch (e) {}
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold").setFontSize(13);
+  doc.text("MONTHLY AUDIT REPORT", pageWidth / 2, logoCardY + logoCardH + 8, { align: "center" });
+
+  doc.setTextColor(255, 200, 100);
+  doc.setFont("helvetica", "normal").setFontSize(8.5);
+  try {
+    doc.text(monthLabel.toUpperCase(), pageWidth / 2, logoCardY + logoCardH + 14, { align: "center", charSpace: 1 });
+  } catch (e) {
+    doc.text(monthLabel, pageWidth / 2, logoCardY + logoCardH + 14, { align: "center" });
+  }
+
+  y = headerH + 10;
+
+  // --- Summary strip ---
+  const sumLabels = ["Total Taxable Sale", "Total Tax (7%)", "Net Sale (Tax Removed)"];
+  const sumValues = [fmt(summary.totalTaxableSale), fmt(summary.totalTax), fmt(summary.totalNetSale)];
+  const sumW = cw / 3;
+  let sx = margin;
+  sumLabels.forEach((label, i) => {
+    doc.setFillColor(26, 61, 43);
+    doc.setDrawColor(255, 200, 100);
+    doc.rect(sx, y, sumW - 4, 20, "FD");
+    doc.setTextColor(255, 200, 100);
+    doc.setFont("helvetica", "normal").setFontSize(8);
+    doc.text(label, sx + (sumW - 4) / 2, y + 7, { align: "center" });
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold").setFontSize(12);
+    doc.text(sumValues[i], sx + (sumW - 4) / 2, y + 15, { align: "center" });
+    sx += sumW;
+  });
+  y += 30;
+
+  const HEADER_H = 12;
+  const ROW_H = 6.5;
+
+  const drawHeaderRow = () => {
+    let hx = margin;
+    HEADERS.forEach((h, i) => {
+      doc.setFillColor(26, 61, 43);
+      doc.setDrawColor(150, 150, 150);
+      doc.rect(hx, y, colW[i], HEADER_H, "FD");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold").setFontSize(7);
+      const lines = h.split("\n");
+      if (lines.length === 1) {
+        doc.text(lines[0], hx + colW[i] / 2, y + HEADER_H / 2 + 1.5, { align: "center" });
+      } else {
+        doc.text(lines[0], hx + colW[i] / 2, y + HEADER_H / 2 - 1, { align: "center" });
+        doc.text(lines[1], hx + colW[i] / 2, y + HEADER_H / 2 + 4, { align: "center" });
+      }
+      hx += colW[i];
+    });
+    y += HEADER_H;
+  };
+
+  drawHeaderRow();
+
+  dayRows.forEach((row) => {
+    if (y > pageHeight - 25) {
+      doc.addPage("landscape");
+      y = 15;
+      drawHeaderRow();
+    }
+    const cells = [
+      row.dayLabel, fmtPlain(row.cashSale), fmtPlain(row.creditCardSale), fmtPlain(row.restaurantOnline),
+      fmtPlain(row.grubhub), fmtPlain(row.doordash), fmtPlain(row.uberEats), fmtPlain(row.chequesCatering),
+      fmtPlain(row.cashTip), fmtPlain(row.creditCardTip), fmtPlain(row.tax), fmtPlain(row.grandTotal),
+    ];
+    let cx = margin;
+    const grey = row.hasData ? 255 : 248;
+    cells.forEach((val, i) => {
+      doc.setDrawColor(215, 215, 215);
+      doc.setFillColor(grey, grey, grey);
+      doc.rect(cx, y, colW[i], ROW_H, "FD");
+      doc.setFont("helvetica", i === 0 ? "bold" : "normal").setFontSize(7);
+      const textGrey = row.hasData ? 40 : 195;
+      doc.setTextColor(row.hasData && i === 0 ? 140 : textGrey, row.hasData && i === 0 ? 55 : textGrey, row.hasData && i === 0 ? 0 : textGrey);
+      doc.text(String(val), cx + colW[i] / 2, y + ROW_H / 2 + 1.4, { align: "center" });
+      cx += colW[i];
+    });
+    y += ROW_H;
+  });
+
+  // Totals row
+  if (y > pageHeight - 25) { doc.addPage("landscape"); y = 15; drawHeaderRow(); }
+  const t = dayRows.reduce(
+    (acc, r) => ({
+      cashSale: acc.cashSale + r.cashSale,
+      creditCardSale: acc.creditCardSale + r.creditCardSale,
+      restaurantOnline: acc.restaurantOnline + r.restaurantOnline,
+      grubhub: acc.grubhub + r.grubhub,
+      doordash: acc.doordash + r.doordash,
+      uberEats: acc.uberEats + r.uberEats,
+      chequesCatering: acc.chequesCatering + r.chequesCatering,
+      cashTip: acc.cashTip + r.cashTip,
+      creditCardTip: acc.creditCardTip + r.creditCardTip,
+      tax: acc.tax + r.tax,
+      grandTotal: acc.grandTotal + r.grandTotal,
+    }),
+    { cashSale: 0, creditCardSale: 0, restaurantOnline: 0, grubhub: 0, doordash: 0, uberEats: 0, chequesCatering: 0, cashTip: 0, creditCardTip: 0, tax: 0, grandTotal: 0 }
+  );
+  const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.tax), fmtPlain(t.grandTotal)];
+  let tx2 = margin;
+  totalCells.forEach((val, i) => {
+    doc.setDrawColor(200, 150, 100);
+    doc.setFillColor(255, 235, 200);
+    doc.rect(tx2, y, colW[i], 8, "FD");
+    doc.setFont("helvetica", "bold").setFontSize(7.5);
+    doc.setTextColor(140, 55, 0);
+    doc.text(String(val), tx2 + colW[i] / 2, y + 5.3, { align: "center" });
+    tx2 += colW[i];
+  });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(196, 82, 0);
+    doc.rect(0, pageHeight - 8, pageWidth, 8, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "normal").setFontSize(6.5);
+    doc.text(`© ${new Date().getFullYear()} EndDay Reports • enddayreports.com`, pageWidth / 2, pageHeight - 3, { align: "center" });
+  }
+
+  return doc;
+}

@@ -9,6 +9,7 @@ export async function onRequest(context) {
     const {
       pdfBase64, reportDate, ownerEmails, emailBody, isUpdate,
       weeklyPdfBase64, weekLabel, // optional: only present when Sunday's report also triggers the weekly summary
+      subjectOverride, attachmentFilename, // optional: used by non-daily reports (e.g. the Audit report)
     } = await context.request.json();
 
     const fallbackEmails = context.env.OWNER_EMAILS
@@ -22,11 +23,11 @@ export async function onRequest(context) {
     console.log("📧 Sending to:", allEmails);
 
     const attachments = [{
-      filename: `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
+      filename: attachmentFilename || `Daily_Report_${reportDate.replace(/ /g, "_")}.pdf`,
       content: pdfBase64,
     }];
 
-    let subject = isUpdate ? `⚠️ UPDATED Report - ${reportDate}` : `Daily Report - ${reportDate}`;
+    let subject = subjectOverride || (isUpdate ? `⚠️ UPDATED Report - ${reportDate}` : `Daily Report - ${reportDate}`);
     let body = emailBody || "Attached is your daily sales report.";
 
     if (weeklyPdfBase64) {
