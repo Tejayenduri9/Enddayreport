@@ -4,8 +4,8 @@ import logo from "./assets/logo.png";
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
 
-const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering", "Cash Tip", "Credit\nTip", "Tax", "Grand\nTotal"];
-const COL_WIDTHS = [48, 40, 40, 40, 36, 36, 36, 44, 36, 36, 36, 44];
+const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Total\nw/o Tip", "Tax", "Cash Tip", "Credit\nTip", "Grand\nTotal"];
+const COL_WIDTHS = [48, 38, 38, 38, 34, 34, 34, 42, 40, 34, 34, 34, 42];
 
 /**
  * dayRows: array of { dayLabel, cashSale, creditCardSale, restaurantOnline, grubhub,
@@ -42,7 +42,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   y = headerH + 10;
 
   // --- Summary strip ---
-  const sumLabels = ["Total Taxable Sale", "Total Tax (7%)", "Net Sale"];
+  const sumLabels = ["Total Taxable Sale", "Total Tax (7%)", "Net Sale (Tax Removed)"];
   const sumValues = [fmt(summary.totalTaxableSale), fmt(summary.totalTax), fmt(summary.totalNetSale)];
   const sumW = cw / 3;
   let sx = margin;
@@ -94,7 +94,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
     const cells = [
       row.dayLabel, fmtPlain(row.cashSale), fmtPlain(row.creditCardSale), fmtPlain(row.restaurantOnline),
       fmtPlain(row.grubhub), fmtPlain(row.doordash), fmtPlain(row.uberEats), fmtPlain(row.chequesCatering),
-      fmtPlain(row.cashTip), fmtPlain(row.creditCardTip), fmtPlain(row.tax), fmtPlain(row.grandTotal),
+      fmtPlain(row.totalWithoutTip), fmtPlain(row.tax), fmtPlain(row.cashTip), fmtPlain(row.creditCardTip), fmtPlain(row.grandTotal),
     ];
     let cx = margin;
     const grey = row.hasData ? 255 : 248;
@@ -122,14 +122,15 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
       doordash: acc.doordash + r.doordash,
       uberEats: acc.uberEats + r.uberEats,
       chequesCatering: acc.chequesCatering + r.chequesCatering,
+      totalWithoutTip: acc.totalWithoutTip + r.totalWithoutTip,
       cashTip: acc.cashTip + r.cashTip,
       creditCardTip: acc.creditCardTip + r.creditCardTip,
       tax: acc.tax + r.tax,
       grandTotal: acc.grandTotal + r.grandTotal,
     }),
-    { cashSale: 0, creditCardSale: 0, restaurantOnline: 0, grubhub: 0, doordash: 0, uberEats: 0, chequesCatering: 0, cashTip: 0, creditCardTip: 0, tax: 0, grandTotal: 0 }
+    { cashSale: 0, creditCardSale: 0, restaurantOnline: 0, grubhub: 0, doordash: 0, uberEats: 0, chequesCatering: 0, totalWithoutTip: 0, cashTip: 0, creditCardTip: 0, tax: 0, grandTotal: 0 }
   );
-  const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.tax), fmtPlain(t.grandTotal)];
+  const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.totalWithoutTip), fmtPlain(t.tax), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.grandTotal)];
   let tx2 = margin;
   totalCells.forEach((val, i) => {
     doc.setDrawColor(200, 150, 100);
