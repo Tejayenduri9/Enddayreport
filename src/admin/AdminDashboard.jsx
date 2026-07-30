@@ -21,6 +21,7 @@ import AdminSettings from "./AdminSettings";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
+import YearOverYearReport from "./YearOverYearReport";
 import TaxSelectModal from "./TaxSelectModal";
 import TaxGeneralDashboard from "./TaxGeneralDashboard";
 import TaxAuditDashboard from "./TaxAuditDashboard";
@@ -719,6 +720,11 @@ export default function AdminDashboard({ user }) {
                     </div>
                   </div>
                 </div>
+
+                {/* YEAR-OVER-YEAR COMPARISON (separate section, always visible) */}
+                <YearOverYearReport
+                  reports={reports}
+                />
               </>
             )}
           </>

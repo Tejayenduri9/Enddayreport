@@ -170,6 +170,39 @@ function AdminApp() {
         .ad-detail-section-label { font-size: 10.5px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #C45200; margin-bottom: 6px; }
         .ad-detail-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; color: #444; }
         .ad-detail-row.bold { font-weight: 700; color: #111; border-top: 1px solid #f5e7d8; padding-top: 8px; margin-top: 2px; }
+
+        /* Year-over-Year comparison */
+        .ad-yoy-range-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+        .ad-yoy-range-btn { background: #fff8f4; border: 0.5px solid #f5c9a0; color: #C45200; padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+        .ad-yoy-range-btn:hover { background: #fdeede; }
+        .ad-yoy-range-btn.active { background: #C45200; color: #fff; border-color: #C45200; }
+        .ad-yoy-compare-label { font-size: 12px; color: #8C3700; margin-bottom: 1rem; font-weight: 500; }
+        .ad-yoy-prior { font-size: 10.5px; color: #999; margin-top: 2px; }
+        .ad-summary-card.primary .ad-yoy-prior { color: rgba(255,255,255,0.75); }
+        .ad-yoy-badge { display: inline-block; font-size: 11px; font-weight: 700; margin-top: 6px; padding: 2px 8px; border-radius: 20px; }
+        .ad-yoy-badge.up { background: #e6f4ea; color: #1e7e34; }
+        .ad-yoy-badge.down { background: #fdeaea; color: #c0392b; }
+        .ad-yoy-badge.neutral { background: #f1f1f1; color: #888; }
+        .ad-summary-card.primary .ad-yoy-badge.up { background: rgba(255,255,255,0.25); color: #d7f5df; }
+        .ad-summary-card.primary .ad-yoy-badge.down { background: rgba(255,255,255,0.25); color: #ffd9d3; }
+        .ad-yoy-warning { background: #fff8e6; border: 0.5px solid #f0d38a; color: #8a6d1a; font-size: 12px; padding: 8px 12px; border-radius: 10px; margin-bottom: 1rem; }
+        .ad-yoy-badge.sm { font-size: 10px; padding: 1px 6px; margin-top: 0; }
+        .ad-insight-box { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 14px; padding: 14px 16px; margin-bottom: 1.25rem; }
+        .ad-insight-row { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #444; padding: 5px 0; line-height: 1.5; }
+        .ad-insight-row strong { color: #111; }
+        .ad-insight-row code { background: #fdeede; padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+        .ad-insight-icon { flex-shrink: 0; font-size: 11px; margin-top: 3px; }
+        .ad-insight-icon.up { color: #1e7e34; }
+        .ad-insight-icon.down { color: #c0392b; }
+        .ad-insight-icon.neutral { color: #C45200; }
+        .ad-yoy-split-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .ad-yoy-donut-row { display: flex; gap: 8px; }
+        .ad-yoy-donut-col { flex: 1; text-align: center; }
+        .ad-yoy-donut-label { font-size: 11px; font-weight: 600; color: #8C3700; margin-top: -6px; }
+        .ad-yoy-legend { display: flex; gap: 14px; justify-content: center; margin-top: 8px; flex-wrap: wrap; }
+        .ad-yoy-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; }
+        .ad-yoy-legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+        .ad-yoy-picker-section { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 12px; padding: 12px 14px; margin-bottom: 1.25rem; }
         .ad-catering-note { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #444; margin-bottom: 6px; }
 
         /* --- New: redesigned Tax button + profile avatar dropdown --- */
