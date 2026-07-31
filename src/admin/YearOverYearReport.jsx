@@ -117,6 +117,13 @@ const PAYMENT_FIELDS = [
   { key: "creditCardSale", label: "Credit Card", color: "#C45200" },
 ];
 
+const ONLINE_PLATFORM_FIELDS = [
+  { key: "restaurantOnline", label: "Website", color: "#F0A202" },
+  { key: "grubhub", label: "Grubhub", color: "#D94F30" },
+  { key: "doordash", label: "DoorDash", color: "#5B3A29" },
+  { key: "uberEats", label: "Uber Eats", color: "#1F6F5C" },
+];
+
 // Historical (pre-launch) data lives in /public/historical-sales.csv, exported
 // from the Standardized Daily Sales Excel template. Field names match the
 // Firestore "restaurants" document schema exactly (see ReportDetail.jsx /
@@ -344,7 +351,7 @@ export default function YearOverYearReport({ reports }) {
     };
   }, [comparisonRows]);
 
-  // ---- Channel + payment-method breakdown (grouped bar chart) ----
+  // ---- Channel + payment-method + delivery-platform breakdown (grouped bar charts) ----
   const channelBreakdown = useMemo(() => {
     const sumField = (side, field) =>
       comparisonRows.reduce((s, r) => {
@@ -352,7 +359,7 @@ export default function YearOverYearReport({ reports }) {
         return s + (rec ? Number(rec[field]) || 0 : 0);
       }, 0);
 
-    return [...CHANNEL_FIELDS, ...PAYMENT_FIELDS].map(({ key, label, color }) => {
+    return [...CHANNEL_FIELDS, ...PAYMENT_FIELDS, ...ONLINE_PLATFORM_FIELDS].map(({ key, label, color }) => {
       const current = sumField("current", key);
       const prior = sumField("prior", key);
       return { key, label, color, current, prior, pctChange: pctChange(current, prior) };
@@ -365,6 +372,10 @@ export default function YearOverYearReport({ reports }) {
 
   const paymentChartData = channelBreakdown
     .filter((c) => PAYMENT_FIELDS.some((f) => f.key === c.key))
+    .map((c) => ({ label: c.label, current: c.current, prior: c.prior }));
+
+  const onlineChartData = channelBreakdown
+    .filter((c) => ONLINE_PLATFORM_FIELDS.some((f) => f.key === c.key))
     .map((c) => ({ label: c.label, current: c.current, prior: c.prior }));
 
   // ---- Sales mix donuts (only meaningful once both periods have data) ----
@@ -381,6 +392,22 @@ export default function YearOverYearReport({ reports }) {
 
     return { current: build("current"), prior: build("prior") };
   }, [comparisonRows]);
+
+  // ---- Online order source mix donuts (Website vs Grubhub vs DoorDash vs Uber Eats) ----
+  const onlineMix = useMemo(() => {
+    const build = (side) =>
+      ONLINE_PLATFORM_FIELDS.map((c) => ({
+        name: c.label,
+        value: comparisonRows.reduce((s, r) => {
+          const rec = r[side];
+          return s + (rec ? Number(rec[c.key]) || 0 : 0);
+        }, 0),
+        color: c.color,
+      })).filter((d) => d.value > 0);
+
+    return { current: build("current"), prior: build("prior") };
+  }, [comparisonRows]);
+
 
   // ---- Trend data, aligned by relative day within the selected range ----
   const trendData = useMemo(
@@ -451,6 +478,43 @@ export default function YearOverYearReport({ reports }) {
               <strong>{worst.label}</strong> is down{" "}
               <strong>{Math.abs(worst.pctChange).toFixed(1)}%</strong> ({fmt(worst.prior)} → {fmt(worst.current)})
               versus last year.
+            </>
+          ),
+        });
+      }
+    }
+
+    const platformsWithChange = channelBreakdown.filter(
+      (c) => c.prior > 0 && ONLINE_PLATFORM_FIELDS.some((f) => f.key === c.key)
+    );
+    if (platformsWithChange.length > 0) {
+      const bestPlatform = [...platformsWithChange].sort((a, b) => b.pctChange - a.pctChange)[0];
+      const worstPlatform = [...platformsWithChange].sort((a, b) => a.pctChange - b.pctChange)[0];
+
+      if (bestPlatform && bestPlatform.pctChange > 0) {
+        list.push({
+          kind: "up",
+          text: (
+            <>
+              <strong>{bestPlatform.label}</strong> is your fastest-growing delivery platform, up{" "}
+              <strong>{bestPlatform.pctChange.toFixed(1)}%</strong> ({fmt(bestPlatform.prior)} →{" "}
+              {fmt(bestPlatform.current)}).
+            </>
+          ),
+        });
+      }
+      if (
+        worstPlatform &&
+        worstPlatform.key !== bestPlatform?.key &&
+        worstPlatform.pctChange < 0
+      ) {
+        list.push({
+          kind: "down",
+          text: (
+            <>
+              <strong>{worstPlatform.label}</strong> orders are down{" "}
+              <strong>{Math.abs(worstPlatform.pctChange).toFixed(1)}%</strong> ({fmt(worstPlatform.prior)} →{" "}
+              {fmt(worstPlatform.current)}) versus last year.
             </>
           ),
         });
@@ -775,6 +839,116 @@ export default function YearOverYearReport({ reports }) {
                   </span>
                 ))}
               </div>
+            </div>
+          </div>
+
+          {/* ---------- DELIVERY & ONLINE PLATFORM BREAKDOWN (grouped bars) ---------- */}
+          <div className="ad-overview-section">
+            <div className="ad-panel-title">Delivery &amp; Online Platform Performance</div>
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart
+                data={onlineChartData}
+                margin={{ top: 24, right: 20, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f5d5b8" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#8C3700" }} />
+                <YAxis
+                  tickFormatter={fmtShort}
+                  tick={{ fontSize: 11, fill: "#8C3700" }}
+                  width={60}
+                />
+                <Tooltip formatter={(v) => fmt(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="prior" fill="#ffc864" name="Last Year" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" fill="#C45200" name="This Period" radius={[4, 4, 0, 0]}>
+                  <LabelList
+                    dataKey="current"
+                    position="top"
+                    content={(props) => {
+                      const { x, y, width, index } = props;
+                      const row = onlineChartData[index];
+                      const prior = row?.prior || 0;
+                      const cur = row?.current || 0;
+                      const pct = pctChange(cur, prior);
+                      if (pct === null) return null;
+                      const up = pct >= 0;
+                      return (
+                        <text
+                          x={x + width / 2}
+                          y={y - 8}
+                          textAnchor="middle"
+                          fontSize="11"
+                          fontWeight="700"
+                          fill={up ? "#1e7e34" : "#c0392b"}
+                        >
+                          {up ? "▲" : "▼"} {Math.abs(pct).toFixed(0)}%
+                        </text>
+                      );
+                    }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ---------- ONLINE ORDER SOURCE MIX (donuts) ---------- */}
+          <div className="ad-overview-section">
+            <div className="ad-panel-title">Online Order Source Mix</div>
+            {priorHasAnyData && onlineMix.prior.length > 0 ? (
+              <div className="ad-yoy-donut-row">
+                <div className="ad-yoy-donut-col">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={onlineMix.prior}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={2}
+                      >
+                        {onlineMix.prior.map((d) => (
+                          <Cell key={d.name} fill={d.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => fmt(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="ad-yoy-donut-label">Last Year</div>
+                </div>
+                <div className="ad-yoy-donut-col">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={onlineMix.current}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={2}
+                      >
+                        {onlineMix.current.map((d) => (
+                          <Cell key={d.name} fill={d.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(v) => fmt(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="ad-yoy-donut-label">This Period</div>
+                </div>
+              </div>
+            ) : (
+              <div className="ad-empty-state">
+                Not enough last-year data yet to show a mix comparison.
+              </div>
+            )}
+            <div className="ad-yoy-legend">
+              {ONLINE_PLATFORM_FIELDS.map((c) => (
+                <span key={c.key} className="ad-yoy-legend-item">
+                  <span className="ad-yoy-legend-dot" style={{ background: c.color }} />
+                  {c.label}
+                </span>
+              ))}
             </div>
           </div>
 
