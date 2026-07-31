@@ -505,7 +505,7 @@ function App() {
   const saveData = async () => {
     const requiredFields = {
       lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
-      cashSale: "Cash Sale", cashCatering: "Cash Catering", chequesCatering: "Cheques Catering",
+      cashSale: "Cash Sale",
       totalCashWithTip: "Total Cash", totalSettle: "Total Settle Amount", creditCardTip: "Credit Card Tip",
       giftCard: "Gift Card Redeemed", restaurantOnline: "Restaurant Online",
       grubhub: "Grubhub", doordash: "DoorDash", uberEats: "Uber Eats",
