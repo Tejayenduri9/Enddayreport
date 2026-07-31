@@ -110,7 +110,7 @@ const formatMoney = (val) => {
 
 const stripFormat = (val) => val.replace(/[^0-9.]/g, "");
 
-function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
+function MoneyInput({ name, value, onChange, placeholder = "0.00", required = false }) {
   const [focused, setFocused] = useState(false);
   const rawVal = stripFormat(String(value ?? ""));
   const display = focused ? rawVal : (rawVal ? formatMoney(rawVal) : "");
@@ -131,6 +131,7 @@ function MoneyInput({ name, value, onChange, placeholder = "0.00" }) {
         onBlur={() => setFocused(false)}
         onChange={handleInputChange}
         inputMode="decimal"
+        required={required}
       />
     </div>
   );
@@ -146,6 +147,8 @@ function App() {
 
   const [form, setForm] = useState(blankForm());
   const [cateringNotes, setCateringNotes] = useState([emptyCatering()]);
+  const cateringRequired =
+    (Number(form.cashCatering) || 0) > 0 || (Number(form.chequesCatering) || 0) > 0;
   const [notesOpen, setNotesOpen] = useState(false);
   const [modal, setModal] = useState({ open: false, type: "", title: "", message: "" });
   const [feedback, setFeedback] = useState("");
@@ -514,6 +517,29 @@ function App() {
       showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${missing.join("\n• ")}`);
       return;
     }
+
+    if (cateringRequired) {
+      const cateringFieldLabels = {
+        cateringDate: "Catering Date", name: "Name", paymentType: "Payment Type", amount: "Amount",
+      };
+      const incomplete = [];
+      cateringNotes.forEach((entry, idx) => {
+        const missingFields = Object.entries(cateringFieldLabels)
+          .filter(([key]) => !entry[key])
+          .map(([, label]) => label);
+        if (missingFields.length > 0) {
+          incomplete.push(`Entry ${idx + 1}: ${missingFields.join(", ")}`);
+        }
+      });
+      if (incomplete.length > 0) {
+        showModal(
+          "error",
+          "Missing Catering Details",
+          `Cash or Cheques Catering has an amount, so every catering entry needs to be filled in:\n\n• ${incomplete.join("\n• ")}`
+        );
+        return;
+      }
+    }
     setLoading(true);
     try {
       if (isEditMode && editDocId) {
@@ -638,6 +664,7 @@ function App() {
         .rs-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .rs-field:last-child { margin-bottom: 0; }
         .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
+        .rs-required { color: #c0392b; margin-left: 3px; font-weight: 700; }
         .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
         .rs-input-money { position: relative; display: flex; align-items: center; }
         .rs-input-money span { position: absolute; left: 10px; color: #C45200; font-weight: 600; font-size: 14px; pointer-events: none; z-index: 1; }
@@ -822,18 +849,27 @@ function App() {
                       <div key={index} className="rs-catering-entry">
                         {cateringNotes.length > 1 && <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>}
                         <div className="rs-entry-label">Entry {index + 1}</div>
-                        <div className="rs-field"><label>Catering Date</label><input type="date" name="cateringDate" value={note.cateringDate} onChange={(evt) => handleCateringChange(index, evt)} /></div>
-                        <div className="rs-field"><label>Name</label><input type="text" name="name" value={note.name} onChange={(evt) => handleCateringChange(index, evt)} placeholder="Client name" /></div>
                         <div className="rs-field">
-                          <label>Payment Type</label>
-                          <select name="paymentType" value={note.paymentType} onChange={(evt) => handleCateringChange(index, evt)}>
+                          <label>Catering Date{cateringRequired && <span className="rs-required">*</span>}</label>
+                          <input type="date" name="cateringDate" value={note.cateringDate} onChange={(evt) => handleCateringChange(index, evt)} required={cateringRequired} />
+                        </div>
+                        <div className="rs-field">
+                          <label>Name{cateringRequired && <span className="rs-required">*</span>}</label>
+                          <input type="text" name="name" value={note.name} onChange={(evt) => handleCateringChange(index, evt)} placeholder="Client name" required={cateringRequired} />
+                        </div>
+                        <div className="rs-field">
+                          <label>Payment Type{cateringRequired && <span className="rs-required">*</span>}</label>
+                          <select name="paymentType" value={note.paymentType} onChange={(evt) => handleCateringChange(index, evt)} required={cateringRequired}>
                             <option value="">Select payment type</option>
                             <option value="Cash">Cash</option>
                             <option value="Credit Card">Credit Card</option>
                             <option value="Check">Check</option>
                           </select>
                         </div>
-                        <div className="rs-field"><label>Amount ($)</label><MoneyInput name="amount" value={note.amount} onChange={(evt) => handleCateringChange(index, evt)} /></div>
+                        <div className="rs-field">
+                          <label>Amount ($){cateringRequired && <span className="rs-required">*</span>}</label>
+                          <MoneyInput name="amount" value={note.amount} onChange={(evt) => handleCateringChange(index, evt)} required={cateringRequired} />
+                        </div>
                       </div>
                     ))}
                     <button type="button" className="rs-add-btn" onClick={addCateringEntry}>+ Add Another Entry</button>
