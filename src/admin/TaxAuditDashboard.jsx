@@ -84,6 +84,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
 
       const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
       const tax = taxableBase * 0.07;
+      const totalWithoutTip = taxableBase - tax;
       // Sale amounts already include tax, so Grand Total = the recorded total itself (no add/subtract)
       const grandTotal = taxableBase;
 
@@ -92,7 +93,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
         dateStr,
         hasData,
         cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-        chequesCatering, cashTip, creditCardTip, tax, grandTotal,
+        chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal,
       });
     }
     return rows;
@@ -274,9 +275,10 @@ export default function TaxAuditDashboard({ reports, onBack }) {
               <th>DoorDash</th>
               <th>Uber Eats</th>
               <th>Catering</th>
+              <th>Net Total</th>
+              <th>Tax</th>
               <th>Cash Tip</th>
               <th>Credit Tip</th>
-              <th>Tax</th>
               <th>Grand Total</th>
             </tr>
           </thead>
@@ -291,9 +293,10 @@ export default function TaxAuditDashboard({ reports, onBack }) {
                 <td>{fmtPlain(r.doordash)}</td>
                 <td>{fmtPlain(r.uberEats)}</td>
                 <td>{fmtPlain(r.chequesCatering)}</td>
+                <td>{fmtPlain(r.totalWithoutTip)}</td>
+                <td>{fmtPlain(r.tax)}</td>
                 <td>{fmtPlain(r.cashTip)}</td>
                 <td>{fmtPlain(r.creditCardTip)}</td>
-                <td>{fmtPlain(r.tax)}</td>
                 <td className="ad-audit-total-cell">{fmtPlain(r.grandTotal)}</td>
               </tr>
             ))}

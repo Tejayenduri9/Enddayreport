@@ -36,6 +36,36 @@ const shiftYears = (dateStr, delta) => {
   return toISO(new Date(y + delta, m - 1, d));
 };
 
+// Monday of the real calendar week containing `dateStr` - matches the
+// convention used by WeeklyReport.jsx, so "7 Days" here means the same
+// Mon-Sun week, not a rolling 7-day trailing window.
+const getMonday = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = date.getDay(); // 0 = Sun, 1 = Mon, ...
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return toISO(date);
+};
+
+// The restaurant is closed every Monday - a Monday with no report on record
+// isn't "missing data", it's just a closed day, so it shouldn't count toward
+// any missing-data gap.
+const isClosedDay = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).getDay() === 1;
+};
+
+// First and last day of the calendar month containing `dateStr`.
+const getMonthStart = (dateStr) => {
+  const [y, m] = dateStr.split("-").map(Number);
+  return toISO(new Date(y, m - 1, 1));
+};
+const getMonthEnd = (dateStr) => {
+  const [y, m] = dateStr.split("-").map(Number);
+  return toISO(new Date(y, m, 0)); // day 0 of next month = last day of this month
+};
+
 const shortDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", {
@@ -55,11 +85,17 @@ const axisDate = (dateStr) => {
 
 const MODE_CHOICES = [
   { key: "day", label: "Day" },
-  { key: "7", label: "7 Days" },
-  { key: "30", label: "30 Days" },
-  { key: "90", label: "90 Days" },
+  { key: "7", label: "Week" },
+  { key: "month", label: "Month" },
+  { key: "quarter", label: "3 Months" },
   { key: "custom", label: "Custom" },
 ];
+
+// Start of month, `monthsBack` months before the month containing `dateStr`.
+const getMonthsAgoStart = (dateStr, monthsBack) => {
+  const [y, m] = dateStr.split("-").map(Number);
+  return toISO(new Date(y, m - 1 - monthsBack, 1));
+};
 
 // Inclusive day count between two ISO date strings (b - a + 1).
 const diffDaysInclusive = (aStr, bStr) => {
@@ -110,18 +146,42 @@ function InsightIcon({ kind }) {
   return <span className="ad-insight-icon neutral">●</span>;
 }
 
+function seriesLabel(value, dateStr) {
+  if (value != null) return fmt(value);
+  return isClosedDay(dateStr) ? "Closed (Monday)" : "No data";
+}
+
+function TrendTooltip({ active, payload, label }) {
+  if (!active || !payload || !payload.length) return null;
+  const point = payload[0]?.payload;
+  if (!point) return null;
+  return (
+    <div className="ad-yoy-tooltip">
+      <div className="ad-yoy-tooltip-date">{label}</div>
+      <div className="ad-yoy-tooltip-row current">
+        This Period: {seriesLabel(point.current, point.currentDate)}
+      </div>
+      <div className="ad-yoy-tooltip-row prior">
+        Last Year: {seriesLabel(point.prior, point.priorDate)}
+      </div>
+    </div>
+  );
+}
+
 export default function YearOverYearReport({ reports }) {
   const [historical, setHistorical] = useState([]);
   const [loadingCsv, setLoadingCsv] = useState(true);
   const [csvError, setCsvError] = useState("");
 
   const [rangeEnd, setRangeEnd] = useState(() => toISO(new Date()));
-  const [rangeMode, setRangeMode] = useState("30");
+  const [rangeMode, setRangeMode] = useState("month");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
   const isCustom = rangeMode === "custom";
   const isDay = rangeMode === "day";
+  const isMonthMode = rangeMode === "month";
+  const isQuarterMode = rangeMode === "quarter";
   const customRangeInvalid =
     isCustom && customStart && customEnd && customStart > customEnd;
   const customRangeIncomplete = isCustom && (!customStart || !customEnd);
@@ -131,8 +191,14 @@ export default function YearOverYearReport({ reports }) {
       if (!customStart || !customEnd || customStart > customEnd) return 0;
       return diffDaysInclusive(customStart, customEnd);
     }
+    if (isMonthMode) {
+      return diffDaysInclusive(getMonthStart(rangeEnd), getMonthEnd(rangeEnd));
+    }
+    if (isQuarterMode) {
+      return diffDaysInclusive(getMonthsAgoStart(rangeEnd, 2), getMonthEnd(rangeEnd));
+    }
     return isDay ? 1 : Number(rangeMode);
-  }, [isCustom, isDay, rangeMode, customStart, customEnd]);
+  }, [isCustom, isDay, isMonthMode, isQuarterMode, rangeMode, rangeEnd, customStart, customEnd]);
 
   useEffect(() => {
     let cancelled = false;
@@ -188,13 +254,27 @@ export default function YearOverYearReport({ reports }) {
     return map;
   }, [historical, reports]);
 
+  const isWeekMode = rangeMode === "7";
+
   const rangeStart = useMemo(() => {
     if (isCustom) return customStart || "";
+    if (isWeekMode) return getMonday(rangeEnd);
+    if (isMonthMode) return getMonthStart(rangeEnd);
+    if (isQuarterMode) return getMonthsAgoStart(rangeEnd, 2);
     const [y, m, d] = rangeEnd.split("-").map(Number);
     return toISO(new Date(y, m - 1, d - (rangeDays - 1)));
-  }, [isCustom, customStart, rangeEnd, rangeDays]);
+  }, [isCustom, isWeekMode, isMonthMode, isQuarterMode, customStart, rangeEnd, rangeDays]);
 
-  const displayEnd = isCustom ? customEnd : rangeEnd;
+  const displayEnd = useMemo(() => {
+    if (isCustom) return customEnd;
+    if (isWeekMode) {
+      const [y, m, d] = rangeStart.split("-").map(Number);
+      return toISO(new Date(y, m - 1, d + 6));
+    }
+    if (isMonthMode || isQuarterMode) return getMonthEnd(rangeEnd);
+    return rangeEnd;
+  }, [isCustom, isWeekMode, isMonthMode, isQuarterMode, customEnd, rangeStart, rangeEnd]);
+
   const rangeSelected = !isCustom || (Boolean(customStart) && Boolean(customEnd) && !customRangeInvalid);
 
   const priorStart = rangeStart ? shiftYears(rangeStart, -1) : "";
@@ -219,8 +299,9 @@ export default function YearOverYearReport({ reports }) {
     return rows;
   }, [rangeStart, rangeDays, byDate]);
 
-  const missingCurrentCount = comparisonRows.filter((r) => !r.current).length;
-  const missingPriorCount = comparisonRows.filter((r) => !r.prior).length;
+  const missingPriorCount = comparisonRows.filter(
+    (r) => !r.prior && !isClosedDay(r.priorDate)
+  ).length;
   const priorHasAnyData = missingPriorCount < rangeDays;
 
   // ---- Core summary numbers (used by KPI cards + insights) ----
@@ -306,6 +387,8 @@ export default function YearOverYearReport({ reports }) {
     () =>
       comparisonRows.map((r) => ({
         label: axisDate(r.currentDate),
+        currentDate: r.currentDate,
+        priorDate: r.priorDate,
         current: r.current ? Number(r.current.totalSalesDay) || 0 : null,
         prior: r.prior ? Number(r.prior.totalSalesDay) || 0 : null,
       })),
@@ -398,19 +481,37 @@ export default function YearOverYearReport({ reports }) {
     setRangeEnd(toISO(new Date(y, m - 1, d + deltaDays)));
   };
 
+  // Calendar months vary in length, so moving to the "next/previous month"
+  // shifts the month component directly rather than adding a fixed day count.
+  const shiftMonth = (deltaMonths) => {
+    const [y, m] = rangeEnd.split("-").map(Number);
+    setRangeEnd(toISO(new Date(y, m - 1 + deltaMonths, 1)));
+  };
+
+  const handlePrev = () => {
+    if (isMonthMode) return shiftMonth(-1);
+    if (isQuarterMode) return shiftMonth(-3);
+    return shiftEnd(-rangeDays);
+  };
+  const handleNext = () => {
+    if (isMonthMode) return shiftMonth(1);
+    if (isQuarterMode) return shiftMonth(3);
+    return shiftEnd(rangeDays);
+  };
+
   return (
     <div className="ad-panel">
       <div className="ad-panel-title-row">
         <div className="ad-panel-title">Year-over-Year Comparison</div>
         {!isCustom && (
           <div className="ad-week-nav">
-            <button className="ad-week-arrow" onClick={() => shiftEnd(-rangeDays)}>
+            <button className="ad-week-arrow" onClick={handlePrev}>
               ‹
             </button>
             <span className="ad-week-range">
-              {isDay ? shortDate(rangeEnd) : `${shortDate(rangeStart)} – ${shortDate(rangeEnd)}`}
+              {isDay ? shortDate(rangeEnd) : `${shortDate(rangeStart)} – ${shortDate(displayEnd)}`}
             </span>
-            <button className="ad-week-arrow" onClick={() => shiftEnd(rangeDays)}>
+            <button className="ad-week-arrow" onClick={handleNext}>
               ›
             </button>
           </div>
@@ -542,20 +643,6 @@ export default function YearOverYearReport({ reports }) {
               </div>
             ))}
           </div>
-
-          {(missingCurrentCount > 0 || missingPriorCount > 0) && (
-            <div className="ad-yoy-warning">
-              {missingCurrentCount > 0 && (
-                <>Missing {missingCurrentCount} day(s) of current-period data. </>
-              )}
-              {missingPriorCount > 0 && (
-                <>
-                  Missing {missingPriorCount} day(s) of same-period-last-year data — add more
-                  rows to historical-sales.csv to fill these in.
-                </>
-              )}
-            </div>
-          )}
 
           {/* ---------- CHANNEL PERFORMANCE (grouped bars) ---------- */}
           <div className="ad-overview-section">
@@ -703,7 +790,7 @@ export default function YearOverYearReport({ reports }) {
                   tick={{ fontSize: 11, fill: "#8C3700" }}
                   width={60}
                 />
-                <Tooltip formatter={(v) => (v == null ? "No data" : fmt(v))} />
+                <Tooltip content={<TrendTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Area
                   type="monotone"
