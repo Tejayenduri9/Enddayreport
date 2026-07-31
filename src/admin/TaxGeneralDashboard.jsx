@@ -56,7 +56,7 @@ export default function TaxGeneralDashboard({ reports, onBack, onSelectReport })
       <div className="ad-panel ad-overview-panel">
         <div className="ad-panel-title-row">
           <div className="ad-panel-title">Tax Dashboard — General</div>
-          <button className="ad-back-btn" onClick={onBack}>← Back to Dashboard</button>
+          <button className="ad-back-btn ad-back-btn-solid" onClick={onBack}>← Back to Dashboard</button>
         </div>
 
         <div className="ad-range-row">

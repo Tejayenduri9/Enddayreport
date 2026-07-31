@@ -124,6 +124,8 @@ function AdminApp() {
 
         .ad-back-btn { background: #fff8f4; border: 0.5px solid #f5c9a0; color: #C45200; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-family: 'DM Sans', sans-serif; cursor: pointer; font-weight: 600; transition: background 0.15s; }
         .ad-back-btn:hover { background: #fdeede; }
+        .ad-back-btn-solid { background: #C45200; border-color: #C45200; color: #fff; }
+        .ad-back-btn-solid:hover { background: #A84600; }
 
         .ad-tax-select-body { padding: 1rem 1.5rem 1.5rem; display: flex; flex-direction: column; gap: 10px; }
         .ad-tax-select-option { text-align: left; background: #fff8f4; border: 1px solid #f5c9a0; border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: all 0.15s; width: 100%; font-family: 'DM Sans', sans-serif; }

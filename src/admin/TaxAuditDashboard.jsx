@@ -187,7 +187,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
     <div className="ad-panel ad-overview-panel">
       <div className="ad-panel-title-row">
         <div className="ad-panel-title">Tax Dashboard — Audit</div>
-        <button className="ad-back-btn" onClick={onBack}>← Back to Dashboard</button>
+        <button className="ad-back-btn ad-back-btn-solid" onClick={onBack}>← Back to Dashboard</button>
       </div>
 
       <div className="ad-week-nav" style={{ marginBottom: "1.25rem" }}>

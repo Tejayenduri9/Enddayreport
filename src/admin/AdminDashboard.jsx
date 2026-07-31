@@ -88,6 +88,7 @@ export default function AdminDashboard({ user }) {
   // Tax dashboard state
   const [taxModalOpen, setTaxModalOpen] = useState(false);
   const [taxView, setTaxView] = useState(null); // null | "general" | "audit"
+  const [compareView, setCompareView] = useState(false);
 
   // Profile dropdown (email / settings / sign out)
   const [profileOpen, setProfileOpen] = useState(false);
@@ -226,7 +227,7 @@ export default function AdminDashboard({ user }) {
     <div className="ad-wrapper">
       {/* TOP BAR */}
       <div className="ad-topbar">
-        <div className="ad-topbar-left" onClick={() => setTaxView(null)} style={{ cursor: "pointer" }} title="Back to main dashboard">
+        <div className="ad-topbar-left" onClick={() => { setTaxView(null); setCompareView(false); }} style={{ cursor: "pointer" }} title="Back to main dashboard">
           {logo && (
             <img
               src={logo}
@@ -249,10 +250,18 @@ export default function AdminDashboard({ user }) {
         <div className="ad-topbar-right">
           <button
             className="ad-tax-btn"
-            onClick={() => setTaxModalOpen(true)}
+            onClick={() => { setCompareView(false); setTaxModalOpen(true); }}
             title="Tax Dashboard"
           >
             Tax
+          </button>
+
+          <button
+            className="ad-tax-btn"
+            onClick={() => { setTaxView(null); setCompareView(true); }}
+            title="Year-over-Year Comparison"
+          >
+            Compare
           </button>
 
           <div className="ad-profile-wrap">
@@ -289,7 +298,9 @@ export default function AdminDashboard({ user }) {
       </div>
 
       <div className="ad-content">
-        {taxView === "general" ? (
+        {compareView ? (
+          <YearOverYearReport reports={reports} onBack={() => setCompareView(false)} />
+        ) : taxView === "general" ? (
           <TaxGeneralDashboard reports={reports} onBack={() => setTaxView(null)} onSelectReport={setSelected} />
         ) : taxView === "audit" ? (
           <TaxAuditDashboard reports={reports} onBack={() => setTaxView(null)} />
@@ -720,11 +731,6 @@ export default function AdminDashboard({ user }) {
                     </div>
                   </div>
                 </div>
-
-                {/* YEAR-OVER-YEAR COMPARISON (separate section, always visible) */}
-                <YearOverYearReport
-                  reports={reports}
-                />
               </>
             )}
           </>

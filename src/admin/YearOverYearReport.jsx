@@ -175,7 +175,7 @@ function TrendTooltip({ active, payload, label }) {
   );
 }
 
-export default function YearOverYearReport({ reports }) {
+export default function YearOverYearReport({ reports, onBack }) {
   const [historical, setHistorical] = useState([]);
   const [loadingCsv, setLoadingCsv] = useState(true);
   const [csvError, setCsvError] = useState("");
@@ -565,6 +565,13 @@ export default function YearOverYearReport({ reports }) {
 
   return (
     <div className="ad-panel">
+      {onBack && (
+        <div className="ad-panel-title-row" style={{ marginBottom: "4px" }}>
+          <div />
+          <button className="ad-back-btn ad-back-btn-solid" onClick={onBack}>← Back to Dashboard</button>
+        </div>
+      )}
+
       <div className="ad-panel-title-row">
         <div className="ad-panel-title">Year-over-Year Comparison</div>
         {!isCustom && (

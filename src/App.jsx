@@ -27,12 +27,22 @@ const shortDate = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
-// Business week = Tuesday through Sunday. Given a Sunday's date, find that
-// week's Tuesday (5 days earlier).
-const getWeekStartForSunday = (sundayDateStr) => {
-  const [y, m, d] = sundayDateStr.split("-").map(Number);
-  const start = new Date(y, m - 1, d - 5);
-  return toISO(start);
+// TESTING: change this back to 0 (Sunday) once you're done testing.
+// 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+const WEEKLY_REPORT_TRIGGER_DAY = 5; // currently Friday, for testing
+
+// Business week = Tuesday through Sunday. Given ANY date, find that week's
+// Tuesday (start) and Sunday (end) - works no matter which day of the week
+// the weekly summary is triggered on, so WEEKLY_REPORT_TRIGGER_DAY above can
+// be changed freely without breaking which reports get included.
+const getBusinessWeekBounds = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = date.getDay(); // 0=Sun,1=Mon,2=Tue,...,6=Sat
+  const daysSinceTuesday = (day + 7 - 2) % 7; // Tuesday = day 0 of the business week
+  const start = new Date(y, m - 1, d - daysSinceTuesday);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 5);
+  return { weekStart: toISO(start), weekEnd: toISO(end) };
 };
 
 const summarizeWeek = (reports) => {
@@ -545,16 +555,17 @@ function App() {
       const pdfDoc = generatePDF();
       const pdfBase64 = pdfDoc.output("datauristring").split(",")[1];
 
-      // --- If today is Sunday, also build the weekly (Tue–Sun) summary PDF ---
+      // --- If today matches WEEKLY_REPORT_TRIGGER_DAY, also build the weekly (Tue–Sun) summary PDF ---
       let weeklyPdfBase64 = null;
       let weekLabel = null;
+      let weeklyError = null;
       const [checkY, checkM, checkD] = form.date.split("-").map(Number);
-      const isSunday = new Date(checkY, checkM - 1, checkD).getDay() === 0;
+      const isWeeklyTriggerDay =
+        new Date(checkY, checkM - 1, checkD).getDay() === WEEKLY_REPORT_TRIGGER_DAY;
 
-      if (isSunday && !isEditMode) {
+      if (isWeeklyTriggerDay) {
         try {
-          const weekStart = getWeekStartForSunday(form.date);
-          const weekEnd = form.date;
+          const { weekStart, weekEnd } = getBusinessWeekBounds(form.date);
           const allDocsSnap = await getDocs(collection(db, "restaurants"));
           const weekReports = allDocsSnap.docs
             .map((d) => d.data())
@@ -566,10 +577,14 @@ function App() {
             const weeklyDoc = generateWeeklyPDF({ weekStart, weekEnd, summary: weekSummary, dailyReports: weekReports });
             weeklyPdfBase64 = weeklyDoc.output("datauristring").split(",")[1];
             weekLabel = `${shortDate(weekStart)} to ${shortDate(weekEnd)}`;
+          } else {
+            weeklyError = "No reports found for this week, so the weekly summary was skipped.";
           }
         } catch (weeklyErr) {
-          // If the weekly PDF fails for any reason, don't block the daily report from sending
+          // Don't block the daily report from sending, but don't hide the failure either -
+          // it gets surfaced in the success/error modal below instead of only console.error.
           console.error("Weekly report generation failed:", weeklyErr);
+          weeklyError = `Weekly summary failed to generate (${weeklyErr.message || "unknown error"}).`;
         }
       }
 
@@ -630,7 +645,20 @@ function App() {
       setEditDocId(null);
       setIsEditMode(false);
       setLoading(false);
-      showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", isEditMode ? "Your report has been updated and the revised PDF has been emailed." : "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.");
+
+      let successMessage = isEditMode
+        ? "Your report has been updated and the revised PDF has been emailed."
+        : "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.";
+
+      if (isWeeklyTriggerDay) {
+        if (weeklyPdfBase64) {
+          successMessage += "\n\n✅ This closes out the week — the Weekly Sales Report was also generated and emailed.";
+        } else if (weeklyError) {
+          successMessage += `\n\n⚠️ Note: the Weekly Sales Report was NOT sent — ${weeklyError}`;
+        }
+      }
+
+      showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", successMessage);
     } catch (err) {
       setLoading(false);
       console.error(err);
