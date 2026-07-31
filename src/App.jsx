@@ -513,32 +513,26 @@ function App() {
     const missing = Object.entries(requiredFields)
       .filter(([key]) => form[key] === "" || form[key] === null || form[key] === undefined)
       .map(([, label]) => label);
-    if (missing.length > 0) {
-      showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${missing.join("\n• ")}`);
-      return;
-    }
 
+    const cateringIssues = [];
     if (cateringRequired) {
       const cateringFieldLabels = {
         cateringDate: "Catering Date", name: "Name", paymentType: "Payment Type", amount: "Amount",
       };
-      const incomplete = [];
       cateringNotes.forEach((entry, idx) => {
         const missingFields = Object.entries(cateringFieldLabels)
           .filter(([key]) => !entry[key])
           .map(([, label]) => label);
         if (missingFields.length > 0) {
-          incomplete.push(`Entry ${idx + 1}: ${missingFields.join(", ")}`);
+          cateringIssues.push(`Entry ${idx + 1}: ${missingFields.join(", ")}`);
         }
       });
-      if (incomplete.length > 0) {
-        showModal(
-          "error",
-          "Missing Catering Details",
-          `Cash or Cheques Catering has an amount, so every catering entry needs to be filled in:\n\n• ${incomplete.join("\n• ")}`
-        );
-        return;
-      }
+    }
+
+    if (missing.length > 0 || cateringIssues.length > 0) {
+      const lines = [...missing, ...cateringIssues];
+      showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${lines.join("\n• ")}`);
+      return;
     }
     setLoading(true);
     try {
