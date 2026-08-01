@@ -9,6 +9,8 @@ export async function onRequest(context) {
     const {
       pdfBase64, reportDate, ownerEmails, emailBody, isUpdate,
       weeklyPdfBase64, weekLabel, // optional: only present when Sunday's report also triggers the weekly summary
+      monthlyPdfBase64, monthlyLabel, // optional: only present when the last day of the month is submitted
+      auditPdfBase64, // optional: same trigger as monthly - Tax Audit Report for the owner to review before manually sending to the auditor
       subjectOverride, attachmentFilename, // optional: used by non-daily reports (e.g. the Audit report)
     } = await context.request.json();
 
@@ -37,6 +39,24 @@ export async function onRequest(context) {
       });
       subject += " + Weekly Summary";
       body += `\n\nSince this closes out the week, your Weekly Sales Report (${weekLabel || "this week"}) is also attached.`;
+    }
+
+    if (monthlyPdfBase64) {
+      attachments.push({
+        filename: `Monthly_Report_${(monthlyLabel || reportDate).replace(/ /g, "_")}.pdf`,
+        content: monthlyPdfBase64,
+      });
+      subject += " + Monthly Summary";
+      body += `\n\nSince this closes out the month, your Monthly Sales Report (${monthlyLabel || "this month"}) is also attached.`;
+    }
+
+    if (auditPdfBase64) {
+      attachments.push({
+        filename: `Audit_Report_${(monthlyLabel || reportDate).replace(/ /g, "_")}.pdf`,
+        content: auditPdfBase64,
+      });
+      subject += " + Tax Audit Report";
+      body += `\n\nThe Tax Audit Report for ${monthlyLabel || "this month"} is also attached for your review before sending it on to your auditor.`;
     }
 
     const resend = new Resend(context.env.RESEND_API_KEY);

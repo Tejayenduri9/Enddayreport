@@ -37,16 +37,6 @@ const fmtShort = (v) =>
     maximumFractionDigits: 0,
   })}`;
 
-const shortDate = (dateStr) => {
-  const [y, m, d] = dateStr.split("-").map(Number);
-
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
 const axisDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
 
@@ -56,14 +46,52 @@ const axisDate = (dateStr) => {
   });
 };
 
+const ordinalSuffix = (n) => {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+};
+
+// e.g. "Jul 31st, 2026, Friday"
+const fullDateLabel = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
+};
+
+const toISO = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+// Monday of the real calendar week containing today - matches the same
+// convention used elsewhere in the app (WeeklyReport.jsx, YearOverYearReport.jsx).
+const getMonday = (date) => {
+  const d = new Date(date);
+  const day = d.getDay(); // 0 = Sun, 1 = Mon, ...
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+};
+
 const RANGE_OPTIONS = [
-  { label: "Last 7 Days", days: 7 },
-  { label: "Last 30 Days", days: 30 },
-  { label: "Last 90 Days", days: 90 },
-  { label: "Last 180 Days", days: 180 },
-  { label: "Last 1 Year", days: 365 },
-  { label: "All Time", days: null },
-  { label: "Custom", days: "custom" },
+  { key: "day", label: "Day" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "week", label: "Week" },
+  { key: "month", label: "Month" },
+  { key: "lastMonth", label: "Last Month" },
+  { key: "quarter", label: "3 Months" },
+  { key: "thisYear", label: "This Year" },
+  { key: "lastYear", label: "Last Year" },
+  { key: "allTime", label: "All Time" },
+  { key: "custom", label: "Custom" },
 ];
 
 export default function AdminDashboard({ user }) {
@@ -73,8 +101,8 @@ export default function AdminDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Last 7 Days selected by default
-  const [rangeIdx, setRangeIdx] = useState(0);
+  // "Week" selected by default
+  const [rangeIdx, setRangeIdx] = useState(2);
 
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -124,28 +152,74 @@ export default function AdminDashboard({ user }) {
   }, []);
 
   const filteredByRange = useMemo(() => {
-    const days = RANGE_OPTIONS[rangeIdx].days;
+    const key = RANGE_OPTIONS[rangeIdx].key;
 
-    if (days === "custom") {
+    if (key === "custom") {
       if (!customStart || !customEnd) {
         return [];
       }
-
-      return reports.filter(
-        (r) => r.date >= customStart && r.date <= customEnd
-      );
+      return reports.filter((r) => r.date >= customStart && r.date <= customEnd);
     }
 
-    if (!days) {
+    if (key === "allTime") {
       return reports;
     }
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - days);
+    const today = new Date();
 
-    const cutoffStr = cutoff.toISOString().slice(0, 10);
+    if (key === "day") {
+      const todayStr = toISO(today);
+      return reports.filter((r) => r.date === todayStr);
+    }
 
-    return reports.filter((r) => r.date >= cutoffStr);
+    if (key === "yesterday") {
+      const y = new Date(today);
+      y.setDate(y.getDate() - 1);
+      const yStr = toISO(y);
+      return reports.filter((r) => r.date === yStr);
+    }
+
+    if (key === "week") {
+      const monday = getMonday(today);
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      const weekStart = toISO(monday);
+      const weekEnd = toISO(sunday);
+      return reports.filter((r) => r.date >= weekStart && r.date <= weekEnd);
+    }
+
+    if (key === "month") {
+      const start = toISO(new Date(today.getFullYear(), today.getMonth(), 1));
+      const end = toISO(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+      return reports.filter((r) => r.date >= start && r.date <= end);
+    }
+
+    if (key === "lastMonth") {
+      const start = toISO(new Date(today.getFullYear(), today.getMonth() - 1, 1));
+      const end = toISO(new Date(today.getFullYear(), today.getMonth(), 0));
+      return reports.filter((r) => r.date >= start && r.date <= end);
+    }
+
+    if (key === "quarter") {
+      const start = toISO(new Date(today.getFullYear(), today.getMonth() - 2, 1));
+      const end = toISO(new Date(today.getFullYear(), today.getMonth() + 1, 0));
+      return reports.filter((r) => r.date >= start && r.date <= end);
+    }
+
+    if (key === "thisYear") {
+      const start = `${today.getFullYear()}-01-01`;
+      const end = `${today.getFullYear()}-12-31`;
+      return reports.filter((r) => r.date >= start && r.date <= end);
+    }
+
+    if (key === "lastYear") {
+      const lastYear = today.getFullYear() - 1;
+      const start = `${lastYear}-01-01`;
+      const end = `${lastYear}-12-31`;
+      return reports.filter((r) => r.date >= start && r.date <= end);
+    }
+
+    return reports;
   }, [reports, rangeIdx, customStart, customEnd]);
 
   const filteredBySearch = useMemo(() => {
@@ -158,7 +232,7 @@ export default function AdminDashboard({ user }) {
     return filteredByRange.filter(
       (r) =>
         (r.date || "").includes(q) ||
-        shortDate(r.date).toLowerCase().includes(q) ||
+        fullDateLabel(r.date).toLowerCase().includes(q) ||
         (r.cateringNotes || []).some((c) =>
           (c.name || "").toLowerCase().includes(q)
         )
@@ -313,7 +387,7 @@ export default function AdminDashboard({ user }) {
               <div className="ad-range-row">
                 {RANGE_OPTIONS.map((opt, i) => (
                   <button
-                    key={opt.label}
+                    key={opt.key}
                     className={`ad-range-btn${
                       i === rangeIdx ? " active" : ""
                     }`}
@@ -325,7 +399,7 @@ export default function AdminDashboard({ user }) {
               </div>
 
               {/* CUSTOM DATE RANGE */}
-              {RANGE_OPTIONS[rangeIdx].days === "custom" && (
+              {RANGE_OPTIONS[rangeIdx].key === "custom" && (
                 <div
                   className="ad-range-picker-row"
                   style={{ marginBottom: "1.25rem" }}
@@ -477,7 +551,7 @@ export default function AdminDashboard({ user }) {
                             formatter={(v) => fmt(v)}
                             labelFormatter={(l, p) =>
                               p?.[0]?.payload?.fullDate
-                                ? shortDate(
+                                ? fullDateLabel(
                                     p[0].payload.fullDate
                                   )
                                 : l
@@ -541,6 +615,13 @@ export default function AdminDashboard({ user }) {
 
                           <Tooltip
                             formatter={(v) => fmt(v)}
+                            labelFormatter={(l, p) =>
+                              p?.[0]?.payload?.fullDate
+                                ? fullDateLabel(
+                                    p[0].payload.fullDate
+                                  )
+                                : l
+                            }
                           />
 
                           <Legend
@@ -618,7 +699,7 @@ export default function AdminDashboard({ user }) {
                           }
                         >
                           <span>
-                            {shortDate(r.date)}
+                            {fullDateLabel(r.date)}
                           </span>
 
                           <span>

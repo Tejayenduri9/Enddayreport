@@ -8,6 +8,24 @@ const shortDate = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
+const ordinalSuffix = (n) => {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+};
+
+// e.g. "Jul 31st, 2026, Friday" - used for per-day rows in the Daily Breakdown table
+const fullDateLabel = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
+};
+
 function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -93,8 +111,9 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   if (dailyReports?.length) {
     if (y > pageHeight - 40) { doc.addPage(); y = 15; }
     secHeader("DAILY BREAKDOWN");
-    const colB = Math.floor(cw / 3);
-    const cols = [colB, colB, cw - colB * 2];
+    const colDate = Math.floor(cw * 0.42);
+    const colGuests = Math.floor(cw * 0.24);
+    const cols = [colDate, colGuests, cw - colDate - colGuests];
     let hx = margin;
     ["Date", "Guests", "Total Sales"].forEach((h, i) => {
       doc.setFillColor(255, 235, 200);
@@ -108,12 +127,12 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
     y += 6;
     dailyReports.forEach((r) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 15; }
-      const cells = [shortDate(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(r.totalSalesDay)];
+      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(r.totalSalesDay)];
       let dx = margin;
       cells.forEach((val, i) => {
         doc.setDrawColor(200, 200, 200);
         doc.rect(dx, y, cols[i], 6);
-        doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(50, 50, 50);
+        doc.setFont("helvetica", "normal").setFontSize(i === 0 ? 6.5 : 7.5).setTextColor(50, 50, 50);
         doc.text(val, dx + cols[i] / 2, y + 4.5, { align: "center" });
         dx += cols[i];
       });

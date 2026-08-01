@@ -3,7 +3,8 @@ import jsPDF from "jspdf";
 import { db } from "./firebase";
 import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
-import { generateWeeklyPDF } from "./reportPdfWeekly";
+import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
+import { generateAuditPDF } from "./reportPdfAudit";
 
 const emptyCatering = () => ({ cateringDate: "", name: "", paymentType: "", amount: "" });
 
@@ -27,9 +28,8 @@ const shortDate = (dateStr) => {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
 
-// TESTING: change this back to 0 (Sunday) once you're done testing.
 // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
-const WEEKLY_REPORT_TRIGGER_DAY = 5; // currently Friday, for testing
+const WEEKLY_REPORT_TRIGGER_DAY = 0; // Sunday - production
 
 // Business week = Tuesday through Sunday. Given ANY date, find that week's
 // Tuesday (start) and Sunday (end) - works no matter which day of the week
@@ -44,6 +44,28 @@ const getBusinessWeekBounds = (dateStr) => {
   const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 5);
   return { weekStart: toISO(start), weekEnd: toISO(end) };
 };
+
+// e.g. "July 2026"
+const getMonthLabel = (year, monthIndex) =>
+  new Date(year, monthIndex, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+// Is `dateStr` the last calendar day of its month?
+const isLastDayOfMonth = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return d === daysInMonth;
+};
+
+// First day of the month containing `dateStr`, plus the year/month index for convenience.
+const getMonthBounds = (dateStr) => {
+  const [y, m] = dateStr.split("-").map(Number);
+  return {
+    year: y,
+    monthIndex: m - 1,
+    monthStart: toISO(new Date(y, m - 1, 1)),
+  };
+};
+
 
 const summarizeWeek = (reports) => {
   const sum = (key) => reports.reduce((s, r) => s + (Number(r[key]) || 0), 0);
@@ -588,6 +610,87 @@ function App() {
         }
       }
 
+      // --- If today is the last day of the month, also build & send the Monthly Sales
+      // Report AND the Tax Audit Report to the owners, both attached alongside the
+      // daily/weekly email. Sending to the auditor stays a separate, manual action from
+      // the Tax Audit dashboard - the owner reviews the attached audit report first. ---
+      let monthlyPdfBase64 = null;
+      let monthlyLabel = null;
+      let auditPdfBase64 = null;
+      let monthlyError = null;
+      const isMonthEndDay = isLastDayOfMonth(form.date);
+
+      if (isMonthEndDay) {
+        try {
+          const { year, monthIndex, monthStart } = getMonthBounds(form.date);
+          const monthEnd = form.date; // today IS the last day of the month
+          const label = getMonthLabel(year, monthIndex);
+
+          const monthDocsSnap = await getDocs(collection(db, "restaurants"));
+          const monthReports = monthDocsSnap.docs
+            .map((d) => d.data())
+            .filter((r) => r.date >= monthStart && r.date <= monthEnd)
+            .sort((a, b) => (a.date > b.date ? 1 : -1));
+
+          if (monthReports.length > 0) {
+            // Monthly Sales Report
+            const monthSummary = summarizeWeek(monthReports); // same shape works for any date range
+            const monthlyDoc = generateMonthlyPDF({ monthLabel: label, summary: monthSummary, dailyReports: monthReports });
+            monthlyPdfBase64 = monthlyDoc.output("datauristring").split(",")[1];
+            monthlyLabel = label;
+
+            // Tax Audit Report - zero-filled day-by-day, matching the Tax Audit
+            // dashboard's own calculation exactly, for the owner to review before
+            // manually sending it on to the auditor.
+            const reportsByDate = {};
+            monthReports.forEach((r) => { reportsByDate[r.date] = r; });
+            const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+            const dayRows = [];
+            for (let d = 1; d <= daysInMonth; d++) {
+              const dateStr = toISO(new Date(year, monthIndex, d));
+              const r = reportsByDate[dateStr];
+              const cashSale = Number(r?.cashSale) || 0;
+              const creditCardSale = Number(r?.creditCardSale) || 0;
+              const restaurantOnline = Number(r?.restaurantOnline) || 0;
+              const grubhub = Number(r?.grubhub) || 0;
+              const doordash = Number(r?.doordash) || 0;
+              const uberEats = Number(r?.uberEats) || 0;
+              const chequesCatering = Number(r?.chequesCatering) || 0;
+              const cashTip = Number(r?.cashTip) || 0;
+              const creditCardTip = Number(r?.creditCardTip) || 0;
+              const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
+              const tax = taxableBase * 0.07;
+              const totalWithoutTip = taxableBase - tax;
+              dayRows.push({
+                dayLabel: shortDate(dateStr), dateStr, hasData: Boolean(r),
+                cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
+                chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal: taxableBase,
+              });
+            }
+            const sum = (key) => dayRows.reduce((s, r) => s + r[key], 0);
+            const totalTaxableSale = sum("cashSale") + sum("creditCardSale") + sum("restaurantOnline") + sum("grubhub") + sum("doordash") + sum("uberEats") + sum("chequesCatering");
+            const totalTax = sum("tax");
+            const auditSummary = {
+              totalTaxableSale, totalTax, totalNetSale: totalTaxableSale - totalTax,
+              cashSale: sum("cashSale"), creditCardSale: sum("creditCardSale"),
+              restaurantOnline: sum("restaurantOnline"), grubhub: sum("grubhub"),
+              doordash: sum("doordash"), uberEats: sum("uberEats"), chequesCatering: sum("chequesCatering"),
+              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"),
+              totalCashExclCatering: sum("cashSale") + sum("cashTip"),
+              totalCcSettle: sum("creditCardSale") + sum("creditCardTip"),
+            };
+
+            const auditDoc = generateAuditPDF({ monthLabel: label, dayRows, summary: auditSummary });
+            auditPdfBase64 = auditDoc.output("datauristring").split(",")[1];
+          } else {
+            monthlyError = "No reports found for this month, so the monthly summary was skipped.";
+          }
+        } catch (monthlyErr) {
+          console.error("Monthly/Audit report generation failed:", monthlyErr);
+          monthlyError = `Monthly summary failed to generate (${monthlyErr.message || "unknown error"}).`;
+        }
+      }
+
       const [pYear, pMonth, pDay] = form.date.split("-").map(Number);
       const suffix = pDay % 10 === 1 && pDay !== 11 ? "st" : pDay % 10 === 2 && pDay !== 12 ? "nd" : pDay % 10 === 3 && pDay !== 13 ? "rd" : "th";
       const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -638,6 +741,8 @@ function App() {
         body: JSON.stringify({
           pdfBase64, reportDate: pdfName, ownerEmails: form.ownerEmails, emailBody, isUpdate: isEditMode,
           weeklyPdfBase64, weekLabel,
+          monthlyPdfBase64, monthlyLabel,
+          auditPdfBase64,
         }),
       });
       if (!response.ok) throw new Error("Backend request failed");
@@ -655,6 +760,14 @@ function App() {
           successMessage += "\n\n✅ This closes out the week — the Weekly Sales Report was also generated and emailed.";
         } else if (weeklyError) {
           successMessage += `\n\n⚠️ Note: the Weekly Sales Report was NOT sent — ${weeklyError}`;
+        }
+      }
+
+      if (isMonthEndDay) {
+        if (monthlyPdfBase64) {
+          successMessage += "\n\n✅ This closes out the month — the Monthly Sales Report and the Tax Audit Report were also generated and emailed. Review the audit report, then send it to your auditor from the Tax Audit dashboard whenever you're ready.";
+        } else if (monthlyError) {
+          successMessage += `\n\n⚠️ Note: the Monthly Sales Report and Tax Audit Report were NOT sent — ${monthlyError}`;
         }
       }
 

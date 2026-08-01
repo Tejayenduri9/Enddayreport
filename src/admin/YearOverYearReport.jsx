@@ -83,18 +83,41 @@ const axisDate = (dateStr) => {
   });
 };
 
+const ordinalSuffix = (n) => {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+};
+
+// e.g. "Jul 31st, 2026, Friday"
+const fullDateLabel = (dateStr) => {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
+};
+
 const MODE_CHOICES = [
-  { key: "day", label: "Day" },
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
   { key: "7", label: "Week" },
   { key: "month", label: "Month" },
-  { key: "quarter", label: "3 Months" },
+  { key: "year", label: "Year" },
   { key: "custom", label: "Custom" },
 ];
 
-// Start of month, `monthsBack` months before the month containing `dateStr`.
-const getMonthsAgoStart = (dateStr, monthsBack) => {
-  const [y, m] = dateStr.split("-").map(Number);
-  return toISO(new Date(y, m - 1 - monthsBack, 1));
+// First and last day of the calendar year containing `dateStr`.
+const getYearStart = (dateStr) => {
+  const [y] = dateStr.split("-").map(Number);
+  return toISO(new Date(y, 0, 1));
+};
+const getYearEnd = (dateStr) => {
+  const [y] = dateStr.split("-").map(Number);
+  return toISO(new Date(y, 11, 31));
 };
 
 // Inclusive day count between two ISO date strings (b - a + 1).
@@ -158,18 +181,19 @@ function seriesLabel(value, dateStr) {
   return isClosedDay(dateStr) ? "Closed (Monday)" : "No data";
 }
 
-function TrendTooltip({ active, payload, label }) {
+function TrendTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const point = payload[0]?.payload;
   if (!point) return null;
   return (
     <div className="ad-yoy-tooltip">
-      <div className="ad-yoy-tooltip-date">{label}</div>
       <div className="ad-yoy-tooltip-row current">
-        This Period: {seriesLabel(point.current, point.currentDate)}
+        <div className="ad-yoy-tooltip-date">{fullDateLabel(point.currentDate)}</div>
+        {seriesLabel(point.current, point.currentDate)}
       </div>
       <div className="ad-yoy-tooltip-row prior">
-        Last Year: {seriesLabel(point.prior, point.priorDate)}
+        <div className="ad-yoy-tooltip-date">{fullDateLabel(point.priorDate)}</div>
+        {seriesLabel(point.prior, point.priorDate)}
       </div>
     </div>
   );
@@ -186,9 +210,9 @@ export default function YearOverYearReport({ reports, onBack }) {
   const [customEnd, setCustomEnd] = useState("");
 
   const isCustom = rangeMode === "custom";
-  const isDay = rangeMode === "day";
+  const isDay = rangeMode === "today" || rangeMode === "yesterday";
   const isMonthMode = rangeMode === "month";
-  const isQuarterMode = rangeMode === "quarter";
+  const isYearMode = rangeMode === "year";
   const customRangeInvalid =
     isCustom && customStart && customEnd && customStart > customEnd;
   const customRangeIncomplete = isCustom && (!customStart || !customEnd);
@@ -201,11 +225,12 @@ export default function YearOverYearReport({ reports, onBack }) {
     if (isMonthMode) {
       return diffDaysInclusive(getMonthStart(rangeEnd), getMonthEnd(rangeEnd));
     }
-    if (isQuarterMode) {
-      return diffDaysInclusive(getMonthsAgoStart(rangeEnd, 2), getMonthEnd(rangeEnd));
+    if (isYearMode) {
+      return diffDaysInclusive(getYearStart(rangeEnd), getYearEnd(rangeEnd));
     }
-    return isDay ? 1 : Number(rangeMode);
-  }, [isCustom, isDay, isMonthMode, isQuarterMode, rangeMode, rangeEnd, customStart, customEnd]);
+    if (isDay) return 1;
+    return Number(rangeMode);
+  }, [isCustom, isDay, isMonthMode, isYearMode, rangeMode, rangeEnd, customStart, customEnd]);
 
   useEffect(() => {
     let cancelled = false;
@@ -267,10 +292,10 @@ export default function YearOverYearReport({ reports, onBack }) {
     if (isCustom) return customStart || "";
     if (isWeekMode) return getMonday(rangeEnd);
     if (isMonthMode) return getMonthStart(rangeEnd);
-    if (isQuarterMode) return getMonthsAgoStart(rangeEnd, 2);
+    if (isYearMode) return getYearStart(rangeEnd);
     const [y, m, d] = rangeEnd.split("-").map(Number);
     return toISO(new Date(y, m - 1, d - (rangeDays - 1)));
-  }, [isCustom, isWeekMode, isMonthMode, isQuarterMode, customStart, rangeEnd, rangeDays]);
+  }, [isCustom, isWeekMode, isMonthMode, isYearMode, customStart, rangeEnd, rangeDays]);
 
   const displayEnd = useMemo(() => {
     if (isCustom) return customEnd;
@@ -278,14 +303,24 @@ export default function YearOverYearReport({ reports, onBack }) {
       const [y, m, d] = rangeStart.split("-").map(Number);
       return toISO(new Date(y, m - 1, d + 6));
     }
-    if (isMonthMode || isQuarterMode) return getMonthEnd(rangeEnd);
+    if (isMonthMode) return getMonthEnd(rangeEnd);
+    if (isYearMode) return getYearEnd(rangeEnd);
     return rangeEnd;
-  }, [isCustom, isWeekMode, isMonthMode, isQuarterMode, customEnd, rangeStart, rangeEnd]);
+  }, [isCustom, isWeekMode, isMonthMode, isYearMode, customEnd, rangeStart, rangeEnd]);
 
   const rangeSelected = !isCustom || (Boolean(customStart) && Boolean(customEnd) && !customRangeInvalid);
 
   const priorStart = rangeStart ? shiftYears(rangeStart, -1) : "";
   const priorEnd = displayEnd ? shiftYears(displayEnd, -1) : "";
+
+  const formatRangeLabel = (start, end) => {
+    if (!start || !end) return "";
+    return start === end ? fullDateLabel(start) : `${shortDate(start)} – ${shortDate(end)}`;
+  };
+  const currentRangeLabel = formatRangeLabel(rangeStart, displayEnd);
+  const priorRangeLabel = formatRangeLabel(priorStart, priorEnd);
+  // Compact version (no weekday) for small KPI cards where space is tight
+  const priorCompactLabel = isDay ? shortDate(priorStart) : priorRangeLabel;
 
   const comparisonRows = useMemo(() => {
     const [sy, sm, sd] = rangeStart.split("-").map(Number);
@@ -436,7 +471,7 @@ export default function YearOverYearReport({ reports, onBack }) {
           <>
             Total sales are <strong>{pct >= 0 ? "up" : "down"} {Math.abs(pct).toFixed(1)}%</strong>{" "}
             ({diff >= 0 ? "+" : "-"}
-            {fmt(Math.abs(diff))}) versus the same {rangeDays}-day period last year.
+            {fmt(Math.abs(diff))}) versus {priorRangeLabel}.
           </>
         ),
       });
@@ -445,7 +480,7 @@ export default function YearOverYearReport({ reports, onBack }) {
         kind: "neutral",
         text: (
           <>
-            No matching sales data from last year for this window yet — add more rows to{" "}
+            No matching sales data for {priorRangeLabel} yet — add more rows to{" "}
             <code>historical-sales.csv</code> to unlock full comparisons.
           </>
         ),
@@ -477,7 +512,7 @@ export default function YearOverYearReport({ reports, onBack }) {
             <>
               <strong>{worst.label}</strong> is down{" "}
               <strong>{Math.abs(worst.pctChange).toFixed(1)}%</strong> ({fmt(worst.prior)} → {fmt(worst.current)})
-              versus last year.
+              versus {priorRangeLabel}.
             </>
           ),
         });
@@ -514,7 +549,7 @@ export default function YearOverYearReport({ reports, onBack }) {
             <>
               <strong>{worstPlatform.label}</strong> orders are down{" "}
               <strong>{Math.abs(worstPlatform.pctChange).toFixed(1)}%</strong> ({fmt(worstPlatform.prior)} →{" "}
-              {fmt(worstPlatform.current)}) versus last year.
+              {fmt(worstPlatform.current)}) versus {priorRangeLabel}.
             </>
           ),
         });
@@ -522,7 +557,7 @@ export default function YearOverYearReport({ reports, onBack }) {
     }
 
     const daysWithCurrent = comparisonRows.filter((r) => r.current);
-    if (daysWithCurrent.length > 0) {
+    if (daysWithCurrent.length > 1) {
       const bestDay = [...daysWithCurrent].sort(
         (a, b) => (Number(b.current.totalSalesDay) || 0) - (Number(a.current.totalSalesDay) || 0)
       )[0];
@@ -530,7 +565,7 @@ export default function YearOverYearReport({ reports, onBack }) {
         kind: "neutral",
         text: (
           <>
-            Best day this period: <strong>{shortDate(bestDay.currentDate)}</strong> at{" "}
+            Best day in {currentRangeLabel}: <strong>{shortDate(bestDay.currentDate)}</strong> at{" "}
             <strong>{fmt(bestDay.current.totalSalesDay)}</strong>.
           </>
         ),
@@ -538,29 +573,72 @@ export default function YearOverYearReport({ reports, onBack }) {
     }
 
     return list;
-  }, [summary, channelBreakdown, comparisonRows, rangeDays]);
+  }, [summary, channelBreakdown, comparisonRows, priorRangeLabel, currentRangeLabel]);
 
   const shiftEnd = (deltaDays) => {
     const [y, m, d] = rangeEnd.split("-").map(Number);
     setRangeEnd(toISO(new Date(y, m - 1, d + deltaDays)));
   };
 
-  // Calendar months vary in length, so moving to the "next/previous month"
-  // shifts the month component directly rather than adding a fixed day count.
+  // Calendar months/years vary in length, so moving to the "next/previous"
+  // one shifts that component directly rather than adding a fixed day count.
   const shiftMonth = (deltaMonths) => {
     const [y, m] = rangeEnd.split("-").map(Number);
     setRangeEnd(toISO(new Date(y, m - 1 + deltaMonths, 1)));
   };
+  const shiftYear = (deltaYears) => {
+    const [y, m, d] = rangeEnd.split("-").map(Number);
+    setRangeEnd(toISO(new Date(y + deltaYears, m - 1, d)));
+  };
 
   const handlePrev = () => {
     if (isMonthMode) return shiftMonth(-1);
-    if (isQuarterMode) return shiftMonth(-3);
+    if (isYearMode) return shiftYear(-1);
     return shiftEnd(-rangeDays);
   };
   const handleNext = () => {
     if (isMonthMode) return shiftMonth(1);
-    if (isQuarterMode) return shiftMonth(3);
+    if (isYearMode) return shiftYear(1);
     return shiftEnd(rangeDays);
+  };
+
+  // "Today" and "Yesterday" both use the single-day mode internally, but each
+  // jumps the anchor date to the right place when clicked.
+  const handleModeSelect = (key) => {
+    if (key === "today") {
+      setRangeEnd(toISO(new Date()));
+    } else if (key === "yesterday") {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      setRangeEnd(toISO(y));
+    }
+    setRangeMode(key);
+  };
+
+  // Shared tooltip for the aggregate (summed-over-the-period) grouped bar
+  // charts - shows the actual date range for each side of the comparison
+  // instead of a generic "This Period" / "Last Year" label.
+  const renderAggregateTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const currentEntry = payload.find((p) => p.dataKey === "current");
+    const priorEntry = payload.find((p) => p.dataKey === "prior");
+    return (
+      <div className="ad-yoy-tooltip">
+        <div className="ad-yoy-tooltip-date">{label}</div>
+        {priorEntry && (
+          <div className="ad-yoy-tooltip-row prior">
+            <div className="ad-yoy-tooltip-date">{priorRangeLabel}</div>
+            {fmt(priorEntry.value)}
+          </div>
+        )}
+        {currentEntry && (
+          <div className="ad-yoy-tooltip-row current">
+            <div className="ad-yoy-tooltip-date">{currentRangeLabel}</div>
+            {fmt(currentEntry.value)}
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -580,7 +658,7 @@ export default function YearOverYearReport({ reports, onBack }) {
               ‹
             </button>
             <span className="ad-week-range">
-              {isDay ? shortDate(rangeEnd) : `${shortDate(rangeStart)} – ${shortDate(displayEnd)}`}
+              {isDay ? fullDateLabel(rangeEnd) : `${shortDate(rangeStart)} – ${shortDate(displayEnd)}`}
             </span>
             <button className="ad-week-arrow" onClick={handleNext}>
               ›
@@ -594,27 +672,12 @@ export default function YearOverYearReport({ reports, onBack }) {
           <button
             key={choice.key}
             className={`ad-yoy-range-btn${rangeMode === choice.key ? " active" : ""}`}
-            onClick={() => setRangeMode(choice.key)}
+            onClick={() => handleModeSelect(choice.key)}
           >
             {choice.label}
           </button>
         ))}
       </div>
-
-      {/* ---------- Separate section: Day / Custom date pickers ---------- */}
-      {isDay && (
-        <div className="ad-yoy-picker-section">
-          <div className="ad-detail-section-label">Pick a Day</div>
-          <div className="ad-range-picker-row">
-            <input
-              type="date"
-              className="ad-load-input"
-              value={rangeEnd}
-              onChange={(e) => setRangeEnd(e.target.value)}
-            />
-          </div>
-        </div>
-      )}
 
       {isCustom && (
         <div className="ad-yoy-picker-section">
@@ -647,9 +710,7 @@ export default function YearOverYearReport({ reports, onBack }) {
       ) : (
         <>
           <div className="ad-yoy-compare-label">
-            {isDay
-              ? <>vs. {shortDate(priorStart)} (same day last year)</>
-              : <>vs. {shortDate(priorStart)} – {shortDate(priorEnd)} (same period last year)</>}
+            Comparing to {priorRangeLabel}
           </div>
 
           {loadingCsv ? (
@@ -663,14 +724,14 @@ export default function YearOverYearReport({ reports, onBack }) {
             <div className="ad-summary-card primary">
               <div className="ad-summary-label">Total Sales</div>
               <div className="ad-summary-value">{fmt(summary.totalSalesDay.current)}</div>
-              <div className="ad-yoy-prior">vs {fmt(summary.totalSalesDay.prior)} last year</div>
+              <div className="ad-yoy-prior">vs {fmt(summary.totalSalesDay.prior)} ({priorCompactLabel})</div>
               <ChangeBadge pct={summary.totalSalesDay.pctChange} />
             </div>
 
             <div className="ad-summary-card">
               <div className="ad-summary-label">In-House Sales</div>
               <div className="ad-summary-value">{fmt(summary.totalInHouse.current)}</div>
-              <div className="ad-yoy-prior">vs {fmt(summary.totalInHouse.prior)} last year</div>
+              <div className="ad-yoy-prior">vs {fmt(summary.totalInHouse.prior)} ({priorCompactLabel})</div>
               <ChangeBadge pct={summary.totalInHouse.pctChange} />
             </div>
 
@@ -680,7 +741,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                 {fmt(summary.totalRestaurantOnline.current)}
               </div>
               <div className="ad-yoy-prior">
-                vs {fmt(summary.totalRestaurantOnline.prior)} last year
+                vs {fmt(summary.totalRestaurantOnline.prior)} ({priorCompactLabel})
               </div>
               <ChangeBadge pct={summary.totalRestaurantOnline.pctChange} />
             </div>
@@ -688,7 +749,7 @@ export default function YearOverYearReport({ reports, onBack }) {
             <div className="ad-summary-card">
               <div className="ad-summary-label">Catering</div>
               <div className="ad-summary-value">{fmt(summary.totalCatering.current)}</div>
-              <div className="ad-yoy-prior">vs {fmt(summary.totalCatering.prior)} last year</div>
+              <div className="ad-yoy-prior">vs {fmt(summary.totalCatering.prior)} ({priorCompactLabel})</div>
               <ChangeBadge pct={summary.totalCatering.pctChange} />
             </div>
 
@@ -696,7 +757,7 @@ export default function YearOverYearReport({ reports, onBack }) {
               <div className="ad-summary-label">Total Guests</div>
               <div className="ad-summary-value">{summary.guests.current.toLocaleString()}</div>
               <div className="ad-yoy-prior">
-                vs {summary.guests.prior.toLocaleString()} last year
+                vs {summary.guests.prior.toLocaleString()} ({priorCompactLabel})
               </div>
               <ChangeBadge pct={summary.guests.pctChange} />
             </div>
@@ -730,10 +791,10 @@ export default function YearOverYearReport({ reports, onBack }) {
                   tick={{ fontSize: 11, fill: "#8C3700" }}
                   width={60}
                 />
-                <Tooltip formatter={(v) => fmt(v)} />
+                <Tooltip content={renderAggregateTooltip} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="prior" fill="#ffc864" name="Last Year" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="current" fill="#C45200" name="This Period" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]}>
                   <LabelList
                     dataKey="current"
                     position="top"
@@ -780,10 +841,10 @@ export default function YearOverYearReport({ reports, onBack }) {
                     tick={{ fontSize: 11, fill: "#8C3700" }}
                     width={55}
                   />
-                  <Tooltip formatter={(v) => fmt(v)} />
+                  <Tooltip content={renderAggregateTooltip} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="prior" fill="#ffc864" name="Last Year" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="current" fill="#C45200" name="This Period" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -810,7 +871,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                         <Tooltip formatter={(v) => fmt(v)} />
                       </PieChart>
                     </ResponsiveContainer>
-                    <div className="ad-yoy-donut-label">Last Year</div>
+                    <div className="ad-yoy-donut-label">{priorRangeLabel}</div>
                   </div>
                   <div className="ad-yoy-donut-col">
                     <ResponsiveContainer width="100%" height={180}>
@@ -830,7 +891,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                         <Tooltip formatter={(v) => fmt(v)} />
                       </PieChart>
                     </ResponsiveContainer>
-                    <div className="ad-yoy-donut-label">This Period</div>
+                    <div className="ad-yoy-donut-label">{currentRangeLabel}</div>
                   </div>
                 </div>
               ) : (
@@ -864,10 +925,10 @@ export default function YearOverYearReport({ reports, onBack }) {
                   tick={{ fontSize: 11, fill: "#8C3700" }}
                   width={60}
                 />
-                <Tooltip formatter={(v) => fmt(v)} />
+                <Tooltip content={renderAggregateTooltip} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="prior" fill="#ffc864" name="Last Year" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="current" fill="#C45200" name="This Period" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]}>
                   <LabelList
                     dataKey="current"
                     position="top"
@@ -921,7 +982,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                       <Tooltip formatter={(v) => fmt(v)} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="ad-yoy-donut-label">Last Year</div>
+                  <div className="ad-yoy-donut-label">{priorRangeLabel}</div>
                 </div>
                 <div className="ad-yoy-donut-col">
                   <ResponsiveContainer width="100%" height={180}>
@@ -941,7 +1002,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                       <Tooltip formatter={(v) => fmt(v)} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="ad-yoy-donut-label">This Period</div>
+                  <div className="ad-yoy-donut-label">{currentRangeLabel}</div>
                 </div>
               </div>
             ) : (
@@ -961,7 +1022,7 @@ export default function YearOverYearReport({ reports, onBack }) {
 
           {/* ---------- TREND ---------- */}
           <div className="ad-overview-section">
-            <div className="ad-panel-title">Daily Sales Trend: This Period vs. Last Year</div>
+            <div className="ad-panel-title">Daily Sales Trend: {currentRangeLabel} vs. {priorRangeLabel}</div>
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={trendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f5d5b8" />
@@ -976,7 +1037,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                 <Area
                   type="monotone"
                   dataKey="current"
-                  name="This Period"
+                  name={currentRangeLabel}
                   fill="#C45200"
                   stroke="#C45200"
                   fillOpacity={0.18}
@@ -986,7 +1047,7 @@ export default function YearOverYearReport({ reports, onBack }) {
                 <Line
                   type="monotone"
                   dataKey="prior"
-                  name="Last Year"
+                  name={priorRangeLabel}
                   stroke="#8C3700"
                   strokeWidth={2}
                   strokeDasharray="5 4"

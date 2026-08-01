@@ -25,9 +25,22 @@ const toISO = (d) => {
   return `${y}-${m}-${day}`;
 };
 
+const ordinalSuffix = (n) => {
+  const j = n % 10;
+  const k = n % 100;
+  if (j === 1 && k !== 11) return "st";
+  if (j === 2 && k !== 12) return "nd";
+  if (j === 3 && k !== 13) return "rd";
+  return "th";
+};
+
+// e.g. "Jul 1st, 2026, Wednesday"
 const fullDateLabel = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const date = new Date(y, m - 1, d);
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+  return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
 };
 
 const monthLabel = (year, month) =>
@@ -160,22 +173,27 @@ export default function TaxAuditDashboard({ reports, onBack }) {
       const pdfDoc = generateAuditPDF({ monthLabel: label, dayRows, summary });
       const pdfBase64 = pdfDoc.output("datauristring").split(",")[1];
 
+      // Send to both the auditor and the owner(s) - not just the auditor alone.
+      const recipients = [trimmedEmail, import.meta.env.VITE_OWNER_EMAILS]
+        .filter(Boolean)
+        .join(",");
+
       const response = await fetch("/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pdfBase64,
           reportDate: label,
-          ownerEmails: trimmedEmail,
+          ownerEmails: recipients,
           emailBody: `Attached is the monthly audit report for ${label}.`,
           isUpdate: false,
-          subjectOverride: `Monthly Audit Report - ${label}`,
+          subjectOverride: `Spice Malabar ${label} - Tax Report`,
           attachmentFilename: `${label} Audit Report.pdf`,
         }),
       });
 
       if (!response.ok) throw new Error("Backend request failed");
-      setSendResult({ type: "success", message: `Audit report for ${label} sent to ${trimmedEmail}.` });
+      setSendResult({ type: "success", message: `Audit report for ${label} sent to the auditor (${trimmedEmail}) and the owner(s).` });
     } catch (err) {
       console.error(err);
       setSendResult({ type: "error", message: "Failed to send the report. Please try again." });

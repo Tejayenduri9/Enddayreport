@@ -205,9 +205,10 @@ function AdminApp() {
         .ad-yoy-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #666; }
         .ad-yoy-legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
         .ad-yoy-picker-section { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 12px; padding: 12px 14px; margin-bottom: 1.25rem; }
-        .ad-yoy-tooltip { background: #fff; border: 0.5px solid #f0d0ab; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-size: 12.5px; }
-        .ad-yoy-tooltip-date { font-weight: 700; color: #222; margin-bottom: 4px; }
-        .ad-yoy-tooltip-row { padding: 2px 0; }
+        .ad-yoy-tooltip { background: #fff; border: 0.5px solid #f0d0ab; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); font-size: 12.5px; min-width: 220px; }
+        .ad-yoy-tooltip-date { font-weight: 700; color: #222; margin-bottom: 2px; font-size: 12px; }
+        .ad-yoy-tooltip-row { padding: 4px 0; }
+        .ad-yoy-tooltip-row + .ad-yoy-tooltip-row { border-top: 1px dashed #f0d0ab; margin-top: 2px; }
         .ad-yoy-tooltip-row.current { color: #C45200; font-weight: 600; }
         .ad-yoy-tooltip-row.prior { color: #8C3700; }
         .ad-catering-note { background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: #444; margin-bottom: 6px; }

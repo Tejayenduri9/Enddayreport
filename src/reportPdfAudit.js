@@ -10,7 +10,9 @@ const COL_WIDTHS = [48, 38, 38, 38, 34, 34, 34, 42, 40, 34, 34, 34, 42];
 /**
  * dayRows: array of { dayLabel, cashSale, creditCardSale, restaurantOnline, grubhub,
  *   doordash, uberEats, chequesCatering, cashTip, creditCardTip, tax, grandTotal, hasData }
- * summary: { totalTaxableSale, totalTax, totalNetSale }
+ * summary: { totalTaxableSale, totalTax, totalNetSale, cashSale, creditCardSale,
+ *   restaurantOnline, grubhub, doordash, uberEats, chequesCatering, cashTip,
+ *   creditCardTip, totalCashExclCatering, totalCcSettle }
  */
 export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const doc = new jsPDF({ orientation: "landscape" });
@@ -59,6 +61,66 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
     sx += sumW;
   });
   y += 30;
+
+  // --- Cash / Credit Card / Online / Catering breakdown ---
+  const taxOf = (v) => v * 0.07;
+  const netOf = (v) => v - taxOf(v);
+  const colGap = 4;
+  const breakdownColW = (cw - colGap * 3) / 4;
+  const bxStart = margin;
+
+  const drawBreakdownCol = (x, title, rows) => {
+    let by = y;
+    doc.setFont("helvetica", "bold").setFontSize(9);
+    doc.setTextColor(196, 82, 0);
+    doc.text(title, x, by);
+    by += 3;
+    doc.setDrawColor(230, 200, 170);
+    doc.line(x, by, x + breakdownColW - colGap, by);
+    by += 5;
+
+    rows.forEach(({ label, value, taxed, bold }) => {
+      doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(8);
+      doc.setTextColor(40, 40, 40);
+      doc.text(label, x, by);
+      doc.text(fmt(value), x + breakdownColW - colGap, by, { align: "right" });
+      by += 5;
+      if (taxed) {
+        doc.setFont("helvetica", "normal").setFontSize(6.5);
+        doc.setTextColor(196, 130, 60);
+        doc.text(`-7% tax: ${fmt(taxOf(value))}`, x + breakdownColW - colGap, by, { align: "right" });
+        by += 3.8;
+        doc.setTextColor(60, 130, 70);
+        doc.text(`Net: ${fmt(netOf(value))}`, x + breakdownColW - colGap, by, { align: "right" });
+        by += 5.5;
+      }
+    });
+    return by;
+  };
+
+  const colBottoms = [
+    drawBreakdownCol(bxStart, "CASH", [
+      { label: "Cash Sale", value: summary.cashSale, taxed: true },
+      { label: "Cash Tip", value: summary.cashTip },
+      { label: "Total Cash", value: summary.totalCashExclCatering, bold: true },
+    ]),
+    drawBreakdownCol(bxStart + (breakdownColW + colGap), "CREDIT CARD", [
+      { label: "Total CC Settle", value: summary.totalCcSettle },
+      { label: "CC Tip", value: summary.creditCardTip },
+      { label: "CC Sale", value: summary.creditCardSale, taxed: true, bold: true },
+    ]),
+    drawBreakdownCol(bxStart + (breakdownColW + colGap) * 2, "ONLINE", [
+      { label: "Restaurant Online", value: summary.restaurantOnline, taxed: true },
+      { label: "Grubhub", value: summary.grubhub, taxed: true },
+      { label: "DoorDash", value: summary.doordash, taxed: true },
+      { label: "Uber Eats", value: summary.uberEats, taxed: true },
+    ]),
+    drawBreakdownCol(bxStart + (breakdownColW + colGap) * 3, "CATERING", [
+      { label: "Catering", value: summary.chequesCatering, taxed: true, bold: true },
+    ]),
+  ];
+
+  y = Math.max(...colBottoms) + 6;
 
   const HEADER_H = 12;
   const ROW_H = 6.5;
