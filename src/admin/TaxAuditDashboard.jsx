@@ -87,13 +87,14 @@ export default function TaxAuditDashboard({ reports, onBack }) {
       const hasData = Boolean(r);
       const cashSale = Number(r?.cashSale) || 0;
       const creditCardSale = Number(r?.creditCardSale) || 0;
-      const restaurantOnline = Number(r?.restaurantOnline) || 0;
+      const restaurantOnline = (Number(r?.restaurantOnline) || 0) - (Number(r?.restaurantOnlineTips) || 0);
       const grubhub = Number(r?.grubhub) || 0;
       const doordash = Number(r?.doordash) || 0;
       const uberEats = Number(r?.uberEats) || 0;
       const chequesCatering = Number(r?.chequesCatering) || 0;
       const cashTip = Number(r?.cashTip) || 0;
       const creditCardTip = Number(r?.creditCardTip) || 0;
+      const restaurantOnlineTips = Number(r?.restaurantOnlineTips) || 0;
 
       const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
       const tax = taxableBase * 0.07;
@@ -106,7 +107,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
         dateStr,
         hasData,
         cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-        chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal,
+        chequesCatering, cashTip, creditCardTip, restaurantOnlineTips, tax, totalWithoutTip, grandTotal,
       });
     }
     return rows;
@@ -126,14 +127,16 @@ export default function TaxAuditDashboard({ reports, onBack }) {
     const chequesCatering = dayRows.reduce((s, r) => s + r.chequesCatering, 0);
     const cashTip = dayRows.reduce((s, r) => s + r.cashTip, 0);
     const creditCardTip = dayRows.reduce((s, r) => s + r.creditCardTip, 0);
+    const restaurantOnlineTips = dayRows.reduce((s, r) => s + r.restaurantOnlineTips, 0);
     const totalOnline = restaurantOnline + grubhub + doordash + uberEats;
     const totalCashExclCatering = cashSale + cashTip; // Cash Catering excluded per audit rules
     const totalCcSettle = creditCardSale + creditCardTip;
+    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
 
     return {
       totalTaxableSale, totalTax, totalNetSale,
       cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats, chequesCatering,
-      cashTip, creditCardTip, totalOnline, totalCashExclCatering, totalCcSettle,
+      cashTip, creditCardTip, restaurantOnlineTips, totalOnline, totalCashExclCatering, totalCcSettle, totalTips,
     };
   }, [dayRows]);
 
@@ -244,7 +247,8 @@ export default function TaxAuditDashboard({ reports, onBack }) {
         </div>
         <div className="ad-week-detail-col">
           <div className="ad-detail-section-label">Online</div>
-          <div className="ad-detail-row"><span>Restaurant Online</span><TaxedValue value={summary.restaurantOnline} /></div>
+          <div className="ad-detail-row"><span>Restaurant Online (Net)</span><TaxedValue value={summary.restaurantOnline} /></div>
+          <div className="ad-detail-row"><span>Online Tips</span><span>{fmt(summary.restaurantOnlineTips)}</span></div>
           <div className="ad-detail-row"><span>Grubhub</span><TaxedValue value={summary.grubhub} /></div>
           <div className="ad-detail-row"><span>DoorDash</span><TaxedValue value={summary.doordash} /></div>
           <div className="ad-detail-row"><span>Uber Eats</span><TaxedValue value={summary.uberEats} /></div>

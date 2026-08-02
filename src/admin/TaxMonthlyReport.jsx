@@ -42,7 +42,8 @@ export default function TaxMonthlyReport({ reports }) {
     const creditCardTip = sum("creditCardTip");
     const creditCardSale = sum("creditCardSale");
     const totalSettle = sum("totalSettle");
-    const restaurantOnline = sum("restaurantOnline");
+    const restaurantOnlineTips = sum("restaurantOnlineTips");
+    const restaurantOnline = sum("restaurantOnline") - restaurantOnlineTips;
     const grubhub = sum("grubhub");
     const doordash = sum("doordash");
     const uberEats = sum("uberEats");
@@ -50,7 +51,7 @@ export default function TaxMonthlyReport({ reports }) {
     const totalCatering = sum("totalCatering");
     const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
     const totalSale = sum("totalSalesDay");
-    const totalTips = cashTip + creditCardTip;
+    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
     const totalAmountIncTip = totalSale + totalTips;
     const totalCashIncTip = cashSale + cashTip + cashCatering;
     const taxableAmount = totalSale - cashCatering;
@@ -59,7 +60,7 @@ export default function TaxMonthlyReport({ reports }) {
 
     return {
       cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-      totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
+      totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
       totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
       taxableAmount, tax, totalInclTax,
     };
@@ -136,7 +137,8 @@ export default function TaxMonthlyReport({ reports }) {
             </div>
             <div className="ad-week-detail-col">
               <div className="ad-detail-section-label">Online</div>
-              <div className="ad-detail-row"><span>Restaurant Online</span><TaxedValue value={summary.restaurantOnline} /></div>
+              <div className="ad-detail-row"><span>Restaurant Online (Net)</span><TaxedValue value={summary.restaurantOnline} /></div>
+              <div className="ad-detail-row"><span>Online Tips</span><span>{fmt(summary.restaurantOnlineTips)}</span></div>
               <div className="ad-detail-row"><span>Grubhub</span><TaxedValue value={summary.grubhub} /></div>
               <div className="ad-detail-row"><span>DoorDash</span><TaxedValue value={summary.doordash} /></div>
               <div className="ad-detail-row"><span>Uber Eats</span><TaxedValue value={summary.uberEats} /></div>

@@ -85,6 +85,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
     const creditCardSale = sum("creditCardSale");
     const totalSettle = sum("totalSettle");
     const restaurantOnline = sum("restaurantOnline");
+    const restaurantOnlineTips = sum("restaurantOnlineTips");
     const grubhub = sum("grubhub");
     const doordash = sum("doordash");
     const uberEats = sum("uberEats");
@@ -92,13 +93,13 @@ export default function CalendarReport({ reports, onSelectReport }) {
     const totalCatering = sum("totalCatering");
     const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
     const totalSale = sum("totalSalesDay");
-    const totalTips = cashTip + creditCardTip;
+    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
     const totalAmountIncTip = totalSale + totalTips;
     const totalCashIncTip = cashSale + cashTip + cashCatering;
 
     return {
       cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-      totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
+      totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
       totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
     };
   }, [rangeReports]);
@@ -203,6 +204,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
             <div className="ad-week-detail-col">
               <div className="ad-detail-section-label">Online</div>
               <div className="ad-detail-row"><span>Restaurant Online</span><span>{fmt(summary.restaurantOnline)}</span></div>
+              <div className="ad-detail-row"><span>Online Tips</span><span>{fmt(summary.restaurantOnlineTips)}</span></div>
               <div className="ad-detail-row"><span>Grubhub</span><span>{fmt(summary.grubhub)}</span></div>
               <div className="ad-detail-row"><span>DoorDash</span><span>{fmt(summary.doordash)}</span></div>
               <div className="ad-detail-row"><span>Uber Eats</span><span>{fmt(summary.uberEats)}</span></div>

@@ -111,6 +111,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
     ]),
     drawBreakdownCol(bxStart + (breakdownColW + colGap) * 2, "ONLINE", [
       { label: "Restaurant Online", value: summary.restaurantOnline, taxed: true },
+      { label: "Online Tips", value: summary.restaurantOnlineTips },
       { label: "Grubhub", value: summary.grubhub, taxed: true },
       { label: "DoorDash", value: summary.doordash, taxed: true },
       { label: "Uber Eats", value: summary.uberEats, taxed: true },

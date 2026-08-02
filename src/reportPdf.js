@@ -141,10 +141,11 @@ export function generatePDF(form, cateringNotes) {
   y += 2;
 
   secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
-  const ocb = Math.floor(cw / 4);
-  const ocs = [ocb, ocb, ocb, cw - ocb * 3];
+  const ocb = Math.floor(cw / 5);
+  const ocs = [ocb, ocb, ocb, ocb, cw - ocb * 4];
   const platforms = [
     { label: "Restaurant Online", val: form.restaurantOnline },
+    { label: "Online Tips", val: form.restaurantOnlineTips },
     { label: "Grubhub", val: form.grubhub },
     { label: "DoorDash", val: form.doordash },
     { label: "Uber Eats", val: form.uberEats },

@@ -78,6 +78,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
 
   secHeader("ONLINE SALES");
   row("Restaurant Online", fmt(summary.restaurantOnline));
+  row("Online Tips", fmt(summary.restaurantOnlineTips));
   row("Grubhub", fmt(summary.grubhub));
   row("DoorDash", fmt(summary.doordash));
   row("Uber Eats", fmt(summary.uberEats));

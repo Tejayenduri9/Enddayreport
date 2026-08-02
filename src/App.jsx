@@ -77,6 +77,7 @@ const summarizeWeek = (reports) => {
   const creditCardSale = sum("creditCardSale");
   const totalSettle = sum("totalSettle");
   const restaurantOnline = sum("restaurantOnline");
+  const restaurantOnlineTips = sum("restaurantOnlineTips");
   const grubhub = sum("grubhub");
   const doordash = sum("doordash");
   const uberEats = sum("uberEats");
@@ -84,13 +85,13 @@ const summarizeWeek = (reports) => {
   const totalCatering = sum("totalCatering");
   const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
   const totalSale = sum("totalSalesDay");
-  const totalTips = cashTip + creditCardTip;
+  const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
   const totalAmountIncTip = totalSale + totalTips;
   const totalCashIncTip = cashSale + cashTip + cashCatering;
 
   return {
     cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-    totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
+    totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
     totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
   };
 };
@@ -110,6 +111,7 @@ const blankForm = () => ({
   creditCardTip: "",
   giftCard: "",
   restaurantOnline: "",
+  restaurantOnlineTips: "",
   grubhub: "",
   doordash: "",
   uberEats: "",
@@ -256,10 +258,12 @@ function App() {
     const giftCard = Number(updated.giftCard) || 0;
     const totalInHouse = systemGross - giftCard;
     const restaurantOnline = Number(updated.restaurantOnline) || 0;
+    const restaurantOnlineTips = Number(updated.restaurantOnlineTips) || 0;
+    const netRestaurantOnline = restaurantOnline - restaurantOnlineTips;
     const grubhub = Number(updated.grubhub) || 0;
     const doordash = Number(updated.doordash) || 0;
     const uberEats = Number(updated.uberEats) || 0;
-    const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
+    const onlineSale = netRestaurantOnline + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + totalCatering;
     updated.cashTip = cashTip >= 0 ? cashTip : 0;
@@ -651,20 +655,21 @@ function App() {
               const r = reportsByDate[dateStr];
               const cashSale = Number(r?.cashSale) || 0;
               const creditCardSale = Number(r?.creditCardSale) || 0;
-              const restaurantOnline = Number(r?.restaurantOnline) || 0;
+              const restaurantOnline = (Number(r?.restaurantOnline) || 0) - (Number(r?.restaurantOnlineTips) || 0);
               const grubhub = Number(r?.grubhub) || 0;
               const doordash = Number(r?.doordash) || 0;
               const uberEats = Number(r?.uberEats) || 0;
               const chequesCatering = Number(r?.chequesCatering) || 0;
               const cashTip = Number(r?.cashTip) || 0;
               const creditCardTip = Number(r?.creditCardTip) || 0;
+              const restaurantOnlineTips = Number(r?.restaurantOnlineTips) || 0;
               const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
               const tax = taxableBase * 0.07;
               const totalWithoutTip = taxableBase - tax;
               dayRows.push({
                 dayLabel: shortDate(dateStr), dateStr, hasData: Boolean(r),
                 cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-                chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal: taxableBase,
+                chequesCatering, cashTip, creditCardTip, restaurantOnlineTips, tax, totalWithoutTip, grandTotal: taxableBase,
               });
             }
             const sum = (key) => dayRows.reduce((s, r) => s + r[key], 0);
@@ -675,7 +680,7 @@ function App() {
               cashSale: sum("cashSale"), creditCardSale: sum("creditCardSale"),
               restaurantOnline: sum("restaurantOnline"), grubhub: sum("grubhub"),
               doordash: sum("doordash"), uberEats: sum("uberEats"), chequesCatering: sum("chequesCatering"),
-              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"),
+              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"), restaurantOnlineTips: sum("restaurantOnlineTips"),
               totalCashExclCatering: sum("cashSale") + sum("cashTip"),
               totalCcSettle: sum("creditCardSale") + sum("creditCardTip"),
             };
@@ -712,6 +717,7 @@ function App() {
           creditCardSale: { label: "CC Sale", money: true },
           giftCard: { label: "Gift Card Redeemed", money: true },
           restaurantOnline: { label: "Restaurant Online", money: true },
+          restaurantOnlineTips: { label: "Restaurant Online Tips", money: true },
           grubhub: { label: "Grubhub", money: true },
           doordash: { label: "DoorDash", money: true },
           uberEats: { label: "Uber Eats", money: true },
@@ -960,6 +966,7 @@ function App() {
                 <div className="rs-field"><label>Gift Card Redeemed</label><MoneyInput name="giftCard" value={form.giftCard} onChange={handleChange} /></div>
                 <div className="rs-grid-2">
                   <div className="rs-field"><label>Restaurant Online</label><MoneyInput name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Restaurant Online Tips</label><MoneyInput name="restaurantOnlineTips" value={form.restaurantOnlineTips} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Grubhub</label><MoneyInput name="grubhub" value={form.grubhub} onChange={handleChange} /></div>
                   <div className="rs-field"><label>DoorDash</label><MoneyInput name="doordash" value={form.doordash} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Uber Eats</label><MoneyInput name="uberEats" value={form.uberEats} onChange={handleChange} /></div>

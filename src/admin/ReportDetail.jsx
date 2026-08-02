@@ -75,6 +75,7 @@ export default function ReportDetail({ report, onClose }) {
           <div className="ad-detail-section">
             <div className="ad-detail-section-label">Online Sales</div>
             <Row label="Restaurant Online" value={fmt(report.restaurantOnline)} />
+            <Row label="Online Tips" value={fmt(report.restaurantOnlineTips)} />
             <Row label="Grubhub" value={fmt(report.grubhub)} />
             <Row label="DoorDash" value={fmt(report.doordash)} />
             <Row label="Uber Eats" value={fmt(report.uberEats)} />
