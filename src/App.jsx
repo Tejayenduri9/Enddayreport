@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc, query, where } from "firebase/firestore";
 import logo from "./assets/logo.png";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
@@ -77,7 +77,6 @@ const summarizeWeek = (reports) => {
   const creditCardSale = sum("creditCardSale");
   const totalSettle = sum("totalSettle");
   const restaurantOnline = sum("restaurantOnline");
-  const restaurantOnlineTips = sum("restaurantOnlineTips");
   const grubhub = sum("grubhub");
   const doordash = sum("doordash");
   const uberEats = sum("uberEats");
@@ -85,13 +84,13 @@ const summarizeWeek = (reports) => {
   const totalCatering = sum("totalCatering");
   const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
   const totalSale = sum("totalSalesDay");
-  const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
+  const totalTips = cashTip + creditCardTip;
   const totalAmountIncTip = totalSale + totalTips;
   const totalCashIncTip = cashSale + cashTip + cashCatering;
 
   return {
     cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-    totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
+    totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
     totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
   };
 };
@@ -111,7 +110,6 @@ const blankForm = () => ({
   creditCardTip: "",
   giftCard: "",
   restaurantOnline: "",
-  restaurantOnlineTips: "",
   grubhub: "",
   doordash: "",
   uberEats: "",
@@ -197,17 +195,122 @@ function App() {
   const [loadLoading, setLoadLoading] = useState(false);
   const [originalForm, setOriginalForm] = useState(null);
   const [unlocked, setUnlocked] = useState(false);
+  const [autoFilledFields, setAutoFilledFields] = useState({});
+
+  // Whenever the report date changes (and this isn't editing an already-
+  // saved report), check whether the Aldelo email-import pipeline has
+  // values waiting for that date, and fill in only the fields that are
+  // still empty - never overwrite something already typed in.
+  useEffect(() => {
+    if (isEditMode || !form.date) return;
+    let cancelled = false;
+    (async () => {
+      setAutoFilledFields({});
+      try {
+        const res = await fetch(`/get-email-import?date=${form.date}`);
+        const payload = await res.json();
+        if (cancelled || !payload.found) return;
+        const imported = payload.data;
+        const filledKeys = [];
+        setForm((prev) => {
+          const next = { ...prev };
+          if (!prev.cashSale && imported.cashSale) {
+            next.cashSale = imported.cashSale;
+            filledKeys.push("cashSale");
+          }
+          if (!prev.totalSettle && imported.totalSettle) {
+            next.totalSettle = imported.totalSettle;
+            filledKeys.push("totalSettle");
+          }
+          if (!prev.creditCardTip && imported.creditCardTip) {
+            next.creditCardTip = imported.creditCardTip;
+            filledKeys.push("creditCardTip");
+          }
+          return next;
+        });
+        if (filledKeys.length > 0) {
+          setAutoFilledFields(
+            filledKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {})
+          );
+        }
+      } catch (err) {
+        console.error("Failed to check for auto-imported values:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.date, isEditMode]);
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
 
-  const handlePageUnlock = () => {
+  // Multi-step gate after the PIN: pick which staff member is submitting,
+  // then verify their identity with a TOTP code from their authenticator app.
+  const [lockStep, setLockStep] = useState("pin"); // "pin" | "name" | "mfa"
+  const [staffOptions, setStaffOptions] = useState([]);
+  const [staffLoadError, setStaffLoadError] = useState("");
+  const [selectedStaff, setSelectedStaff] = useState(null); // { id, name }
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaError, setMfaError] = useState("");
+  const [mfaVerifying, setMfaVerifying] = useState(false);
+
+  const handlePageUnlock = async () => {
     const correct = import.meta.env.VITE_PAGE_PIN || "0000";
-    if (pagePin === correct) {
-      setUnlocked(true);
-      setPagePinError(false);
-    } else {
+    if (pagePin !== correct) {
       setPagePinError(true);
       setPagePin("");
+      return;
+    }
+    setPagePinError(false);
+    setStaffLoadError("");
+    try {
+      const snap = await getDocs(query(collection(db, "staff"), where("enrolled", "==", true)));
+      const names = snap.docs
+        .map((d) => ({ id: d.id, name: d.data().name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      if (names.length === 0) {
+        setStaffLoadError("No enrolled staff found. Ask the owner to add and enroll staff in Manage Staff first.");
+      }
+      setStaffOptions(names);
+      setLockStep("name");
+    } catch (err) {
+      console.error("Failed to load staff list:", err);
+      setStaffLoadError("Couldn't load the staff list. Please try again.");
+      setLockStep("name");
+    }
+  };
+
+  const handleSelectStaff = (staffMember) => {
+    setSelectedStaff(staffMember);
+    setMfaCode("");
+    setMfaError("");
+    setLockStep("mfa");
+  };
+
+  const handleVerifyMfa = async () => {
+    if (!selectedStaff || mfaCode.trim().length < 6) return;
+    setMfaVerifying(true);
+    setMfaError("");
+    try {
+      const res = await fetch("/staff-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ staffId: selectedStaff.id, code: mfaCode.trim() }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setUnlocked(true);
+      } else if (data.locked) {
+        setMfaError("Too many incorrect codes. Wait 15 minutes and try again.");
+      } else {
+        setMfaError("That code didn't match. Check your authenticator app and try again.");
+      }
+    } catch (err) {
+      console.error("MFA verification failed:", err);
+      setMfaError("Couldn't verify the code. Please try again.");
+    } finally {
+      setMfaVerifying(false);
+      setMfaCode("");
     }
   };
 
@@ -229,6 +332,7 @@ function App() {
     setCateringNotes([emptyCatering()]);
     setNotesOpen(false);
     setOriginalForm(null);
+    setAutoFilledFields({});
   };
 
   const handleCateringChange = (index, evt) => {
@@ -258,12 +362,10 @@ function App() {
     const giftCard = Number(updated.giftCard) || 0;
     const totalInHouse = systemGross - giftCard;
     const restaurantOnline = Number(updated.restaurantOnline) || 0;
-    const restaurantOnlineTips = Number(updated.restaurantOnlineTips) || 0;
-    const netRestaurantOnline = restaurantOnline - restaurantOnlineTips;
     const grubhub = Number(updated.grubhub) || 0;
     const doordash = Number(updated.doordash) || 0;
     const uberEats = Number(updated.uberEats) || 0;
-    const onlineSale = netRestaurantOnline + grubhub + doordash + uberEats;
+    const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + totalCatering;
     updated.cashTip = cashTip >= 0 ? cashTip : 0;
@@ -573,9 +675,17 @@ function App() {
     setLoading(true);
     try {
       if (isEditMode && editDocId) {
-        await updateDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() });
+        await updateDoc(firestoreDoc(db, "restaurants", editDocId), {
+          ...form, cateringNotes, updatedAt: new Date(),
+          submittedByName: selectedStaff?.name || null,
+          submittedByStaffId: selectedStaff?.id || null,
+        });
       } else {
-        await addDoc(collection(db, "restaurants"), { ...form, cateringNotes, createdAt: new Date() });
+        await addDoc(collection(db, "restaurants"), {
+          ...form, cateringNotes, createdAt: new Date(),
+          submittedByName: selectedStaff?.name || null,
+          submittedByStaffId: selectedStaff?.id || null,
+        });
       }
 
       const pdfDoc = generatePDF();
@@ -655,21 +765,20 @@ function App() {
               const r = reportsByDate[dateStr];
               const cashSale = Number(r?.cashSale) || 0;
               const creditCardSale = Number(r?.creditCardSale) || 0;
-              const restaurantOnline = (Number(r?.restaurantOnline) || 0) - (Number(r?.restaurantOnlineTips) || 0);
+              const restaurantOnline = Number(r?.restaurantOnline) || 0;
               const grubhub = Number(r?.grubhub) || 0;
               const doordash = Number(r?.doordash) || 0;
               const uberEats = Number(r?.uberEats) || 0;
               const chequesCatering = Number(r?.chequesCatering) || 0;
               const cashTip = Number(r?.cashTip) || 0;
               const creditCardTip = Number(r?.creditCardTip) || 0;
-              const restaurantOnlineTips = Number(r?.restaurantOnlineTips) || 0;
               const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
               const tax = taxableBase * 0.07;
               const totalWithoutTip = taxableBase - tax;
               dayRows.push({
                 dayLabel: shortDate(dateStr), dateStr, hasData: Boolean(r),
                 cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-                chequesCatering, cashTip, creditCardTip, restaurantOnlineTips, tax, totalWithoutTip, grandTotal: taxableBase,
+                chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal: taxableBase,
               });
             }
             const sum = (key) => dayRows.reduce((s, r) => s + r[key], 0);
@@ -680,7 +789,7 @@ function App() {
               cashSale: sum("cashSale"), creditCardSale: sum("creditCardSale"),
               restaurantOnline: sum("restaurantOnline"), grubhub: sum("grubhub"),
               doordash: sum("doordash"), uberEats: sum("uberEats"), chequesCatering: sum("chequesCatering"),
-              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"), restaurantOnlineTips: sum("restaurantOnlineTips"),
+              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"),
               totalCashExclCatering: sum("cashSale") + sum("cashTip"),
               totalCcSettle: sum("creditCardSale") + sum("creditCardTip"),
             };
@@ -717,7 +826,6 @@ function App() {
           creditCardSale: { label: "CC Sale", money: true },
           giftCard: { label: "Gift Card Redeemed", money: true },
           restaurantOnline: { label: "Restaurant Online", money: true },
-          restaurantOnlineTips: { label: "Restaurant Online Tips", money: true },
           grubhub: { label: "Grubhub", money: true },
           doordash: { label: "DoorDash", money: true },
           uberEats: { label: "Uber Eats", money: true },
@@ -805,6 +913,7 @@ function App() {
         .rs-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .rs-field:last-child { margin-bottom: 0; }
         .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
+        .rs-autofill-badge { display: inline-block; margin-left: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #1e7e34; background: #e6f4ea; padding: 1px 6px; border-radius: 10px; }
         .rs-required { color: #c0392b; margin-left: 3px; font-weight: 700; }
         .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
         .rs-input-money { position: relative; display: flex; align-items: center; }
@@ -876,6 +985,11 @@ function App() {
         .rs-lock-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
         .rs-lock-input.error { border-color: #e05555; box-shadow: 0 0 0 2px rgba(224,85,85,0.12); }
         .rs-lock-error { color: #e05555; font-size: 12px; margin-bottom: 12px; }
+        .rs-staff-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 260px; overflow-y: auto; }
+        .rs-staff-option { padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: #fff8f4; color: #8C3700; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+        .rs-staff-option:hover { background: #fdeede; }
+        .rs-btn-secondary { background: transparent; color: #8C3700; margin-top: 8px; }
+        .rs-btn-secondary:hover { opacity: 0.75; }
       `}</style>
 
       {!unlocked ? (
@@ -886,22 +1000,83 @@ function App() {
               <div className="rs-lock-title">Restaurant Sales</div>
               <div className="rs-lock-sub">Daily Report</div>
             </div>
-            <div className="rs-lock-body">
-              <div className="rs-lock-icon">🔐</div>
-              <label className="rs-lock-label">Enter passcode to continue</label>
-              <input
-                className={`rs-lock-input${pagePinError ? " error" : ""}`}
-                type="password"
-                inputMode="numeric"
-                maxLength={10}
-                value={pagePin}
-                placeholder="••••"
-                onChange={(e) => { setPagePin(e.target.value); setPagePinError(false); }}
-                onKeyDown={(e) => e.key === "Enter" && handlePageUnlock()}
-              />
-              {pagePinError && <div className="rs-lock-error">⚠️ Incorrect passcode. Try again.</div>}
-              <button className="rs-btn" onClick={handlePageUnlock}>Unlock</button>
-            </div>
+
+            {lockStep === "pin" && (
+              <div className="rs-lock-body">
+                <div className="rs-lock-icon">🔐</div>
+                <label className="rs-lock-label">Enter passcode to continue</label>
+                <input
+                  className={`rs-lock-input${pagePinError ? " error" : ""}`}
+                  type="password"
+                  inputMode="numeric"
+                  maxLength={10}
+                  value={pagePin}
+                  placeholder="••••"
+                  onChange={(e) => { setPagePin(e.target.value); setPagePinError(false); }}
+                  onKeyDown={(e) => e.key === "Enter" && handlePageUnlock()}
+                />
+                {pagePinError && <div className="rs-lock-error">⚠️ Incorrect passcode. Try again.</div>}
+                <button className="rs-btn" onClick={handlePageUnlock}>Unlock</button>
+              </div>
+            )}
+
+            {lockStep === "name" && (
+              <div className="rs-lock-body">
+                <div className="rs-lock-icon">👤</div>
+                <label className="rs-lock-label">Who's submitting this report?</label>
+                {staffLoadError && <div className="rs-lock-error">⚠️ {staffLoadError}</div>}
+                <div className="rs-staff-list">
+                  {staffOptions.map((s) => (
+                    <button
+                      key={s.id}
+                      className="rs-staff-option"
+                      onClick={() => handleSelectStaff(s)}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="rs-btn rs-btn-secondary"
+                  onClick={() => { setLockStep("pin"); setPagePin(""); }}
+                >
+                  ← Back
+                </button>
+              </div>
+            )}
+
+            {lockStep === "mfa" && (
+              <div className="rs-lock-body">
+                <div className="rs-lock-icon">🔑</div>
+                <label className="rs-lock-label">
+                  Enter the code from {selectedStaff?.name}'s authenticator app
+                </label>
+                <input
+                  className={`rs-lock-input${mfaError ? " error" : ""}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={mfaCode}
+                  placeholder="000000"
+                  onChange={(e) => { setMfaCode(e.target.value.replace(/\D/g, "")); setMfaError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleVerifyMfa()}
+                />
+                {mfaError && <div className="rs-lock-error">⚠️ {mfaError}</div>}
+                <button
+                  className="rs-btn"
+                  onClick={handleVerifyMfa}
+                  disabled={mfaVerifying || mfaCode.length < 6}
+                >
+                  {mfaVerifying ? "Verifying…" : "Verify & Continue"}
+                </button>
+                <button
+                  className="rs-btn rs-btn-secondary"
+                  onClick={() => { setLockStep("name"); setSelectedStaff(null); }}
+                >
+                  ← Choose a different name
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -949,15 +1124,15 @@ function App() {
 
               <div className="rs-section">
                 <div className="rs-section-label">Cash</div>
-                <div className="rs-field"><label>Cash Sale (Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Cash Sale (Cash Paid Total){autoFilledFields.cashSale && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
                 <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
               </div>
 
               <div className="rs-section">
                 <div className="rs-section-label">Credit Card</div>
                 <div className="rs-grid-2">
-                  <div className="rs-field"><label>Total Settle Amount (Credit & Debit Card Total)</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
-                  <div className="rs-field"><label>Credit Card Tip (Gratuities Total)</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Total Settle Amount (Credit & Debit Card Total){autoFilledFields.totalSettle && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Credit Card Tip (Gratuities Total){autoFilledFields.creditCardTip && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
                 </div>
               </div>
 
@@ -966,7 +1141,6 @@ function App() {
                 <div className="rs-field"><label>Gift Card Redeemed</label><MoneyInput name="giftCard" value={form.giftCard} onChange={handleChange} /></div>
                 <div className="rs-grid-2">
                   <div className="rs-field"><label>Restaurant Online</label><MoneyInput name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} /></div>
-                  <div className="rs-field"><label>Restaurant Online Tips</label><MoneyInput name="restaurantOnlineTips" value={form.restaurantOnlineTips} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Grubhub</label><MoneyInput name="grubhub" value={form.grubhub} onChange={handleChange} /></div>
                   <div className="rs-field"><label>DoorDash</label><MoneyInput name="doordash" value={form.doordash} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Uber Eats</label><MoneyInput name="uberEats" value={form.uberEats} onChange={handleChange} /></div>
