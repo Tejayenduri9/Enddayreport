@@ -1,0 +1,23 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "spice-malabar-email-worker",
+	"main": "src/index.js",
+	"compatibility_date": "2026-08-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// Fill in your actual KV namespace ID after creating it:
+	// wrangler kv namespace create EMAIL_IMPORTS
+	"kv_namespaces": [
+		{
+			"binding": "EMAIL_IMPORTS",
+			"id": "b1b3075ff0e34a01ab16ebe71a561224",
+			"remote": true
+		}
+	],
+	// Where the original email still gets forwarded, so nothing is ever lost
+	// even if the report-extraction logic below fails for any reason.
+	"vars": {
+		"FORWARD_TO": "support@enddayreports.com"
+	}
+}
