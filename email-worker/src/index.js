@@ -104,10 +104,10 @@ function extractFields(data) {
     const creditCardTip = Number(gratuity?.GratuityPayableValue) || 0;
     const totalGuests = Number(stats?.GuestCountValue) || 0;
 
-    // CashTenderedValue is reported as a negative "amount owed out of the
-    // drawer" in some sections - the actual cash sale total is the absolute
-    // amount tendered by customers that day.
-    const cashSale = Math.abs(Number(cashier?.CashTenderedValue) || 0);
+    // CashTendered is a formatted string (e.g. "$637.43"), same as
+    // CreditDebitCards - there's no separate numeric "...Value" field for
+    // this one, unlike most other fields in this report.
+    const cashSale = Math.abs(parseMoney(cashier?.CashTendered));
 
     return {
       date: businessDate,
