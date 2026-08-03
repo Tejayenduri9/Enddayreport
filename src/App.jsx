@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
 import logo from "./assets/logo.png";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
@@ -244,73 +244,14 @@ function App() {
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
 
-  // Multi-step gate after the PIN: pick which staff member is submitting,
-  // then verify their identity with a TOTP code from their authenticator app.
-  const [lockStep, setLockStep] = useState("pin"); // "pin" | "name" | "mfa"
-  const [staffOptions, setStaffOptions] = useState([]);
-  const [staffLoadError, setStaffLoadError] = useState("");
-  const [selectedStaff, setSelectedStaff] = useState(null); // { id, name }
-  const [mfaCode, setMfaCode] = useState("");
-  const [mfaError, setMfaError] = useState("");
-  const [mfaVerifying, setMfaVerifying] = useState(false);
-
-  const handlePageUnlock = async () => {
+  const handlePageUnlock = () => {
     const correct = import.meta.env.VITE_PAGE_PIN || "0000";
-    if (pagePin !== correct) {
+    if (pagePin === correct) {
+      setUnlocked(true);
+      setPagePinError(false);
+    } else {
       setPagePinError(true);
       setPagePin("");
-      return;
-    }
-    setPagePinError(false);
-    setStaffLoadError("");
-    try {
-      const snap = await getDocs(query(collection(db, "staff"), where("enrolled", "==", true)));
-      const names = snap.docs
-        .map((d) => ({ id: d.id, name: d.data().name }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      if (names.length === 0) {
-        setStaffLoadError("No enrolled staff found. Ask the owner to add and enroll staff in Manage Staff first.");
-      }
-      setStaffOptions(names);
-      setLockStep("name");
-    } catch (err) {
-      console.error("Failed to load staff list:", err);
-      setStaffLoadError("Couldn't load the staff list. Please try again.");
-      setLockStep("name");
-    }
-  };
-
-  const handleSelectStaff = (staffMember) => {
-    setSelectedStaff(staffMember);
-    setMfaCode("");
-    setMfaError("");
-    setLockStep("mfa");
-  };
-
-  const handleVerifyMfa = async () => {
-    if (!selectedStaff || mfaCode.trim().length < 6) return;
-    setMfaVerifying(true);
-    setMfaError("");
-    try {
-      const res = await fetch("/staff-verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staffId: selectedStaff.id, code: mfaCode.trim() }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        setUnlocked(true);
-      } else if (data.locked) {
-        setMfaError("Too many incorrect codes. Wait 15 minutes and try again.");
-      } else {
-        setMfaError("That code didn't match. Check your authenticator app and try again.");
-      }
-    } catch (err) {
-      console.error("MFA verification failed:", err);
-      setMfaError("Couldn't verify the code. Please try again.");
-    } finally {
-      setMfaVerifying(false);
-      setMfaCode("");
     }
   };
 
@@ -677,14 +618,10 @@ function App() {
       if (isEditMode && editDocId) {
         await updateDoc(firestoreDoc(db, "restaurants", editDocId), {
           ...form, cateringNotes, updatedAt: new Date(),
-          submittedByName: selectedStaff?.name || null,
-          submittedByStaffId: selectedStaff?.id || null,
         });
       } else {
         await addDoc(collection(db, "restaurants"), {
           ...form, cateringNotes, createdAt: new Date(),
-          submittedByName: selectedStaff?.name || null,
-          submittedByStaffId: selectedStaff?.id || null,
         });
       }
 
@@ -985,11 +922,6 @@ function App() {
         .rs-lock-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
         .rs-lock-input.error { border-color: #e05555; box-shadow: 0 0 0 2px rgba(224,85,85,0.12); }
         .rs-lock-error { color: #e05555; font-size: 12px; margin-bottom: 12px; }
-        .rs-staff-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; max-height: 260px; overflow-y: auto; }
-        .rs-staff-option { padding: 12px 16px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); background: #fff8f4; color: #8C3700; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
-        .rs-staff-option:hover { background: #fdeede; }
-        .rs-btn-secondary { background: transparent; color: #8C3700; margin-top: 8px; }
-        .rs-btn-secondary:hover { opacity: 0.75; }
       `}</style>
 
       {!unlocked ? (
@@ -1001,82 +933,22 @@ function App() {
               <div className="rs-lock-sub">Daily Report</div>
             </div>
 
-            {lockStep === "pin" && (
-              <div className="rs-lock-body">
-                <div className="rs-lock-icon">🔐</div>
-                <label className="rs-lock-label">Enter passcode to continue</label>
-                <input
-                  className={`rs-lock-input${pagePinError ? " error" : ""}`}
-                  type="password"
-                  inputMode="numeric"
-                  maxLength={10}
-                  value={pagePin}
-                  placeholder="••••"
-                  onChange={(e) => { setPagePin(e.target.value); setPagePinError(false); }}
-                  onKeyDown={(e) => e.key === "Enter" && handlePageUnlock()}
-                />
-                {pagePinError && <div className="rs-lock-error">⚠️ Incorrect passcode. Try again.</div>}
-                <button className="rs-btn" onClick={handlePageUnlock}>Unlock</button>
-              </div>
-            )}
-
-            {lockStep === "name" && (
-              <div className="rs-lock-body">
-                <div className="rs-lock-icon">👤</div>
-                <label className="rs-lock-label">Who's submitting this report?</label>
-                {staffLoadError && <div className="rs-lock-error">⚠️ {staffLoadError}</div>}
-                <div className="rs-staff-list">
-                  {staffOptions.map((s) => (
-                    <button
-                      key={s.id}
-                      className="rs-staff-option"
-                      onClick={() => handleSelectStaff(s)}
-                    >
-                      {s.name}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className="rs-btn rs-btn-secondary"
-                  onClick={() => { setLockStep("pin"); setPagePin(""); }}
-                >
-                  ← Back
-                </button>
-              </div>
-            )}
-
-            {lockStep === "mfa" && (
-              <div className="rs-lock-body">
-                <div className="rs-lock-icon">🔑</div>
-                <label className="rs-lock-label">
-                  Enter the code from {selectedStaff?.name}'s authenticator app
-                </label>
-                <input
-                  className={`rs-lock-input${mfaError ? " error" : ""}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={mfaCode}
-                  placeholder="000000"
-                  onChange={(e) => { setMfaCode(e.target.value.replace(/\D/g, "")); setMfaError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleVerifyMfa()}
-                />
-                {mfaError && <div className="rs-lock-error">⚠️ {mfaError}</div>}
-                <button
-                  className="rs-btn"
-                  onClick={handleVerifyMfa}
-                  disabled={mfaVerifying || mfaCode.length < 6}
-                >
-                  {mfaVerifying ? "Verifying…" : "Verify & Continue"}
-                </button>
-                <button
-                  className="rs-btn rs-btn-secondary"
-                  onClick={() => { setLockStep("name"); setSelectedStaff(null); }}
-                >
-                  ← Choose a different name
-                </button>
-              </div>
-            )}
+            <div className="rs-lock-body">
+              <div className="rs-lock-icon">🔐</div>
+              <label className="rs-lock-label">Enter passcode to continue</label>
+              <input
+                className={`rs-lock-input${pagePinError ? " error" : ""}`}
+                type="password"
+                inputMode="numeric"
+                maxLength={10}
+                value={pagePin}
+                placeholder="••••"
+                onChange={(e) => { setPagePin(e.target.value); setPagePinError(false); }}
+                onKeyDown={(e) => e.key === "Enter" && handlePageUnlock()}
+              />
+              {pagePinError && <div className="rs-lock-error">⚠️ Incorrect passcode. Try again.</div>}
+              <button className="rs-btn" onClick={handlePageUnlock}>Unlock</button>
+            </div>
           </div>
         </div>
       ) : (
