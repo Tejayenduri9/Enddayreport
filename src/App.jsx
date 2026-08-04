@@ -195,52 +195,7 @@ function App() {
   const [loadLoading, setLoadLoading] = useState(false);
   const [originalForm, setOriginalForm] = useState(null);
   const [unlocked, setUnlocked] = useState(false);
-  const [autoFilledFields, setAutoFilledFields] = useState({});
-
-  // Whenever the report date changes (and this isn't editing an already-
-  // saved report), check whether the Aldelo email-import pipeline has
-  // values waiting for that date, and fill in only the fields that are
-  // still empty - never overwrite something already typed in.
-  useEffect(() => {
-    if (isEditMode || !form.date) return;
-    let cancelled = false;
-    (async () => {
-      setAutoFilledFields({});
-      try {
-        const res = await fetch(`/get-email-import?date=${form.date}`);
-        const payload = await res.json();
-        if (cancelled || !payload.found) return;
-        const imported = payload.data;
-        const filledKeys = [];
-        setForm((prev) => {
-          const next = { ...prev };
-          if (!prev.cashSale && imported.cashSale) {
-            next.cashSale = imported.cashSale;
-            filledKeys.push("cashSale");
-          }
-          if (!prev.totalSettle && imported.totalSettle) {
-            next.totalSettle = imported.totalSettle;
-            filledKeys.push("totalSettle");
-          }
-          if (!prev.creditCardTip && imported.creditCardTip) {
-            next.creditCardTip = imported.creditCardTip;
-            filledKeys.push("creditCardTip");
-          }
-          return next;
-        });
-        if (filledKeys.length > 0) {
-          setAutoFilledFields(
-            filledKeys.reduce((acc, key) => ({ ...acc, [key]: true }), {})
-          );
-        }
-      } catch (err) {
-        console.error("Failed to check for auto-imported values:", err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [form.date, isEditMode]);
+  const [emailImportPreview, setEmailImportPreview] = useState(null);
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
 
@@ -273,7 +228,7 @@ function App() {
     setCateringNotes([emptyCatering()]);
     setNotesOpen(false);
     setOriginalForm(null);
-    setAutoFilledFields({});
+    setEmailImportPreview(null);
   };
 
   const handleCateringChange = (index, evt) => {
@@ -288,8 +243,12 @@ function App() {
     setCateringNotes(cateringNotes.filter((_, i) => i !== index));
   };
 
-  const handleChange = (evt) => {
-    const updated = { ...form, [evt.target.name]: evt.target.value };
+
+  // Recomputes every derived/computed field from whatever raw inputs are
+  // currently in `updated`. Used both by handleChange (on every keystroke)
+  // and by the Aldelo auto-fill effect below, so the two never fall out of
+  // sync with each other.
+  const recomputeDerivedFields = (updated) => {
     const cashSale = Number(updated.cashSale) || 0;
     const cashCatering = Number(updated.cashCatering) || 0;
     const chequesCatering = Number(updated.chequesCatering) || 0;
@@ -309,17 +268,69 @@ function App() {
     const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + totalCatering;
-    updated.cashTip = cashTip >= 0 ? cashTip : 0;
-    updated.totalCashWithTip = totalCash;
-    updated.creditCardSale = creditCardSale;
-    updated.systemGross = systemGross;
-    updated.totalInHouse = totalInHouse;
-    updated.totalRestaurantOnline = onlineSale;
-    updated.totalRestaurantSales = totalRestaurantSales;
-    updated.totalCatering = totalCatering;
-    updated.totalSalesDay = totalSalesDay;
+    return {
+      ...updated,
+      cashTip: cashTip >= 0 ? cashTip : 0,
+      totalCashWithTip: totalCash,
+      creditCardSale,
+      systemGross,
+      totalInHouse,
+      totalRestaurantOnline: onlineSale,
+      totalRestaurantSales,
+      totalCatering,
+      totalSalesDay,
+    };
+  };
+
+  const handleChange = (evt) => {
+    let updated = { ...form, [evt.target.name]: evt.target.value };
+    if (!isEditMode && emailImportPreview?.totalGuests) {
+      const lunch = Number(updated.lunchGuests) || 0;
+      updated.dinnerGuests = Math.max(0, emailImportPreview.totalGuests - lunch);
+    }
+    updated = recomputeDerivedFields(updated);
     setForm(updated);
   };
+
+  // Whenever the report date changes (and this isn't editing an already-
+  // saved report), check whether the Aldelo email-import pipeline has
+  // values waiting for that date. Cash Sale, Total Settle Amount, Credit
+  // Card Tip, and Dine-in Sales get filled in directly and quietly (only if
+  // still empty - never overwriting something already typed). Dinner Guests
+  // is computed live from Total Guests minus Lunch Guests instead, handled
+  // separately in handleChange above so it stays in sync as you type.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setEmailImportPreview(null);
+      if (!form.date) return;
+      try {
+        const res = await fetch(`/get-email-import?date=${form.date}`);
+        const payload = await res.json();
+        if (cancelled || !payload.found) return;
+        const imported = payload.data;
+        setEmailImportPreview(imported);
+        if (isEditMode) return;
+        setForm((prev) => {
+          const next = { ...prev };
+          if (!next.cashSale && imported.cashSale) next.cashSale = imported.cashSale;
+          if (!next.totalSettle && imported.totalSettle) next.totalSettle = imported.totalSettle;
+          if (!next.creditCardTip && imported.creditCardTip) next.creditCardTip = imported.creditCardTip;
+          if (!next.dineInSales && imported.dineInSales) next.dineInSales = imported.dineInSales;
+          if (imported.totalGuests) {
+            const lunch = Number(next.lunchGuests) || 0;
+            next.dinnerGuests = Math.max(0, imported.totalGuests - lunch);
+          }
+          return recomputeDerivedFields(next);
+        });
+      } catch (err) {
+        console.error("Failed to check for auto-imported values:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.date, isEditMode]);
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -850,7 +861,8 @@ function App() {
         .rs-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .rs-field:last-child { margin-bottom: 0; }
         .rs-field label { font-size: 11px; font-weight: 500; color: #666; }
-        .rs-autofill-badge { display: inline-block; margin-left: 6px; font-size: 9px; font-weight: 700; text-transform: uppercase; color: #1e7e34; background: #e6f4ea; padding: 1px 6px; border-radius: 10px; }
+        .rs-computed-hint { font-weight: 400; font-style: italic; color: #999; }
+        .rs-field input:disabled { background: #f5f0ea; color: #888; cursor: not-allowed; }
         .rs-required { color: #c0392b; margin-left: 3px; font-weight: 700; }
         .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
         .rs-input-money { position: relative; display: flex; align-items: center; }
@@ -989,22 +1001,32 @@ function App() {
                 <div className="rs-section-label">Guests</div>
                 <div className="rs-grid-2">
                   <div className="rs-field"><label>Lunch Guests</label><input name="lunchGuests" value={form.lunchGuests} onChange={handleChange} placeholder="0" type="number" /></div>
-                  <div className="rs-field"><label>Dinner Guests</label><input name="dinnerGuests" value={form.dinnerGuests} onChange={handleChange} placeholder="0" type="number" /></div>
+                  <div className="rs-field">
+                    <label>Dinner Guests{!isEditMode && emailImportPreview?.totalGuests ? <span className="rs-computed-hint"> (auto: Aldelo total − Lunch)</span> : null}</label>
+                    <input
+                      name="dinnerGuests"
+                      value={form.dinnerGuests}
+                      onChange={handleChange}
+                      placeholder="0"
+                      type="number"
+                      disabled={!isEditMode && Boolean(emailImportPreview?.totalGuests)}
+                    />
+                  </div>
                 </div>
                 <div className="rs-field"><label>Dine-in Sales</label><MoneyInput name="dineInSales" value={form.dineInSales} onChange={handleChange} /></div>
               </div>
 
               <div className="rs-section">
                 <div className="rs-section-label">Cash</div>
-                <div className="rs-field"><label>Cash Sale (Cash Paid Total){autoFilledFields.cashSale && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
+                <div className="rs-field"><label>Cash Sale (Cash Paid Total)</label><MoneyInput name="cashSale" value={form.cashSale} onChange={handleChange} /></div>
                 <div className="rs-field"><label>Total Cash</label><MoneyInput name="totalCashWithTip" value={form.totalCashWithTip} onChange={handleChange} /></div>
               </div>
 
               <div className="rs-section">
                 <div className="rs-section-label">Credit Card</div>
                 <div className="rs-grid-2">
-                  <div className="rs-field"><label>Total Settle Amount (Credit & Debit Card Total){autoFilledFields.totalSettle && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
-                  <div className="rs-field"><label>Credit Card Tip (Gratuities Total){autoFilledFields.creditCardTip && <span className="rs-autofill-badge">Auto-filled</span>}</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Total Settle Amount (Credit & Debit Card Total)</label><MoneyInput name="totalSettle" value={form.totalSettle} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Credit Card Tip (Gratuities Total)</label><MoneyInput name="creditCardTip" value={form.creditCardTip} onChange={handleChange} /></div>
                 </div>
               </div>
 
