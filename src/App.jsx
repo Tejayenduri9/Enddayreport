@@ -110,6 +110,7 @@ const blankForm = () => ({
   creditCardTip: "",
   giftCard: "",
   restaurantOnline: "",
+  restaurantOnlineTips: "",
   grubhub: "",
   doordash: "",
   uberEats: "",
@@ -455,10 +456,11 @@ function App() {
     y += 2;
 
     secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
-    const ocb = Math.floor(cw / 4);
-    const ocs = [ocb, ocb, ocb, cw - ocb * 3];
+    const ocb = Math.floor(cw / 5);
+    const ocs = [ocb, ocb, ocb, ocb, cw - ocb * 4];
     const platforms = [
       { label: "Restaurant Online", val: form.restaurantOnline },
+      { label: "Online Tips", val: form.restaurantOnlineTips },
       { label: "Grubhub", val: form.grubhub },
       { label: "DoorDash", val: form.doordash },
       { label: "Uber Eats", val: form.uberEats },
@@ -774,6 +776,7 @@ function App() {
           creditCardSale: { label: "CC Sale", money: true },
           giftCard: { label: "Gift Card Redeemed", money: true },
           restaurantOnline: { label: "Restaurant Online", money: true },
+          restaurantOnlineTips: { label: "Restaurant Online Tips", money: true },
           grubhub: { label: "Grubhub", money: true },
           doordash: { label: "DoorDash", money: true },
           uberEats: { label: "Uber Eats", money: true },
@@ -1035,6 +1038,7 @@ function App() {
                 <div className="rs-field"><label>Gift Card Redeemed</label><MoneyInput name="giftCard" value={form.giftCard} onChange={handleChange} /></div>
                 <div className="rs-grid-2">
                   <div className="rs-field"><label>Restaurant Online</label><MoneyInput name="restaurantOnline" value={form.restaurantOnline} onChange={handleChange} /></div>
+                  <div className="rs-field"><label>Restaurant Online Tips</label><MoneyInput name="restaurantOnlineTips" value={form.restaurantOnlineTips} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Grubhub</label><MoneyInput name="grubhub" value={form.grubhub} onChange={handleChange} /></div>
                   <div className="rs-field"><label>DoorDash</label><MoneyInput name="doordash" value={form.doordash} onChange={handleChange} /></div>
                   <div className="rs-field"><label>Uber Eats</label><MoneyInput name="uberEats" value={form.uberEats} onChange={handleChange} /></div>
