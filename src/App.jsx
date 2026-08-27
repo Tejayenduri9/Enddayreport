@@ -77,6 +77,7 @@ const summarizeWeek = (reports) => {
   const creditCardSale = sum("creditCardSale");
   const totalSettle = sum("totalSettle");
   const restaurantOnline = sum("restaurantOnline");
+  const restaurantOnlineTips = sum("restaurantOnlineTips");
   const grubhub = sum("grubhub");
   const doordash = sum("doordash");
   const uberEats = sum("uberEats");
@@ -90,7 +91,7 @@ const summarizeWeek = (reports) => {
 
   return {
     cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-    totalSettle, restaurantOnline, grubhub, doordash, uberEats, totalOnline, totalCatering,
+    totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
     totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
   };
 };
@@ -626,6 +627,31 @@ function App() {
       showModal("error", "Missing Fields", `Please fill in the following fields:\n\n• ${lines.join("\n• ")}`);
       return;
     }
+
+    // A fresh submission (not editing) should never silently create a second
+    // report for a date that's already been submitted - that's how days end
+    // up with duplicate/conflicting entries. Point them to Load Report
+    // (the existing edit flow) instead.
+    if (!isEditMode) {
+      try {
+        const existingSnap = await getDocs(collection(db, "restaurants"));
+        const alreadySubmitted = existingSnap.docs.some((d) => d.data().date === form.date);
+        if (alreadySubmitted) {
+          showModal(
+            "error",
+            "Already Submitted",
+            `A report for ${shortDate(form.date)} has already been submitted.\n\nPlease use "Load Report" to edit it instead, or email enddayreports.com if you need help.`
+          );
+          return;
+        }
+      } catch (err) {
+        // If the check itself fails (e.g. a network hiccup), don't trap the
+        // user out of submitting their report entirely - log it and let the
+        // save proceed, same as if this check didn't exist.
+        console.error("Failed to check for an existing report on this date:", err);
+      }
+    }
+
     setLoading(true);
     try {
       if (isEditMode && editDocId) {
