@@ -175,6 +175,8 @@ export function generatePDF(form, cateringNotes) {
   row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
   row("Cash Catering", fmt(form.cashCatering), margin, cw);
   row("Cheques Catering", fmt(form.chequesCatering), margin, cw);
+  const totalTipsAll = (Number(form.restaurantOnlineTips) || 0) + (Number(form.cashTip) || 0) + (Number(form.creditCardTip) || 0);
+  row("Tips (Online + Cash + CC)", fmt(totalTipsAll), margin, cw);
   row("Total Catering", fmt(form.totalCatering), margin, cw, true);
   y += 2;
 
@@ -183,7 +185,8 @@ export function generatePDF(form, cateringNotes) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
   doc.text("TOTAL SALES OF THE DAY", margin + 4, y + 8);
-  doc.text(fmt(form.totalSalesDay), margin + cw - 3, y + 8, { align: "right" });
+  const totalSalesInclTip = (Number(form.totalSalesDay) || 0) + totalTipsAll;
+  doc.text(fmt(totalSalesInclTip), margin + cw - 3, y + 8, { align: "right" });
   y += 16;
 
   const validCatering = (cateringNotes || []).filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
