@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { generateTaxWeeklyPDF } from "../reportPdfTax";
 
-const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 // Recorded amount already includes 7% tax — extract it out (subtract, not add)
 const TaxedValue = ({ value }) => {

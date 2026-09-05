@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { generateTaxCustomRangePDF } from "../reportPdfTax";
 
-const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const TaxedValue = ({ value }) => {
   const tax = value * 0.07;

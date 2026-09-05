@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import logo from "./assets/logo.png";
 
-const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const shortDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);

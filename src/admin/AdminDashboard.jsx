@@ -30,6 +30,7 @@ import useIdleLogout from "./useIdleLogout";
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`;
 
 const fmtShort = (v) =>

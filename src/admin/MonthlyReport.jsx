@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { generateMonthlyPDF } from "../reportPdfWeekly";
 
-const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const monthLabel = (year, month) =>
   new Date(year, month, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });

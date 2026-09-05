@@ -338,7 +338,7 @@ function App() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+    const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const margin = 14;
     const cw = pageWidth - margin * 2;
 
@@ -814,7 +814,7 @@ function App() {
           totalRestaurantSales: { label: "Total Restaurant Sales", money: true },
           totalSalesDay: { label: "Total Sales of the Day", money: true },
         };
-        const fmt2 = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+        const fmt2 = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
         const changedLines = [];
         if (originalForm) {
           Object.entries(fieldLabels).forEach(([key, { label, money }]) => {
