@@ -264,10 +264,14 @@ function App() {
     const giftCard = Number(updated.giftCard) || 0;
     const totalInHouse = systemGross - giftCard;
     const restaurantOnline = Number(updated.restaurantOnline) || 0;
+    const restaurantOnlineTips = Number(updated.restaurantOnlineTips) || 0;
     const grubhub = Number(updated.grubhub) || 0;
     const doordash = Number(updated.doordash) || 0;
     const uberEats = Number(updated.uberEats) || 0;
-    const onlineSale = restaurantOnline + grubhub + doordash + uberEats;
+    // restaurantOnline (like totalSettle) is the raw settled amount and includes
+    // the online tip - net it out here, same as creditCardSale above, so the tip
+    // doesn't leak into totalSalesDay.
+    const onlineSale = (restaurantOnline - restaurantOnlineTips) + grubhub + doordash + uberEats;
     const totalRestaurantSales = totalInHouse + onlineSale;
     const totalSalesDay = totalRestaurantSales + totalCatering;
     return {

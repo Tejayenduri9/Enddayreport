@@ -4,7 +4,7 @@ import logo from "./assets/logo.png";
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Total\nw/o Tip", "Tax", "Cash Tip", "Credit\nTip", "Online\nTip", "Grand\nTotal"];
+const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Net\nTotal", "Tax", "Cash Tip", "Credit\nTip", "Online\nTip", "Grand\nTotal"];
 const COL_WIDTHS = [46, 36, 36, 36, 32, 32, 32, 40, 38, 32, 32, 32, 32, 40];
 
 /**

@@ -98,9 +98,10 @@ export default function TaxAuditDashboard({ reports, onBack }) {
 
       const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
       const tax = taxableBase * 0.07;
-      const totalWithoutTip = taxableBase - tax;
-      // Sale amounts already include tax, so Grand Total = the recorded total itself (no add/subtract)
-      const grandTotal = taxableBase;
+      // Net Total is the plain sum of the sale channels (Tax is shown alongside for
+      // reference only, not subtracted here) - tips get added on top for Grand Total.
+      const totalWithoutTip = taxableBase;
+      const grandTotal = taxableBase + cashTip + creditCardTip + restaurantOnlineTips;
 
       rows.push({
         dayLabel: fullDateLabel(dateStr),
