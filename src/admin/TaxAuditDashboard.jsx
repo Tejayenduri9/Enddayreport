@@ -301,6 +301,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
               <th>Tax</th>
               <th>Cash Tip</th>
               <th>Credit Tip</th>
+              <th>Online Tip</th>
               <th>Grand Total</th>
             </tr>
           </thead>
@@ -319,6 +320,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
                 <td>{fmtPlain(r.tax)}</td>
                 <td>{fmtPlain(r.cashTip)}</td>
                 <td>{fmtPlain(r.creditCardTip)}</td>
+                <td>{fmtPlain(r.restaurantOnlineTips)}</td>
                 <td className="ad-audit-total-cell">{fmtPlain(r.grandTotal)}</td>
               </tr>
             ))}

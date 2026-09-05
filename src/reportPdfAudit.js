@@ -4,8 +4,8 @@ import logo from "./assets/logo.png";
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2 });
 
-const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Total\nw/o Tip", "Tax", "Cash Tip", "Credit\nTip", "Grand\nTotal"];
-const COL_WIDTHS = [48, 38, 38, 38, 34, 34, 34, 42, 40, 34, 34, 34, 42];
+const HEADERS = ["Date", "Cash Sale", "CC Sale", "Rest.\nOnline", "Grubhub", "DoorDash", "Uber\nEats", "Catering\n(excl. cash)", "Total\nw/o Tip", "Tax", "Cash Tip", "Credit\nTip", "Online\nTip", "Grand\nTotal"];
+const COL_WIDTHS = [46, 36, 36, 36, 32, 32, 32, 40, 38, 32, 32, 32, 32, 40];
 
 /**
  * dayRows: array of { dayLabel, cashSale, creditCardSale, restaurantOnline, grubhub,
@@ -124,7 +124,15 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   y = Math.max(...colBottoms) + 6;
 
   const HEADER_H = 12;
-  const ROW_H = 6.5;
+  const ROW_H = 9;
+
+  // "Sep 1st, 2026, Tuesday" -> ["Sep 1st, 2026", "Tuesday"] so the Date
+  // column can wrap onto two lines instead of overflowing past its border.
+  const splitDateLabel = (label) => {
+    const idx = label.lastIndexOf(", ");
+    if (idx === -1) return [label];
+    return [label.slice(0, idx), label.slice(idx + 2)];
+  };
 
   const drawHeaderRow = () => {
     let hx = margin;
@@ -157,7 +165,8 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
     const cells = [
       row.dayLabel, fmtPlain(row.cashSale), fmtPlain(row.creditCardSale), fmtPlain(row.restaurantOnline),
       fmtPlain(row.grubhub), fmtPlain(row.doordash), fmtPlain(row.uberEats), fmtPlain(row.chequesCatering),
-      fmtPlain(row.totalWithoutTip), fmtPlain(row.tax), fmtPlain(row.cashTip), fmtPlain(row.creditCardTip), fmtPlain(row.grandTotal),
+      fmtPlain(row.totalWithoutTip), fmtPlain(row.tax), fmtPlain(row.cashTip), fmtPlain(row.creditCardTip),
+      fmtPlain(row.restaurantOnlineTips), fmtPlain(row.grandTotal),
     ];
     let cx = margin;
     const grey = row.hasData ? 255 : 248;
@@ -168,7 +177,17 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
       doc.setFont("helvetica", i === 0 ? "bold" : "normal").setFontSize(7);
       const textGrey = row.hasData ? 40 : 195;
       doc.setTextColor(row.hasData && i === 0 ? 140 : textGrey, row.hasData && i === 0 ? 55 : textGrey, row.hasData && i === 0 ? 0 : textGrey);
-      doc.text(String(val), cx + colW[i] / 2, y + ROW_H / 2 + 1.4, { align: "center" });
+      if (i === 0) {
+        const lines = splitDateLabel(String(val));
+        if (lines.length === 1) {
+          doc.text(lines[0], cx + colW[i] / 2, y + ROW_H / 2 + 1.4, { align: "center" });
+        } else {
+          doc.text(lines[0], cx + colW[i] / 2, y + ROW_H / 2 - 0.8, { align: "center" });
+          doc.text(lines[1], cx + colW[i] / 2, y + ROW_H / 2 + 3.4, { align: "center" });
+        }
+      } else {
+        doc.text(String(val), cx + colW[i] / 2, y + ROW_H / 2 + 1.4, { align: "center" });
+      }
       cx += colW[i];
     });
     y += ROW_H;
@@ -188,12 +207,13 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
       totalWithoutTip: acc.totalWithoutTip + r.totalWithoutTip,
       cashTip: acc.cashTip + r.cashTip,
       creditCardTip: acc.creditCardTip + r.creditCardTip,
+      restaurantOnlineTips: acc.restaurantOnlineTips + r.restaurantOnlineTips,
       tax: acc.tax + r.tax,
       grandTotal: acc.grandTotal + r.grandTotal,
     }),
-    { cashSale: 0, creditCardSale: 0, restaurantOnline: 0, grubhub: 0, doordash: 0, uberEats: 0, chequesCatering: 0, totalWithoutTip: 0, cashTip: 0, creditCardTip: 0, tax: 0, grandTotal: 0 }
+    { cashSale: 0, creditCardSale: 0, restaurantOnline: 0, grubhub: 0, doordash: 0, uberEats: 0, chequesCatering: 0, totalWithoutTip: 0, cashTip: 0, creditCardTip: 0, restaurantOnlineTips: 0, tax: 0, grandTotal: 0 }
   );
-  const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.totalWithoutTip), fmtPlain(t.tax), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.grandTotal)];
+  const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.totalWithoutTip), fmtPlain(t.tax), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.restaurantOnlineTips), fmtPlain(t.grandTotal)];
   let tx2 = margin;
   totalCells.forEach((val, i) => {
     doc.setDrawColor(200, 150, 100);
