@@ -49,7 +49,9 @@ export default function TaxDailyReport({ reports }) {
     const totalOnline = Number(report.totalRestaurantOnline) || 0;
     const totalCatering = Number(report.totalCatering) || 0;
     const totalGuests = (Number(report.lunchGuests) || 0) + (Number(report.dinnerGuests) || 0);
-    const totalSale = Number(report.totalSalesDay) || 0;
+    // Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
+    // stays correct even for reports saved before the online-tip fix in App.jsx.
+    const totalSale = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + totalCatering;
     const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
     const totalAmountIncTip = totalSale + totalTips;
     const totalCashIncTip = cashSale + cashTip + cashCatering;
