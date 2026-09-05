@@ -96,7 +96,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   y += 2;
 
   secHeader(totalLabel.sectionTitle);
-  row("Total Sale (excl. Tip)", fmt(summary.totalSale), true);
+  row("Total Sale (excl. Tip)", fmt(summary.totalSale));
   row("Total Tips (Cash + CC)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
   y += 4;
@@ -106,7 +106,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
   doc.text(totalLabel.bannerTitle, margin + 4, y + 8);
-  doc.text(fmt(summary.totalSale), margin + cw - 3, y + 8, { align: "right" });
+  doc.text(fmt(summary.totalAmountIncTip), margin + cw - 3, y + 8, { align: "right" });
   y += 18;
 
   if (dailyReports?.length) {
@@ -161,7 +161,7 @@ export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports })
     subtitle: `${shortDate(weekStart)} — ${shortDate(weekEnd)}`,
     summary,
     dailyReports,
-    totalLabel: { sectionTitle: "WEEKLY TOTALS", bannerTitle: "TOTAL SALE OF THE WEEK" },
+    totalLabel: { sectionTitle: "WEEKLY TOTALS", bannerTitle: "TOTAL SALES OF THE WEEK (INCL. TIP)" },
   });
 }
 
@@ -174,7 +174,7 @@ export function generateMonthlyPDF({ monthLabel, summary, dailyReports }) {
     subtitle: monthLabel,
     summary,
     dailyReports,
-    totalLabel: { sectionTitle: "MONTHLY TOTALS", bannerTitle: "TOTAL SALE OF THE MONTH" },
+    totalLabel: { sectionTitle: "MONTHLY TOTALS", bannerTitle: "TOTAL SALES OF THE MONTH (INCL. TIP)" },
   });
 }
 
@@ -187,6 +187,6 @@ export function generateCustomRangePDF({ rangeStart, rangeEnd, summary, dailyRep
     subtitle: `${shortDate(rangeStart)} — ${shortDate(rangeEnd)}`,
     summary,
     dailyReports,
-    totalLabel: { sectionTitle: "RANGE TOTALS", bannerTitle: "TOTAL SALE OF THE RANGE" },
+    totalLabel: { sectionTitle: "RANGE TOTALS", bannerTitle: "TOTAL SALES OF THE RANGE (INCL. TIP)" },
   });
 }

@@ -96,7 +96,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   y += 2;
 
   secHeader(totalLabel.sectionTitle);
-  row("Total Sale (excl. Tip)", fmt(summary.totalSale), true);
+  row("Total Sale (excl. Tip)", fmt(summary.totalSale));
   row("Total Tips (Cash + CC)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
   y += 2;

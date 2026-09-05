@@ -81,6 +81,13 @@ const getMonday = (date) => {
   return d;
 };
 
+const reportTips = (r) =>
+  (Number(r.cashTip) || 0) +
+  (Number(r.creditCardTip) || 0) +
+  (Number(r.restaurantOnlineTips) || 0);
+
+const reportTotalIncTip = (r) => (Number(r.totalSalesDay) || 0) + reportTips(r);
+
 const RANGE_OPTIONS = [
   { key: "day", label: "Day" },
   { key: "yesterday", label: "Yesterday" },
@@ -243,7 +250,7 @@ export default function AdminDashboard({ user }) {
     const list = filteredByRange;
 
     const totalSales = list.reduce(
-      (s, r) => s + (Number(r.totalSalesDay) || 0),
+      (s, r) => s + reportTotalIncTip(r),
       0
     );
 
@@ -283,7 +290,7 @@ export default function AdminDashboard({ user }) {
       .map((r) => ({
         date: axisDate(r.date),
         fullDate: r.date,
-        total: Number(r.totalSalesDay) || 0,
+        total: reportTotalIncTip(r),
         inHouse: Number(r.totalInHouse) || 0,
         online: Number(r.totalRestaurantOnline) || 0,
         catering: Number(r.totalCatering) || 0,
@@ -713,7 +720,7 @@ export default function AdminDashboard({ user }) {
 
                           <span className="ad-table-total">
                             {fmt(
-                              r.totalSalesDay
+                              reportTotalIncTip(r)
                             )}
                           </span>
 

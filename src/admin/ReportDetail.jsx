@@ -17,6 +17,9 @@ const Row = ({ label, value, bold }) => (
   </div>
 );
 
+const totalTips = (r) =>
+  (Number(r.cashTip) || 0) + (Number(r.creditCardTip) || 0) + (Number(r.restaurantOnlineTips) || 0);
+
 export default function ReportDetail({ report, onClose }) {
   if (!report) return null;
 
@@ -86,7 +89,8 @@ export default function ReportDetail({ report, onClose }) {
             <div className="ad-detail-section-label">Final Totals</div>
             <Row label="Total Restaurant Sales" value={fmt(report.totalRestaurantSales)} bold />
             <Row label="Total Catering" value={fmt(report.totalCatering)} bold />
-            <Row label="Total Sales of the Day" value={fmt(report.totalSalesDay)} bold />
+            <Row label="Total Sale (excl. Tip)" value={fmt(report.totalSalesDay)} />
+            <Row label="Total Sales of the Day (incl. Tip)" value={fmt((Number(report.totalSalesDay) || 0) + totalTips(report))} bold />
           </div>
 
           {report.cateringNotes && report.cateringNotes.some(c => c.name || c.cateringDate || c.paymentType || c.amount) && (

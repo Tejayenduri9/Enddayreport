@@ -153,6 +153,13 @@ const ONLINE_PLATFORM_FIELDS = [
 // WeeklyReport.jsx) so the two sources merge without any translation.
 const HISTORICAL_CSV_PATH = "/historical-sales.csv";
 
+const reportTips = (r) =>
+  (Number(r.cashTip) || 0) +
+  (Number(r.creditCardTip) || 0) +
+  (Number(r.restaurantOnlineTips) || 0);
+
+const reportTotalIncTip = (r) => (Number(r.totalSalesDay) || 0) + reportTips(r);
+
 function pctChange(current, prior) {
   if (!prior) return null;
   return ((current - prior) / prior) * 100;
@@ -363,6 +370,15 @@ export default function YearOverYearReport({ reports, onBack }) {
       return { current, prior, pctChange: pctChange(current, prior) };
     };
 
+    const totalSalesIncTip = (side) =>
+      comparisonRows.reduce((s, r) => {
+        const rec = r[side];
+        return s + (rec ? reportTotalIncTip(rec) : 0);
+      }, 0);
+
+    const curTotalSales = totalSalesIncTip("current");
+    const priorTotalSales = totalSalesIncTip("prior");
+
     const guestTotal = (side) =>
       comparisonRows.reduce((s, r) => {
         const rec = r[side];
@@ -374,7 +390,11 @@ export default function YearOverYearReport({ reports, onBack }) {
     const priorGuests = guestTotal("prior");
 
     return {
-      totalSalesDay: build("totalSalesDay"),
+      totalSalesDay: {
+        current: curTotalSales,
+        prior: priorTotalSales,
+        pctChange: pctChange(curTotalSales, priorTotalSales),
+      },
       totalInHouse: build("totalInHouse"),
       totalRestaurantOnline: build("totalRestaurantOnline"),
       totalCatering: build("totalCatering"),
@@ -451,8 +471,8 @@ export default function YearOverYearReport({ reports, onBack }) {
         label: axisDate(r.currentDate),
         currentDate: r.currentDate,
         priorDate: r.priorDate,
-        current: r.current ? Number(r.current.totalSalesDay) || 0 : null,
-        prior: r.prior ? Number(r.prior.totalSalesDay) || 0 : null,
+        current: r.current ? reportTotalIncTip(r.current) : null,
+        prior: r.prior ? reportTotalIncTip(r.prior) : null,
       })),
     [comparisonRows]
   );
@@ -559,14 +579,14 @@ export default function YearOverYearReport({ reports, onBack }) {
     const daysWithCurrent = comparisonRows.filter((r) => r.current);
     if (daysWithCurrent.length > 1) {
       const bestDay = [...daysWithCurrent].sort(
-        (a, b) => (Number(b.current.totalSalesDay) || 0) - (Number(a.current.totalSalesDay) || 0)
+        (a, b) => reportTotalIncTip(b.current) - reportTotalIncTip(a.current)
       )[0];
       list.push({
         kind: "neutral",
         text: (
           <>
             Best day in {currentRangeLabel}: <strong>{shortDate(bestDay.currentDate)}</strong> at{" "}
-            <strong>{fmt(bestDay.current.totalSalesDay)}</strong>.
+            <strong>{fmt(reportTotalIncTip(bestDay.current))}</strong>.
           </>
         ),
       });

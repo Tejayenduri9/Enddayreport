@@ -175,16 +175,16 @@ export default function TaxCustomReport({ reports, onSelectReport }) {
         <>
           <div className="ad-summary-grid" style={{ marginTop: "1rem", marginBottom: "1rem" }}>
             <div className="ad-summary-card">
+              <div className="ad-summary-label">Total Sales (incl. Tip)</div>
+              <div className="ad-summary-value">{fmt(summary.totalAmountIncTip)}</div>
+            </div>
+            <div className="ad-summary-card">
               <div className="ad-summary-label">Total Sale (excl. Tip)</div>
               <div className="ad-summary-value">{fmt(summary.totalSale)}</div>
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Tips</div>
               <div className="ad-summary-value">{fmt(summary.totalTips)}</div>
-            </div>
-            <div className="ad-summary-card">
-              <div className="ad-summary-label">Total Amount (incl. Tip)</div>
-              <div className="ad-summary-value">{fmt(summary.totalAmountIncTip)}</div>
             </div>
             <div className="ad-summary-card">
               <div className="ad-summary-label">Total Guests</div>
