@@ -84,8 +84,10 @@ const summarizeWeek = (reports) => {
   const totalOnline = sum("totalRestaurantOnline");
   const totalCatering = sum("totalCatering");
   const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
-  const totalSale = sum("totalSalesDay");
-  const totalTips = cashTip + creditCardTip;
+  // Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
+  // stays correct even for reports saved before the online-tip fix in App.jsx.
+  const totalSale = cashSale + creditCardSale + (restaurantOnline - restaurantOnlineTips) + grubhub + doordash + uberEats + totalCatering;
+  const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
   const totalAmountIncTip = totalSale + totalTips;
   const totalCashIncTip = cashSale + cashTip + cashCatering;
 
@@ -135,6 +137,18 @@ const OG = {
   online:   [196, 110, 30],
   channels: [160, 80,  10],
 };
+
+// Rebuilt from the raw channel fields (not the stored totalRestaurantOnline /
+// totalRestaurantSales / totalSalesDay) so the PDF stays correct even when the
+// form was just loaded for editing an old report (before its own online-tip
+// fix in recomputeDerivedFields has run against it again).
+const onlineSaleExclTip = (r) =>
+  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
+  (Number(r.grubhub) || 0) + (Number(r.doordash) || 0) + (Number(r.uberEats) || 0);
+
+const restaurantSalesExclTip = (r) => (Number(r.totalInHouse) || 0) + onlineSaleExclTip(r);
+
+const totalSaleExclTip = (r) => restaurantSalesExclTip(r) + (Number(r.totalCatering) || 0);
 
 const formatMoney = (val) => {
   const num = parseFloat(val);
@@ -364,10 +378,10 @@ function App() {
     const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
     const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
     const summaryValues = [
-      fmt(form.totalSalesDay),
+      fmt(totalSaleExclTip(form)),
       fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)),
       fmt(form.totalInHouse),
-      fmt(form.totalRestaurantOnline),
+      fmt(onlineSaleExclTip(form)),
       fmt(form.totalCatering),
     ];
     let sumX = margin;
@@ -488,11 +502,11 @@ function App() {
     doc.rect(margin, y, cw, 6, "FD");
     doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(26, 61, 43);
     doc.text("Total Online Sales", margin + 3, y + 4.5);
-    doc.text(fmt(form.totalRestaurantOnline), margin + cw - 2, y + 4.5, { align: "right" });
+    doc.text(fmt(onlineSaleExclTip(form)), margin + cw - 2, y + 4.5, { align: "right" });
     y += 8;
 
     secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
-    row("Total Restaurant Sales", fmt(form.totalRestaurantSales), margin, cw, true);
+    row("Total Restaurant Sales", fmt(restaurantSalesExclTip(form)), margin, cw, true);
     row("Cash Catering", fmt(form.cashCatering), margin, cw);
     row("Cheques Catering", fmt(form.chequesCatering), margin, cw);
     const totalTipsAll = (Number(form.restaurantOnlineTips) || 0) + (Number(form.cashTip) || 0) + (Number(form.creditCardTip) || 0);
@@ -505,7 +519,7 @@ function App() {
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold").setFontSize(12);
     doc.text("TOTAL SALES OF THE DAY", margin + 4, y + 8);
-    const totalSalesInclTip = (Number(form.totalSalesDay) || 0) + totalTipsAll;
+    const totalSalesInclTip = totalSaleExclTip(form) + totalTipsAll;
     doc.text(fmt(totalSalesInclTip), margin + cw - 3, y + 8, { align: "right" });
     y += 16;
 
@@ -748,7 +762,8 @@ function App() {
               const r = reportsByDate[dateStr];
               const cashSale = Number(r?.cashSale) || 0;
               const creditCardSale = Number(r?.creditCardSale) || 0;
-              const restaurantOnline = Number(r?.restaurantOnline) || 0;
+              const restaurantOnlineTips = Number(r?.restaurantOnlineTips) || 0;
+              const restaurantOnline = (Number(r?.restaurantOnline) || 0) - restaurantOnlineTips;
               const grubhub = Number(r?.grubhub) || 0;
               const doordash = Number(r?.doordash) || 0;
               const uberEats = Number(r?.uberEats) || 0;
@@ -757,11 +772,14 @@ function App() {
               const creditCardTip = Number(r?.creditCardTip) || 0;
               const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
               const tax = taxableBase * 0.07;
-              const totalWithoutTip = taxableBase - tax;
+              // Net Total is the plain sum of the sale channels (Tax is shown alongside for
+              // reference only, not subtracted here) - tips get added on top for Grand Total.
+              const totalWithoutTip = taxableBase;
+              const grandTotal = taxableBase + cashTip + creditCardTip + restaurantOnlineTips;
               dayRows.push({
                 dayLabel: shortDate(dateStr), dateStr, hasData: Boolean(r),
                 cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-                chequesCatering, cashTip, creditCardTip, tax, totalWithoutTip, grandTotal: taxableBase,
+                chequesCatering, cashTip, creditCardTip, restaurantOnlineTips, tax, totalWithoutTip, grandTotal,
               });
             }
             const sum = (key) => dayRows.reduce((s, r) => s + r[key], 0);
@@ -772,7 +790,7 @@ function App() {
               cashSale: sum("cashSale"), creditCardSale: sum("creditCardSale"),
               restaurantOnline: sum("restaurantOnline"), grubhub: sum("grubhub"),
               doordash: sum("doordash"), uberEats: sum("uberEats"), chequesCatering: sum("chequesCatering"),
-              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"),
+              cashTip: sum("cashTip"), creditCardTip: sum("creditCardTip"), restaurantOnlineTips: sum("restaurantOnlineTips"),
               totalCashExclCatering: sum("cashSale") + sum("cashTip"),
               totalCcSettle: sum("creditCardSale") + sum("creditCardTip"),
             };

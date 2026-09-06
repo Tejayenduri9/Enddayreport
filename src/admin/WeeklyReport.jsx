@@ -56,7 +56,9 @@ export default function WeeklyReport({ reports }) {
     const totalOnline = sum("totalRestaurantOnline");
     const totalCatering = sum("totalCatering");
     const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
-    const totalSale = sum("totalSalesDay"); // excludes tips, per daily calc
+    // Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
+    // stays correct even for reports saved before the online-tip fix in App.jsx.
+    const totalSale = cashSale + creditCardSale + (restaurantOnline - restaurantOnlineTips) + grubhub + doordash + uberEats + totalCatering;
     const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
     const totalAmountIncTip = totalSale + totalTips;
     const totalCashIncTip = cashSale + cashTip + cashCatering;

@@ -87,7 +87,18 @@ const reportTips = (r) =>
   (Number(r.creditCardTip) || 0) +
   (Number(r.restaurantOnlineTips) || 0);
 
-const reportTotalIncTip = (r) => (Number(r.totalSalesDay) || 0) + reportTips(r);
+// Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
+// stays correct even for reports saved before the online-tip fix in App.jsx.
+const reportSaleExclTip = (r) =>
+  (Number(r.cashSale) || 0) +
+  (Number(r.creditCardSale) || 0) +
+  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
+  (Number(r.grubhub) || 0) +
+  (Number(r.doordash) || 0) +
+  (Number(r.uberEats) || 0) +
+  (Number(r.totalCatering) || 0);
+
+const reportTotalIncTip = (r) => reportSaleExclTip(r) + reportTips(r);
 
 const RANGE_OPTIONS = [
   { key: "day", label: "Day" },
