@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
 import { db } from "./firebase";
-import { collection, addDoc, getDocs, doc as firestoreDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
 import logo from "./assets/logo.png";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
@@ -27,6 +27,13 @@ const shortDate = (dateStr) => {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 };
+
+// How often the page re-checks the date and whether a new version has been
+// deployed, so a tab that's left open at the restaurant all day can't drift
+// onto a stale date or keep running old code. 2 minutes is frequent enough to
+// catch a midnight rollover or a fresh deploy quickly, without hammering the
+// server.
+const STALE_CHECK_INTERVAL_MS = 2 * 60 * 1000;
 
 // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 const WEEKLY_REPORT_TRIGGER_DAY = 0; // Sunday - production
@@ -235,6 +242,100 @@ function App() {
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, [isEditMode]);
+
+  // --- Kiosk-safety: self-correct a stale tab left open all day ---
+  // A device that's never backgrounded (always foreground, no tab switch) can
+  // sit for hours with (a) a date that's drifted to "yesterday" after
+  // midnight and (b) old JS still running even after a new version has been
+  // deployed. The `focus` listener above only catches (a), and only when the
+  // tab is actually blurred/refocused. These refs mirror the latest state
+  // into a periodic setInterval closure so it can check both, without being
+  // torn down and recreated on every render.
+  const formRef = useRef(form);
+  const loadingRef = useRef(loading);
+  const isEditModeRef = useRef(isEditMode);
+  const modalOpenRef = useRef(modal.open);
+  const loadModalOpenRef = useRef(loadModalOpen);
+
+  useEffect(() => { formRef.current = form; }, [form]);
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
+  useEffect(() => { isEditModeRef.current = isEditMode; }, [isEditMode]);
+  useEffect(() => { modalOpenRef.current = modal.open; }, [modal.open]);
+  useEffect(() => { loadModalOpenRef.current = loadModalOpen; }, [loadModalOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let baselineVersionTag = null;
+
+    // Treat the form as "empty" (safe to silently correct or reload) only if
+    // nothing but the date/owner-email defaults has been touched.
+    const isFormEffectivelyEmpty = () => {
+      const f = formRef.current;
+      const blank = blankForm();
+      return Object.keys(blank).every((key) => {
+        if (key === "date" || key === "ownerEmails") return true;
+        return !f[key];
+      });
+    };
+
+    const isSafeToAutoAct = () =>
+      !loadingRef.current &&
+      !modalOpenRef.current &&
+      !loadModalOpenRef.current &&
+      !isEditModeRef.current &&
+      isFormEffectivelyEmpty();
+
+    // Cache-busted fetch of the page itself, used only to read response
+    // headers (ETag / Last-Modified) as a lightweight "build fingerprint" -
+    // no need to touch vite.config.js or the CI pipeline for this to work.
+    const fetchVersionTag = async () => {
+      try {
+        const res = await fetch("/?_=" + Date.now(), { cache: "no-store" });
+        if (!res.ok) return null;
+        return res.headers.get("etag") || res.headers.get("last-modified") || null;
+      } catch {
+        return null; // offline / blocked - just skip this cycle
+      }
+    };
+
+    const runCheck = async () => {
+      if (cancelled) return;
+
+      // 1) Date drift: only correct it when it's safe (don't yank the date
+      // out from under someone mid-entry or mid-edit).
+      if (!isEditModeRef.current) {
+        const today = getToday();
+        if (formRef.current.date !== today && isFormEffectivelyEmpty()) {
+          setForm((prev) => ({ ...prev, date: today }));
+        }
+      }
+
+      // 2) Stale code: compare this load's version tag against a fresh one.
+      // Only ever reload automatically when it's safe to do so; otherwise
+      // just wait for the next cycle and try again.
+      const currentTag = await fetchVersionTag();
+      if (cancelled || !currentTag) return;
+
+      if (baselineVersionTag === null) {
+        baselineVersionTag = currentTag;
+        return;
+      }
+
+      if (currentTag !== baselineVersionTag && isSafeToAutoAct()) {
+        window.location.reload();
+      }
+    };
+
+    runCheck();
+    const intervalId = setInterval(runCheck, STALE_CHECK_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+    // Intentionally mount-only: reads the latest state via refs above so it
+    // doesn't need to be torn down and recreated as the form changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const showModal = (type, title, message) => setModal({ open: true, type, title, message });
   const closeModal = () => { setModal({ open: false, type: "", title: "", message: "" }); setFeedback(""); };
@@ -566,6 +667,10 @@ function App() {
     return doc;
   };
 
+  // --- Load an existing report directly by its date-keyed document ID. ---
+  // Date IS the Firestore doc ID now (see saveData below), so this is a
+  // single direct read - no more scanning every report in the collection
+  // to find a date match.
   const loadReport = async () => {
     setLoadError("");
     const correctPin = import.meta.env.VITE_REPORT_PIN || "1234";
@@ -575,36 +680,19 @@ function App() {
     }
     setLoadLoading(true);
     try {
-      const allDocs = await getDocs(collection(db, "restaurants"));
-      const matched = allDocs.docs.filter(d => {
-        const data = d.data();
-        if (data.date && data.date === loadDate) return true;
-        if (data.createdAt) {
-          const createdDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt.seconds * 1000);
-          const y = createdDate.getFullYear();
-          const m = String(createdDate.getMonth() + 1).padStart(2, "0");
-          const dd = String(createdDate.getDate()).padStart(2, "0");
-          if (`${y}-${m}-${dd}` === loadDate) return true;
-        }
-        return false;
-      });
-      if (matched.length === 0) {
+      const docRef = firestoreDoc(db, "restaurants", loadDate);
+      const snap = await getDoc(docRef);
+      if (!snap.exists()) {
         setLoadError("No report found for this date.");
         setLoadLoading(false);
         return;
       }
-      matched.sort((a, b) => {
-        const aTime = a.data().createdAt?.seconds || 0;
-        const bTime = b.data().createdAt?.seconds || 0;
-        return bTime - aTime;
-      });
-      const docData = matched[0];
-      const data = docData.data();
+      const data = snap.data();
       const loadedForm = { ...blankForm(), ...data, date: loadDate };
       setForm(loadedForm);
       setOriginalForm(loadedForm);
       setCateringNotes(data.cateringNotes || [emptyCatering()]);
-      setEditDocId(docData.id);
+      setEditDocId(loadDate);
       setIsEditMode(true);
       setLoadModalOpen(false);
       setLoadPin("");
@@ -649,40 +737,67 @@ function App() {
       return;
     }
 
-    // A fresh submission (not editing) should never silently create a second
-    // report for a date that's already been submitted - that's how days end
-    // up with duplicate/conflicting entries. Point them to Load Report
-    // (the existing edit flow) instead.
-    if (!isEditMode) {
-      try {
-        const existingSnap = await getDocs(collection(db, "restaurants"));
-        const alreadySubmitted = existingSnap.docs.some((d) => d.data().date === form.date);
-        if (alreadySubmitted) {
-          showModal(
-            "error",
-            "Already Submitted",
-            `A report for ${shortDate(form.date)} has already been submitted.\n\nPlease use "Load Report" to edit it instead, or email enddayreports.com if you need help.`
-          );
-          return;
-        }
-      } catch (err) {
-        // If the check itself fails (e.g. a network hiccup), don't trap the
-        // user out of submitting their report entirely - log it and let the
-        // save proceed, same as if this check didn't exist.
-        console.error("Failed to check for an existing report on this date:", err);
-      }
-    }
-
     setLoading(true);
     try {
-      if (isEditMode && editDocId) {
-        await updateDoc(firestoreDoc(db, "restaurants", editDocId), {
-          ...form, cateringNotes, updatedAt: new Date(),
-        });
+      // The Firestore document ID is now the report's date (e.g. "2026-09-25")
+      // instead of a random auto-generated ID. That, combined with doing the
+      // "does a report already exist for this date?" check and the create as
+      // ONE atomic transaction (instead of a separate getDocs scan followed
+      // by a separate addDoc), closes both ways a duplicate used to slip
+      // through:
+      //   1. A race between two near-simultaneous submissions - Firestore
+      //      transactions guarantee only one writer can win; the other
+      //      re-reads inside the transaction and sees the first one's write.
+      //   2. The old check failing open on a network/permissions hiccup and
+      //      silently letting the save through unprotected - there is no
+      //      longer a separate check step to fail; if anything goes wrong
+      //      here, the whole save fails loudly in the catch block below,
+      //      same as any other save error.
+      const docId = form.date;
+      const docRef = firestoreDoc(db, "restaurants", docId);
+
+      if (!isEditMode) {
+        try {
+          await runTransaction(db, async (tx) => {
+            const snap = await tx.get(docRef);
+            if (snap.exists()) {
+              const dupErr = new Error("ALREADY_SUBMITTED");
+              dupErr.code = "ALREADY_SUBMITTED";
+              throw dupErr;
+            }
+            tx.set(docRef, { ...form, cateringNotes, createdAt: new Date() });
+          });
+        } catch (txErr) {
+          if (txErr && txErr.code === "ALREADY_SUBMITTED") {
+            setLoading(false);
+            showModal(
+              "error",
+              "Already Submitted",
+              `A report for ${shortDate(form.date)} has already been submitted.\n\nPlease use "Load Report" to edit it instead, or email enddayreports.com if you need help.`
+            );
+            return;
+          }
+          throw txErr; // anything else (network, permissions, etc.) surfaces as a real error below
+        }
       } else {
-        await addDoc(collection(db, "restaurants"), {
-          ...form, cateringNotes, createdAt: new Date(),
-        });
+        // Editing an existing report. If the date field itself was changed,
+        // the document "moves" to a new date-keyed ID - guard against
+        // silently colliding with some other day's real report first, then
+        // move it (delete old, write new).
+        if (editDocId && editDocId !== docId) {
+          const collideSnap = await getDoc(docRef);
+          if (collideSnap.exists()) {
+            setLoading(false);
+            showModal(
+              "error",
+              "Date Already Has a Report",
+              `You changed the date to ${shortDate(form.date)}, but that date already has its own report.\n\nPlease pick a different date, or edit that report separately.`
+            );
+            return;
+          }
+          await deleteDoc(firestoreDoc(db, "restaurants", editDocId));
+        }
+        await setDoc(docRef, { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
       }
 
       const pdfDoc = generatePDF();
