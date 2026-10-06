@@ -30,6 +30,7 @@ import useIdleLogout from "./useIdleLogout";
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   })}`;
 
 const fmtShort = (v) =>
@@ -80,6 +81,24 @@ const getMonday = (date) => {
   d.setDate(d.getDate() + diff);
   return d;
 };
+
+const reportTips = (r) =>
+  (Number(r.cashTip) || 0) +
+  (Number(r.creditCardTip) || 0) +
+  (Number(r.restaurantOnlineTips) || 0);
+
+// Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
+// stays correct even for reports saved before the online-tip fix in App.jsx.
+const reportSaleExclTip = (r) =>
+  (Number(r.cashSale) || 0) +
+  (Number(r.creditCardSale) || 0) +
+  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
+  (Number(r.grubhub) || 0) +
+  (Number(r.doordash) || 0) +
+  (Number(r.uberEats) || 0) +
+  (Number(r.totalCatering) || 0);
+
+const reportTotalIncTip = (r) => reportSaleExclTip(r) + reportTips(r);
 
 const RANGE_OPTIONS = [
   { key: "day", label: "Day" },
@@ -190,8 +209,7 @@ export default function AdminDashboard({ user }) {
     }
 
     if (key === "lastWeek") {
-      const thisMonday = getMonday(today);
-      const lastMonday = new Date(thisMonday);
+      const lastMonday = getMonday(today);
       lastMonday.setDate(lastMonday.getDate() - 7);
       const lastSunday = new Date(lastMonday);
       lastSunday.setDate(lastSunday.getDate() + 6);
@@ -255,7 +273,7 @@ export default function AdminDashboard({ user }) {
     const list = filteredByRange;
 
     const totalSales = list.reduce(
-      (s, r) => s + (Number(r.totalSalesDay) || 0),
+      (s, r) => s + reportTotalIncTip(r),
       0
     );
 
@@ -295,7 +313,7 @@ export default function AdminDashboard({ user }) {
       .map((r) => ({
         date: axisDate(r.date),
         fullDate: r.date,
-        total: Number(r.totalSalesDay) || 0,
+        total: reportTotalIncTip(r),
         inHouse: Number(r.totalInHouse) || 0,
         online: Number(r.totalRestaurantOnline) || 0,
         catering: Number(r.totalCatering) || 0,
@@ -725,7 +743,7 @@ export default function AdminDashboard({ user }) {
 
                           <span className="ad-table-total">
                             {fmt(
-                              r.totalSalesDay
+                              reportTotalIncTip(r)
                             )}
                           </span>
 
