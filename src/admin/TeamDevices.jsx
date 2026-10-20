@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot, serverTimestamp, updateDoc, doc } from "firebase/firestore";
 import { db } from "../firebase";
 import { OWNER_UIDS } from "../accessConfig";
+import { cleanupAccess } from "./cleanupAccess";
 import "./team.css";
 
 const toDate = (ts) => (ts?.toDate ? ts.toDate() : null);
@@ -61,6 +62,9 @@ export default function TeamDevices({ user, onBack }) {
     try {
       await updateDoc(doc(db, collectionName, id), { ...changes, reviewedAt: serverTimestamp(), reviewedBy: user.email });
       setConfirming(null);
+      // Declined / removed logins are deleted from Firebase entirely.
+      const revoked = ["rejected", "removed"].includes(changes.status ?? changes.role);
+      if (revoked) cleanupAccess();
     } catch (err) {
       console.error(err);
       setError("That didn't save. Please try again.");
@@ -142,7 +146,7 @@ export default function TeamDevices({ user, onBack }) {
                   <ConfirmRow
                     busy={busyId === d.id}
                     onCancel={() => setConfirming(null)}
-                    message={`Disconnect ${d.name || "this device"}? It will need a new code to connect again.`}
+                    message={`Disconnect ${d.name || "this device"}? It will be deleted and need a new code to connect again.`}
                     action="Disconnect"
                     onConfirm={() => review("devices", d.id, { status: "removed" })}
                   />
@@ -192,7 +196,7 @@ export default function TeamDevices({ user, onBack }) {
                     <ConfirmRow
                       busy={busyId === p.id}
                       onCancel={() => setConfirming(null)}
-                      message={`Remove ${p.name || p.email}'s access to the dashboard?`}
+                      message={`Remove ${p.name || p.email}'s access? Their login will be deleted.`}
                       action="Remove access"
                       onConfirm={() => review("users", p.id, { role: "rejected" })}
                     />

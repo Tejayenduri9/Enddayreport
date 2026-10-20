@@ -20,6 +20,7 @@ import ReportDetail from "./ReportDetail";
 import AdminSettings from "./AdminSettings";
 import TeamDevices from "./TeamDevices";
 import NotificationBell from "./NotificationBell";
+import { cleanupAccess } from "./cleanupAccess";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
@@ -126,6 +127,9 @@ export default function AdminDashboard({ user }) {
     return () => { unsubDevices(); unsubPeople(); };
   }, []);
   const pendingTotal = pendingDevices + pendingPeople;
+
+  // Tidy Firebase on each visit: deletes declined, removed and abandoned logins.
+  useEffect(() => { cleanupAccess(); }, []);
   const openTeam = () => { setTaxView(null); setCompareView(false); setTeamView(true); setProfileOpen(false); };
 
   // Weekly Report selected by default
