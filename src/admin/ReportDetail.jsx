@@ -1,4 +1,5 @@
 import { generatePDF } from "../reportPdf";
+import { onlineSaleOf, inHouseSaleOf, saleExclTipOf, totalIncTipOf } from "../salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -16,20 +17,6 @@ const Row = ({ label, value, bold }) => (
     <span>{value}</span>
   </div>
 );
-
-const totalTips = (r) =>
-  (Number(r.cashTip) || 0) + (Number(r.creditCardTip) || 0) + (Number(r.restaurantOnlineTips) || 0);
-
-// Rebuilt from the raw channel fields (not the stored totalRestaurantOnline /
-// totalRestaurantSales / totalSalesDay) so these stay correct even for reports
-// saved before the online-tip fix in App.jsx.
-const onlineSaleExclTip = (r) =>
-  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
-  (Number(r.grubhub) || 0) + (Number(r.doordash) || 0) + (Number(r.uberEats) || 0);
-
-const restaurantSalesExclTip = (r) => (Number(r.totalInHouse) || 0) + onlineSaleExclTip(r);
-
-const totalSaleExclTip = (r) => restaurantSalesExclTip(r) + (Number(r.totalCatering) || 0);
 
 export default function ReportDetail({ report, onClose }) {
   if (!report) return null;
@@ -93,15 +80,15 @@ export default function ReportDetail({ report, onClose }) {
             <Row label="Grubhub" value={fmt(report.grubhub)} />
             <Row label="DoorDash" value={fmt(report.doordash)} />
             <Row label="Uber Eats" value={fmt(report.uberEats)} />
-            <Row label="Total Online" value={fmt(onlineSaleExclTip(report))} bold />
+            <Row label="Total Online" value={fmt(onlineSaleOf(report))} bold />
           </div>
 
           <div className="ad-detail-section">
             <div className="ad-detail-section-label">Final Totals</div>
-            <Row label="Total Restaurant Sales" value={fmt(restaurantSalesExclTip(report))} bold />
+            <Row label="Total Restaurant Sales" value={fmt(inHouseSaleOf(report) + onlineSaleOf(report))} bold />
             <Row label="Total Catering" value={fmt(report.totalCatering)} bold />
-            <Row label="Total Sale (excl. Tip)" value={fmt(totalSaleExclTip(report))} />
-            <Row label="Total Sales of the Day (incl. Tip)" value={fmt(totalSaleExclTip(report) + totalTips(report))} bold />
+            <Row label="Total Sale (excl. Tip)" value={fmt(saleExclTipOf(report))} />
+            <Row label="Total Sales of the Day (incl. Tip)" value={fmt(totalIncTipOf(report))} bold />
           </div>
 
           {report.cateringNotes && report.cateringNotes.some(c => c.name || c.cateringDate || c.paymentType || c.amount) && (

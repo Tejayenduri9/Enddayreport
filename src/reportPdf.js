@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import logo from "./assets/logo.png";
+import { onlineSaleOf, inHouseSaleOf, saleExclTipOf, tipsOf } from "./salesMath";
 
 const OG = {
   primary: [196, 82, 0],
@@ -12,17 +13,6 @@ const OG = {
   online: [196, 110, 30],
   channels: [160, 80, 10],
 };
-
-// Rebuilt from the raw channel fields (not the stored totalRestaurantOnline /
-// totalRestaurantSales / totalSalesDay) so PDFs regenerated for reports saved
-// before the online-tip fix in App.jsx still show the correct totals.
-const onlineSaleExclTip = (r) =>
-  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
-  (Number(r.grubhub) || 0) + (Number(r.doordash) || 0) + (Number(r.uberEats) || 0);
-
-const restaurantSalesExclTip = (r) => (Number(r.totalInHouse) || 0) + onlineSaleExclTip(r);
-
-const totalSaleExclTip = (r) => restaurantSalesExclTip(r) + (Number(r.totalCatering) || 0);
 
 /**
  * Builds the daily sales report PDF from a form object + catering notes.
@@ -39,7 +29,7 @@ export function generatePDF(form, cateringNotes) {
 
   doc.setFillColor(...OG.primary);
   doc.rect(0, 0, pageWidth, 36, "F");
-  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch (e) {}
+  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch { /* logo is optional - still build the PDF without it */ }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(11);
   doc.text("DAILY SALES REPORT", pageWidth / 2, 23, { align: "center" });
@@ -55,10 +45,10 @@ export function generatePDF(form, cateringNotes) {
   const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
   const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
   const summaryValues = [
-    fmt(totalSaleExclTip(form)),
+    fmt(saleExclTipOf(form)),
     fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)),
     fmt(form.totalInHouse),
-    fmt(onlineSaleExclTip(form)),
+    fmt(onlineSaleOf(form)),
     fmt(form.totalCatering),
   ];
   let sumX = margin;
@@ -179,14 +169,14 @@ export function generatePDF(form, cateringNotes) {
   doc.rect(margin, y, cw, 6, "FD");
   doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(26, 61, 43);
   doc.text("Total Online Sales", margin + 3, y + 4.5);
-  doc.text(fmt(onlineSaleExclTip(form)), margin + cw - 2, y + 4.5, { align: "right" });
+  doc.text(fmt(onlineSaleOf(form)), margin + cw - 2, y + 4.5, { align: "right" });
   y += 8;
 
   secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
-  row("Total Restaurant Sales", fmt(restaurantSalesExclTip(form)), margin, cw, true);
+  row("Total Restaurant Sales", fmt(inHouseSaleOf(form) + onlineSaleOf(form)), margin, cw, true);
   row("Cash Catering", fmt(form.cashCatering), margin, cw);
   row("Cheques Catering", fmt(form.chequesCatering), margin, cw);
-  const totalTipsAll = (Number(form.restaurantOnlineTips) || 0) + (Number(form.cashTip) || 0) + (Number(form.creditCardTip) || 0);
+  const totalTipsAll = tipsOf(form);
   row("Tips (Online + Cash + CC)", fmt(totalTipsAll), margin, cw);
   row("Total Catering", fmt(form.totalCatering), margin, cw, true);
   y += 2;
@@ -196,7 +186,7 @@ export function generatePDF(form, cateringNotes) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
   doc.text("TOTAL SALES OF THE DAY", margin + 4, y + 8);
-  const totalSalesInclTip = totalSaleExclTip(form) + totalTipsAll;
+  const totalSalesInclTip = saleExclTipOf(form) + totalTipsAll;
   doc.text(fmt(totalSalesInclTip), margin + cw - 3, y + 8, { align: "right" });
   y += 16;
 

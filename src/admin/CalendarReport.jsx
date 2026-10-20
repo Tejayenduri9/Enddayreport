@@ -1,5 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { generateCustomRangePDF } from "../reportPdfWeekly";
+import { summarizeReports, totalIncTipOf } from "../salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -36,6 +37,16 @@ export default function CalendarReport({ reports, onSelectReport }) {
   const [rangeEnd, setRangeEnd] = useState("");
   const rangeSelected = Boolean(rangeStart && rangeEnd);
 
+  // Jump the calendar to the month containing the picked range's start date
+  const handleRangeStartChange = (value) => {
+    setRangeStart(value);
+    if (value) {
+      const [y, m] = value.split("-").map(Number);
+      setCalYear(y);
+      setCalMonth(m - 1);
+    }
+  };
+
   const calendarCells = useMemo(() => {
     const firstOfMonth = new Date(calYear, calMonth, 1);
     const startWeekday = firstOfMonth.getDay(); // 0 = Sun
@@ -59,15 +70,6 @@ export default function CalendarReport({ reports, onSelectReport }) {
     setCalYear(y);
   };
 
-  // Jump the calendar to the month containing the picked range's start date
-  useEffect(() => {
-    if (rangeStart) {
-      const [y, m] = rangeStart.split("-").map(Number);
-      setCalYear(y);
-      setCalMonth(m - 1);
-    }
-  }, [rangeStart]);
-
   const rangeReports = useMemo(() => {
     if (!rangeStart || !rangeEnd || rangeStart > rangeEnd) return [];
     return reports
@@ -75,36 +77,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
       .sort((a, b) => (a.date > b.date ? 1 : -1));
   }, [reports, rangeStart, rangeEnd]);
 
-  const summary = useMemo(() => {
-    const sum = (k) => rangeReports.reduce((s, r) => s + (Number(r[k]) || 0), 0);
-    const cashSale = sum("cashSale");
-    const cashTip = sum("cashTip");
-    const cashCatering = sum("cashCatering");
-    const chequesCatering = sum("chequesCatering");
-    const creditCardTip = sum("creditCardTip");
-    const creditCardSale = sum("creditCardSale");
-    const totalSettle = sum("totalSettle");
-    const restaurantOnline = sum("restaurantOnline");
-    const restaurantOnlineTips = sum("restaurantOnlineTips");
-    const grubhub = sum("grubhub");
-    const doordash = sum("doordash");
-    const uberEats = sum("uberEats");
-    const totalOnline = sum("totalRestaurantOnline");
-    const totalCatering = sum("totalCatering");
-    const totalGuests = sum("lunchGuests") + sum("dinnerGuests");
-    // Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
-    // stays correct even for reports saved before the online-tip fix in App.jsx.
-    const totalSale = cashSale + creditCardSale + (restaurantOnline - restaurantOnlineTips) + grubhub + doordash + uberEats + totalCatering;
-    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
-    const totalAmountIncTip = totalSale + totalTips;
-    const totalCashIncTip = cashSale + cashTip + cashCatering;
-
-    return {
-      cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-      totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
-      totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
-    };
-  }, [rangeReports]);
+  const summary = useMemo(() => summarizeReports(rangeReports), [rangeReports]);
 
   const handleDownload = () => {
     const pdfDoc = generateCustomRangePDF({
@@ -138,7 +111,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
               key={cell.dateStr}
               className={`ad-calendar-cell${cell.report ? " has-report" : ""}${cell.inRange ? " in-range" : ""}`}
               onClick={() => cell.report && onSelectReport?.(cell.report)}
-              title={cell.report ? `Total: ${fmt(cell.report.totalSalesDay)}` : undefined}
+              title={cell.report ? `Total: ${fmt(totalIncTipOf(cell.report))}` : undefined}
             >
               {cell.day}
             </div>
@@ -150,7 +123,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
 
       <div className="ad-detail-section-label">Custom Range</div>
       <div className="ad-range-picker-row">
-        <input type="date" className="ad-load-input" value={rangeStart} onChange={(e) => setRangeStart(e.target.value)} />
+        <input type="date" className="ad-load-input" value={rangeStart} onChange={(e) => handleRangeStartChange(e.target.value)} />
         <span className="ad-range-to">to</span>
         <input type="date" className="ad-load-input" value={rangeEnd} onChange={(e) => setRangeEnd(e.target.value)} />
       </div>
@@ -202,6 +175,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-row"><span>Total CC Settle</span><span>{fmt(summary.totalSettle)}</span></div>
               <div className="ad-detail-row"><span>CC Tip</span><span>{fmt(summary.creditCardTip)}</span></div>
               <div className="ad-detail-row bold"><span>CC Sale</span><span>{fmt(summary.creditCardSale)}</span></div>
+              <div className="ad-detail-row"><span>Gift Card Redeemed (deducted)</span><span>{fmt(summary.giftCard)}</span></div>
             </div>
             <div className="ad-week-detail-col">
               <div className="ad-detail-section-label">Online</div>

@@ -17,6 +17,7 @@ import {
   LabelList,
 } from "recharts";
 import { parseCsv } from "./parseCsv";
+import { totalIncTipOf, guestsOf, onlineSaleOf, restaurantOnlineNetOf } from "../salesMath";
 
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -153,23 +154,18 @@ const ONLINE_PLATFORM_FIELDS = [
 // WeeklyReport.jsx) so the two sources merge without any translation.
 const HISTORICAL_CSV_PATH = "/historical-sales.csv";
 
-const reportTips = (r) =>
-  (Number(r.cashTip) || 0) +
-  (Number(r.creditCardTip) || 0) +
-  (Number(r.restaurantOnlineTips) || 0);
+// Online totals are rebuilt from raw fields via salesMath (not the stored totals),
+// so they match every other report and stay correct for older saved reports.
+// totalInHouse stays as stored: for live reports it already equals
+// inHouseSaleOf(), and the historical CSV's in-house figure comes from the old
+// POS's own system-gross number, which can't be rebuilt from cash + card.
+const COMPUTED_FIELDS = {
+  totalRestaurantOnline: onlineSaleOf,
+  restaurantOnline: restaurantOnlineNetOf,
+};
 
-// Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
-// stays correct even for reports saved before the online-tip fix in App.jsx.
-const reportSaleExclTip = (r) =>
-  (Number(r.cashSale) || 0) +
-  (Number(r.creditCardSale) || 0) +
-  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
-  (Number(r.grubhub) || 0) +
-  (Number(r.doordash) || 0) +
-  (Number(r.uberEats) || 0) +
-  (Number(r.totalCatering) || 0);
-
-const reportTotalIncTip = (r) => reportSaleExclTip(r) + reportTips(r);
+const fieldValue = (rec, key) =>
+  COMPUTED_FIELDS[key] ? COMPUTED_FIELDS[key](rec) : Number(rec[key]) || 0;
 
 function pctChange(current, prior) {
   if (!prior) return null;
@@ -370,7 +366,7 @@ export default function YearOverYearReport({ reports, onBack }) {
       let total = 0;
       for (const row of comparisonRows) {
         const rec = row[side];
-        if (rec) total += Number(rec[field]) || 0;
+        if (rec) total += fieldValue(rec, field);
       }
       return total;
     };
@@ -384,7 +380,7 @@ export default function YearOverYearReport({ reports, onBack }) {
     const totalSalesIncTip = (side) =>
       comparisonRows.reduce((s, r) => {
         const rec = r[side];
-        return s + (rec ? reportTotalIncTip(rec) : 0);
+        return s + (rec ? totalIncTipOf(rec) : 0);
       }, 0);
 
     const curTotalSales = totalSalesIncTip("current");
@@ -394,7 +390,7 @@ export default function YearOverYearReport({ reports, onBack }) {
       comparisonRows.reduce((s, r) => {
         const rec = r[side];
         if (!rec) return s;
-        return s + (Number(rec.lunchGuests) || 0) + (Number(rec.dinnerGuests) || 0);
+        return s + guestsOf(rec);
       }, 0);
 
     const curGuests = guestTotal("current");
@@ -422,7 +418,7 @@ export default function YearOverYearReport({ reports, onBack }) {
     const sumField = (side, field) =>
       comparisonRows.reduce((s, r) => {
         const rec = r[side];
-        return s + (rec ? Number(rec[field]) || 0 : 0);
+        return s + (rec ? fieldValue(rec, field) : 0);
       }, 0);
 
     return [...CHANNEL_FIELDS, ...PAYMENT_FIELDS, ...ONLINE_PLATFORM_FIELDS].map(({ key, label, color }) => {
@@ -451,7 +447,7 @@ export default function YearOverYearReport({ reports, onBack }) {
         name: c.label,
         value: comparisonRows.reduce((s, r) => {
           const rec = r[side];
-          return s + (rec ? Number(rec[c.key]) || 0 : 0);
+          return s + (rec ? fieldValue(rec, c.key) : 0);
         }, 0),
         color: c.color,
       })).filter((d) => d.value > 0);
@@ -466,7 +462,7 @@ export default function YearOverYearReport({ reports, onBack }) {
         name: c.label,
         value: comparisonRows.reduce((s, r) => {
           const rec = r[side];
-          return s + (rec ? Number(rec[c.key]) || 0 : 0);
+          return s + (rec ? fieldValue(rec, c.key) : 0);
         }, 0),
         color: c.color,
       })).filter((d) => d.value > 0);
@@ -482,8 +478,8 @@ export default function YearOverYearReport({ reports, onBack }) {
         label: axisDate(r.currentDate),
         currentDate: r.currentDate,
         priorDate: r.priorDate,
-        current: r.current ? reportTotalIncTip(r.current) : null,
-        prior: r.prior ? reportTotalIncTip(r.prior) : null,
+        current: r.current ? totalIncTipOf(r.current) : null,
+        prior: r.prior ? totalIncTipOf(r.prior) : null,
       })),
     [comparisonRows]
   );
@@ -590,14 +586,14 @@ export default function YearOverYearReport({ reports, onBack }) {
     const daysWithCurrent = comparisonRows.filter((r) => r.current);
     if (daysWithCurrent.length > 1) {
       const bestDay = [...daysWithCurrent].sort(
-        (a, b) => reportTotalIncTip(b.current) - reportTotalIncTip(a.current)
+        (a, b) => totalIncTipOf(b.current) - totalIncTipOf(a.current)
       )[0];
       list.push({
         kind: "neutral",
         text: (
           <>
             Best day in {currentRangeLabel}: <strong>{shortDate(bestDay.currentDate)}</strong> at{" "}
-            <strong>{fmt(reportTotalIncTip(bestDay.current))}</strong>.
+            <strong>{fmt(totalIncTipOf(bestDay.current))}</strong>.
           </>
         ),
       });

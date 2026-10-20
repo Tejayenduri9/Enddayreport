@@ -26,6 +26,7 @@ import TaxSelectModal from "./TaxSelectModal";
 import TaxGeneralDashboard from "./TaxGeneralDashboard";
 import TaxAuditDashboard from "./TaxAuditDashboard";
 import useIdleLogout from "./useIdleLogout";
+import { totalIncTipOf, inHouseSaleOf, onlineSaleOf } from "../salesMath";
 
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", {
@@ -81,24 +82,6 @@ const getMonday = (date) => {
   d.setDate(d.getDate() + diff);
   return d;
 };
-
-const reportTips = (r) =>
-  (Number(r.cashTip) || 0) +
-  (Number(r.creditCardTip) || 0) +
-  (Number(r.restaurantOnlineTips) || 0);
-
-// Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
-// stays correct even for reports saved before the online-tip fix in App.jsx.
-const reportSaleExclTip = (r) =>
-  (Number(r.cashSale) || 0) +
-  (Number(r.creditCardSale) || 0) +
-  ((Number(r.restaurantOnline) || 0) - (Number(r.restaurantOnlineTips) || 0)) +
-  (Number(r.grubhub) || 0) +
-  (Number(r.doordash) || 0) +
-  (Number(r.uberEats) || 0) +
-  (Number(r.totalCatering) || 0);
-
-const reportTotalIncTip = (r) => reportSaleExclTip(r) + reportTips(r);
 
 const RANGE_OPTIONS = [
   { key: "day", label: "Day" },
@@ -273,7 +256,7 @@ export default function AdminDashboard({ user }) {
     const list = filteredByRange;
 
     const totalSales = list.reduce(
-      (s, r) => s + reportTotalIncTip(r),
+      (s, r) => s + totalIncTipOf(r),
       0
     );
 
@@ -291,7 +274,7 @@ export default function AdminDashboard({ user }) {
     );
 
     const totalOnline = list.reduce(
-      (s, r) => s + (Number(r.totalRestaurantOnline) || 0),
+      (s, r) => s + onlineSaleOf(r),
       0
     );
 
@@ -313,9 +296,9 @@ export default function AdminDashboard({ user }) {
       .map((r) => ({
         date: axisDate(r.date),
         fullDate: r.date,
-        total: reportTotalIncTip(r),
-        inHouse: Number(r.totalInHouse) || 0,
-        online: Number(r.totalRestaurantOnline) || 0,
+        total: totalIncTipOf(r),
+        inHouse: inHouseSaleOf(r),
+        online: onlineSaleOf(r),
         catering: Number(r.totalCatering) || 0,
       }));
   }, [filteredByRange]);
@@ -743,7 +726,7 @@ export default function AdminDashboard({ user }) {
 
                           <span className="ad-table-total">
                             {fmt(
-                              reportTotalIncTip(r)
+                              totalIncTipOf(r)
                             )}
                           </span>
 

@@ -8,7 +8,8 @@
     "dev:full": "npm run build && wrangler pages dev dist --compatibility-flag nodejs_compat",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test \"src/**/*.test.js\""
   },
   "dependencies": {
     "firebase": "^12.12.1",

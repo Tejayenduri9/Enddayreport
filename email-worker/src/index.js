@@ -3,7 +3,7 @@ import PostalMime from "postal-mime";
 const ALDELO_ENDOFDAY_API = "https://api.aldelo.express/store/Report/RichEmail/EndOfDay";
 
 export default {
-  async email(message, env, ctx) {
+  async email(message, env) {
     // Always forward the original email first, so nothing is ever lost even
     // if the extraction logic below fails for any reason (vendor changes
     // their report format, API is down, etc.) - this Worker only ever adds

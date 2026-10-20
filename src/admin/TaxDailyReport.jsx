@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { generateTaxDailyPDF } from "../reportPdfTax";
+import { summarizeReports } from "../salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -32,40 +33,7 @@ export default function TaxDailyReport({ reports }) {
 
   const report = useMemo(() => reports.find((r) => r.date === date) || null, [reports, date]);
 
-  const summary = useMemo(() => {
-    if (!report) return null;
-    const cashSale = Number(report.cashSale) || 0;
-    const cashTip = Number(report.cashTip) || 0;
-    const cashCatering = Number(report.cashCatering) || 0;
-    const chequesCatering = Number(report.chequesCatering) || 0;
-    const creditCardTip = Number(report.creditCardTip) || 0;
-    const creditCardSale = Number(report.creditCardSale) || 0;
-    const totalSettle = Number(report.totalSettle) || 0;
-    const restaurantOnlineTips = Number(report.restaurantOnlineTips) || 0;
-    const restaurantOnline = (Number(report.restaurantOnline) || 0) - restaurantOnlineTips;
-    const grubhub = Number(report.grubhub) || 0;
-    const doordash = Number(report.doordash) || 0;
-    const uberEats = Number(report.uberEats) || 0;
-    const totalOnline = Number(report.totalRestaurantOnline) || 0;
-    const totalCatering = Number(report.totalCatering) || 0;
-    const totalGuests = (Number(report.lunchGuests) || 0) + (Number(report.dinnerGuests) || 0);
-    // Rebuilt from the raw channel fields (not the stored totalSalesDay) so this
-    // stays correct even for reports saved before the online-tip fix in App.jsx.
-    const totalSale = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + totalCatering;
-    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
-    const totalAmountIncTip = totalSale + totalTips;
-    const totalCashIncTip = cashSale + cashTip + cashCatering;
-    const taxableAmount = totalSale - cashCatering;
-    const tax = taxableAmount * 0.07;
-    const totalInclTax = totalSale - tax;
-
-    return {
-      cashSale, cashTip, cashCatering, chequesCatering, creditCardTip, creditCardSale,
-      totalSettle, restaurantOnline, restaurantOnlineTips, grubhub, doordash, uberEats, totalOnline, totalCatering,
-      totalGuests, totalSale, totalTips, totalAmountIncTip, totalCashIncTip,
-      taxableAmount, tax, totalInclTax,
-    };
-  }, [report]);
+  const summary = useMemo(() => (report ? summarizeReports([report]) : null), [report]);
 
   const handleDownload = () => {
     if (!summary) return;
@@ -117,7 +85,7 @@ export default function TaxDailyReport({ reports }) {
             </div>
             <div className="ad-summary-card primary">
               <div className="ad-summary-label">Net Sales (Tax Removed)</div>
-              <div className="ad-summary-value">{fmt(summary.totalInclTax)}</div>
+              <div className="ad-summary-value">{fmt(summary.netSalesExclTax)}</div>
             </div>
           </div>
 
@@ -133,10 +101,11 @@ export default function TaxDailyReport({ reports }) {
               <div className="ad-detail-row"><span>Total CC Settle</span><span>{fmt(summary.totalSettle)}</span></div>
               <div className="ad-detail-row"><span>CC Tip</span><span>{fmt(summary.creditCardTip)}</span></div>
               <div className="ad-detail-row bold"><span>CC Sale</span><TaxedValue value={summary.creditCardSale} /></div>
+              <div className="ad-detail-row"><span>Gift Card Redeemed (deducted)</span><span>{fmt(summary.giftCard)}</span></div>
             </div>
             <div className="ad-week-detail-col">
               <div className="ad-detail-section-label">Online</div>
-              <div className="ad-detail-row"><span>Restaurant Online (Net)</span><TaxedValue value={summary.restaurantOnline} /></div>
+              <div className="ad-detail-row"><span>Restaurant Online (Net)</span><TaxedValue value={summary.restaurantOnlineNet} /></div>
               <div className="ad-detail-row"><span>Online Tips</span><span>{fmt(summary.restaurantOnlineTips)}</span></div>
               <div className="ad-detail-row"><span>Grubhub</span><TaxedValue value={summary.grubhub} /></div>
               <div className="ad-detail-row"><span>DoorDash</span><TaxedValue value={summary.doordash} /></div>

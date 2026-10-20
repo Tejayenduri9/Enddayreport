@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import logo from "./assets/logo.png";
+import { totalIncTipOf } from "./salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -36,7 +37,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
 
   doc.setFillColor(196, 82, 0);
   doc.rect(0, 0, pageWidth, 36, "F");
-  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch (e) {}
+  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch { /* logo is optional - still build the PDF without it */ }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(11);
   doc.text(title, pageWidth / 2, 23, { align: "center" });
@@ -77,7 +78,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   y += 2;
 
   secHeader("ONLINE SALES");
-  row("Restaurant Online (Net)", fmt(summary.restaurantOnline));
+  row("Restaurant Online (Net)", fmt(summary.restaurantOnlineNet));
   row("Online Tips", fmt(summary.restaurantOnlineTips));
   row("Grubhub", fmt(summary.grubhub));
   row("DoorDash", fmt(summary.doordash));
@@ -96,14 +97,15 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   y += 2;
 
   secHeader(totalLabel.sectionTitle);
+  row("Gift Card Redeemed (deducted)", fmt(summary.giftCard));
   row("Total Sale (excl. Tip)", fmt(summary.totalSale));
-  row("Total Tips (Cash + CC)", fmt(summary.totalTips));
+  row("Total Tips (Cash + CC + Online)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
   y += 2;
 
   secHeader("TAX");
   row("Tax (7%, extracted)", fmt(summary.tax));
-  row("Net Sales (Tax Removed)", fmt(summary.totalInclTax), true);
+  row("Net Sales (Tax Removed)", fmt(summary.netSalesExclTax), true);
   y += 4;
 
   doc.setFillColor(196, 82, 0);
@@ -111,7 +113,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
   doc.text("NET SALES (TAX REMOVED)", margin + 4, y + 8);
-  doc.text(fmt(summary.totalInclTax), margin + cw - 3, y + 8, { align: "right" });
+  doc.text(fmt(summary.netSalesExclTax), margin + cw - 3, y + 8, { align: "right" });
   y += 18;
 
   if (dailyReports?.length) {
@@ -121,7 +123,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
     const colGuests = Math.floor(cw * 0.24);
     const cols = [colDate, colGuests, cw - colDate - colGuests];
     let hx = margin;
-    ["Date", "Guests", "Total Sales"].forEach((h, i) => {
+    ["Date", "Guests", "Total Sales (incl. Tip)"].forEach((h, i) => {
       doc.setFillColor(255, 235, 200);
       doc.setDrawColor(200, 150, 100);
       doc.rect(hx, y, cols[i], 6, "FD");
@@ -133,7 +135,7 @@ function buildTaxPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
     y += 6;
     dailyReports.forEach((r) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 15; }
-      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(r.totalSalesDay)];
+      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(totalIncTipOf(r))];
       let dx = margin;
       cells.forEach((val, i) => {
         doc.setDrawColor(200, 200, 200);

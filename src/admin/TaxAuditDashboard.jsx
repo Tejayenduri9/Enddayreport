@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { generateAuditPDF } from "../reportPdfAudit";
+import { buildTaxAudit } from "../salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,13 +17,6 @@ const TaxedValue = ({ value }) => {
       <span className="ad-tax-badge net">Net: {fmt(net)}</span>
     </span>
   );
-};
-
-const toISO = (d) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
 };
 
 const ordinalSuffix = (n) => {
@@ -52,7 +46,6 @@ export default function TaxAuditDashboard({ reports, onBack }) {
   const [month, setMonth] = useState(now.getMonth());
 
   const [auditorEmail, setAuditorEmail] = useState("");
-  const [savedAuditorEmail, setSavedAuditorEmail] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null); // { type: 'success'|'error', message }
 
@@ -72,74 +65,11 @@ export default function TaxAuditDashboard({ reports, onBack }) {
     return () => { cancelled = true; };
   }, []);
 
-  const reportsByDate = useMemo(() => {
-    const map = {};
-    reports.forEach((r) => { map[r.date] = r; });
-    return map;
-  }, [reports]);
-
-  const dayRows = useMemo(() => {
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const rows = [];
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = toISO(new Date(year, month, d));
-      const r = reportsByDate[dateStr];
-      const hasData = Boolean(r);
-      const cashSale = Number(r?.cashSale) || 0;
-      const creditCardSale = Number(r?.creditCardSale) || 0;
-      const restaurantOnline = (Number(r?.restaurantOnline) || 0) - (Number(r?.restaurantOnlineTips) || 0);
-      const grubhub = Number(r?.grubhub) || 0;
-      const doordash = Number(r?.doordash) || 0;
-      const uberEats = Number(r?.uberEats) || 0;
-      const chequesCatering = Number(r?.chequesCatering) || 0;
-      const cashTip = Number(r?.cashTip) || 0;
-      const creditCardTip = Number(r?.creditCardTip) || 0;
-      const restaurantOnlineTips = Number(r?.restaurantOnlineTips) || 0;
-
-      const taxableBase = cashSale + creditCardSale + restaurantOnline + grubhub + doordash + uberEats + chequesCatering;
-      const tax = taxableBase * 0.07;
-      // Net Total is the plain sum of the sale channels (Tax is shown alongside for
-      // reference only, not subtracted here) - tips get added on top for Grand Total.
-      const totalWithoutTip = taxableBase;
-      const grandTotal = taxableBase + cashTip + creditCardTip + restaurantOnlineTips;
-
-      rows.push({
-        dayLabel: fullDateLabel(dateStr),
-        dateStr,
-        hasData,
-        cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats,
-        chequesCatering, cashTip, creditCardTip, restaurantOnlineTips, tax, totalWithoutTip, grandTotal,
-      });
-    }
-    return rows;
-  }, [reportsByDate, year, month]);
-
-  const summary = useMemo(() => {
-    const totalTaxableSale = dayRows.reduce((s, r) => s + r.cashSale + r.creditCardSale + r.restaurantOnline + r.grubhub + r.doordash + r.uberEats + r.chequesCatering, 0);
-    const totalTax = dayRows.reduce((s, r) => s + r.tax, 0);
-    const totalNetSale = totalTaxableSale - totalTax;
-
-    const cashSale = dayRows.reduce((s, r) => s + r.cashSale, 0);
-    const creditCardSale = dayRows.reduce((s, r) => s + r.creditCardSale, 0);
-    const restaurantOnline = dayRows.reduce((s, r) => s + r.restaurantOnline, 0);
-    const grubhub = dayRows.reduce((s, r) => s + r.grubhub, 0);
-    const doordash = dayRows.reduce((s, r) => s + r.doordash, 0);
-    const uberEats = dayRows.reduce((s, r) => s + r.uberEats, 0);
-    const chequesCatering = dayRows.reduce((s, r) => s + r.chequesCatering, 0);
-    const cashTip = dayRows.reduce((s, r) => s + r.cashTip, 0);
-    const creditCardTip = dayRows.reduce((s, r) => s + r.creditCardTip, 0);
-    const restaurantOnlineTips = dayRows.reduce((s, r) => s + r.restaurantOnlineTips, 0);
-    const totalOnline = restaurantOnline + grubhub + doordash + uberEats;
-    const totalCashExclCatering = cashSale + cashTip; // Cash Catering excluded per audit rules
-    const totalCcSettle = creditCardSale + creditCardTip;
-    const totalTips = cashTip + creditCardTip + restaurantOnlineTips;
-
-    return {
-      totalTaxableSale, totalTax, totalNetSale,
-      cashSale, creditCardSale, restaurantOnline, grubhub, doordash, uberEats, chequesCatering,
-      cashTip, creditCardTip, restaurantOnlineTips, totalOnline, totalCashExclCatering, totalCcSettle, totalTips,
-    };
-  }, [dayRows]);
+  const { dayRows, summary } = useMemo(() => {
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, "0")}-`;
+    const monthReports = reports.filter((r) => (r.date || "").startsWith(monthPrefix));
+    return buildTaxAudit(monthReports, year, month, fullDateLabel);
+  }, [reports, year, month]);
 
   const shiftMonth = (delta) => {
     let newMonth = month + delta;
@@ -168,7 +98,6 @@ export default function TaxAuditDashboard({ reports, onBack }) {
       // Save the email for next time
       try {
         await setDoc(doc(db, "settings", "auditorEmail"), { email: trimmedEmail, updatedAt: new Date() });
-        setSavedAuditorEmail(true);
       } catch (err) {
         console.error("Failed to save auditor email:", err);
       }

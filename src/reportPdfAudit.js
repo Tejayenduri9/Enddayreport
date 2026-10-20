@@ -35,7 +35,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const logoCardX = pageWidth / 2 - logoCardW / 2, logoCardY = 4;
   doc.setFillColor(255, 255, 255);
   doc.roundedRect(logoCardX, logoCardY, logoCardW, logoCardH, 2, 2, "F");
-  try { doc.addImage(logo, "PNG", logoCardX + 2, logoCardY + 2, logoCardW - 4, logoCardH - 4); } catch (e) {}
+  try { doc.addImage(logo, "PNG", logoCardX + 2, logoCardY + 2, logoCardW - 4, logoCardH - 4); } catch { /* logo is optional - still build the PDF without it */ }
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(13);

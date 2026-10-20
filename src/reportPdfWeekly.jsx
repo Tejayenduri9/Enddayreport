@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import logo from "./assets/logo.png";
+import { totalIncTipOf } from "./salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -36,7 +37,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
 
   doc.setFillColor(196, 82, 0);
   doc.rect(0, 0, pageWidth, 36, "F");
-  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch (e) {}
+  try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch { /* logo is optional - still build the PDF without it */ }
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(11);
   doc.text(title, pageWidth / 2, 23, { align: "center" });
@@ -96,8 +97,9 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   y += 2;
 
   secHeader(totalLabel.sectionTitle);
+  row("Gift Card Redeemed (deducted)", fmt(summary.giftCard));
   row("Total Sale (excl. Tip)", fmt(summary.totalSale));
-  row("Total Tips (Cash + CC)", fmt(summary.totalTips));
+  row("Total Tips (Cash + CC + Online)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
   y += 4;
 
@@ -116,7 +118,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
     const colGuests = Math.floor(cw * 0.24);
     const cols = [colDate, colGuests, cw - colDate - colGuests];
     let hx = margin;
-    ["Date", "Guests", "Total Sales"].forEach((h, i) => {
+    ["Date", "Guests", "Total Sales (incl. Tip)"].forEach((h, i) => {
       doc.setFillColor(255, 235, 200);
       doc.setDrawColor(200, 150, 100);
       doc.rect(hx, y, cols[i], 6, "FD");
@@ -128,7 +130,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
     y += 6;
     dailyReports.forEach((r) => {
       if (y > pageHeight - 20) { doc.addPage(); y = 15; }
-      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(r.totalSalesDay)];
+      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(totalIncTipOf(r))];
       let dx = margin;
       cells.forEach((val, i) => {
         doc.setDrawColor(200, 200, 200);
