@@ -14,14 +14,32 @@ function pemToPkcs8(pem) {
   return Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
 }
 
+// Accepts the key file's JSON as pasted, also when wrapped in quotes or
+// base64-encoded. Errors describe the value's shape, never its content.
+function parseServiceAccount(raw) {
+  let text = String(raw).trim();
+  const attempts = [text];
+  if (/^["'].*["']$/s.test(text)) attempts.push(text.slice(1, -1));
+  if (!text.startsWith("{")) {
+    try { attempts.push(atob(text)); } catch { /* not base64 */ }
+  }
+  for (const attempt of attempts) {
+    try {
+      let value = JSON.parse(attempt);
+      if (typeof value === "string") value = JSON.parse(value);
+      if (value && typeof value === "object") return value;
+    } catch { /* try the next form */ }
+  }
+  const ends = text.endsWith("}") ? "ends with }" : "does NOT end with }";
+  throw new Error(
+    `FIREBASE_SERVICE_ACCOUNT isn't the complete key file (it has ${text.length} characters, starts with "${text.charAt(0)}", ${ends}). ` +
+    "Open the downloaded .json file, copy everything from the first { to the last }, and paste it again."
+  );
+}
+
 export function readServiceAccount(env) {
   if (!env.FIREBASE_SERVICE_ACCOUNT) return null;
-  let sa;
-  try {
-    sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT);
-  } catch {
-    throw new Error("FIREBASE_SERVICE_ACCOUNT is not valid JSON - paste the whole key file, including the { and }");
-  }
+  const sa = parseServiceAccount(env.FIREBASE_SERVICE_ACCOUNT);
   if (!sa.client_email || !sa.private_key || !sa.project_id) throw new Error("FIREBASE_SERVICE_ACCOUNT is missing fields");
   return sa;
 }

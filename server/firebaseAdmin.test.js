@@ -54,3 +54,12 @@ test("adminClient lists users, reads records and deletes in batches", async () =
   assert.ok(calls.some((c) => c.startsWith("POST https://identitytoolkit.googleapis.com/v1/projects/proj/accounts:batchDelete")));
   assert.ok(calls.includes("DELETE https://firestore.googleapis.com/v1/projects/proj/databases/(default)/documents/devices/d"));
 });
+
+test("readServiceAccount accepts common paste variants and explains bad ones", () => {
+  const key = { project_id: "p", client_email: "c@p", private_key: "k" };
+  const json = JSON.stringify(key);
+  assert.deepEqual(readServiceAccount({ FIREBASE_SERVICE_ACCOUNT: `  ${json}\n` }), key);
+  assert.deepEqual(readServiceAccount({ FIREBASE_SERVICE_ACCOUNT: JSON.stringify(json) }), key);
+  assert.deepEqual(readServiceAccount({ FIREBASE_SERVICE_ACCOUNT: Buffer.from(json).toString("base64") }), key);
+  assert.throws(() => readServiceAccount({ FIREBASE_SERVICE_ACCOUNT: json.slice(0, 20) }), /20 characters, starts with "\{", does NOT end with \}/);
+});
