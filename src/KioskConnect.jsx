@@ -9,7 +9,7 @@ const formatCode = (code = "") => (
 );
 
 /**
- * The iPad's opening screens until it's connected: welcome, waiting for
+ * The device's opening screens until it's connected: welcome, waiting for
  * approval (with the pairing code), and disconnected / declined.
  */
 export default function KioskConnect({ device }) {
@@ -40,10 +40,10 @@ export default function KioskConnect({ device }) {
 
   if (device.status === "pending") {
     return (
-      <AuthScreen subtitle="Connect this iPad">
+      <AuthScreen subtitle="Connect this device">
         <div className="au-icon">{Icons.clock}</div>
         <h1 className="au-h">Waiting for approval</h1>
-        <p className="au-p">Ask the owner or a manager to approve this iPad. It only needs to be done once.</p>
+        <p className="au-p">Ask the owner or a manager to approve this device. It only needs to be done once.</p>
 
         <div className="au-code-box" aria-label={`Pairing code ${device.code}`}>
           <div className="au-code-label">Pairing code</div>
@@ -75,7 +75,7 @@ export default function KioskConnect({ device }) {
       <AuthScreen subtitle="Daily report">
         <div className="au-icon warn">{Icons.wifiOff}</div>
         <h1 className="au-h">Can&apos;t reach the server</h1>
-        <p className="au-p">Check that this iPad is connected to the internet, then try again.</p>
+        <p className="au-p">Check that this device is connected to the internet, then try again.</p>
         <div className="au-stack">
           <button className="au-btn primary" onClick={() => window.location.reload()}>Try again</button>
         </div>
@@ -87,21 +87,21 @@ export default function KioskConnect({ device }) {
 
   return (
     <AuthScreen subtitle="Daily report">
-      <div className={`au-icon${disconnected ? " warn" : ""}`}>{disconnected ? Icons.unplug : Icons.tablet}</div>
-      <h1 className="au-h">{disconnected ? "This iPad isn't connected" : "Set up this iPad"}</h1>
+      <div className={`au-icon${disconnected ? " warn" : ""}`}>{disconnected ? Icons.unplug : Icons.devices}</div>
+      <h1 className="au-h">{disconnected ? "This device isn't connected" : "Set up this device"}</h1>
       <p className="au-p">
         {device.status === "rejected"
-          ? "The request to connect this iPad was declined. You can send a new one."
+          ? "The request to connect this device was declined. You can send a new one."
           : device.status === "removed"
-            ? "This iPad was disconnected from the admin dashboard. Connect it again to keep entering reports."
-            : "Connect this iPad to your restaurant so staff can enter the end-of-day report. You'll get a code for the owner to approve."}
+            ? "This device was disconnected from the admin dashboard. Connect it again to keep entering reports."
+            : "Connect this device to your restaurant so staff can enter the end-of-day report. You'll get a code for the owner to approve."}
       </p>
 
       <div className="au-stack">
         {error && <div className="au-alert error" role="alert">{error}</div>}
         <button className="au-btn primary" onClick={() => run(device.connect)} disabled={busy}>
           {busy ? <Spinner /> : null}
-          {disconnected ? "Connect again" : "Connect this iPad"}
+          {disconnected ? "Connect again" : "Connect this device"}
         </button>
       </div>
 

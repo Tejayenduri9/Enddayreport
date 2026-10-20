@@ -36,7 +36,7 @@ function ConfirmRow({ message, action, busy, onCancel, onConfirm }) {
   );
 }
 
-/** Approve / remove admin accounts and connected iPads. */
+/** Approve / remove admin accounts and connected devices. */
 export default function TeamDevices({ user, onBack }) {
   const [people, setPeople] = useState(null);
   const [devices, setDevices] = useState(null);
@@ -81,7 +81,7 @@ export default function TeamDevices({ user, onBack }) {
       <div className="ad-panel-title-row" style={{ marginBottom: 12 }}>
         <div>
           <div className="tm-page-title">Team &amp; devices</div>
-          <div className="tm-page-sub">Approve who can open this dashboard and which iPads can enter reports.</div>
+          <div className="tm-page-sub">Approve who can open this dashboard and which devices can enter reports.</div>
         </div>
         <button className="ad-back-btn ad-back-btn-solid" onClick={onBack}>← Back to Dashboard</button>
       </div>
@@ -91,10 +91,10 @@ export default function TeamDevices({ user, onBack }) {
 
       {!loading && (
         <>
-          {/* ---- iPads ---- */}
+          {/* ---- Devices ---- */}
           <section className="ad-panel">
             <div className="tm-section-head">
-              <h2 className="tm-h">iPads</h2>
+              <h2 className="tm-h">Devices</h2>
               <span className="tm-count">{connectedDevices.length} connected</span>
             </div>
 
@@ -104,14 +104,14 @@ export default function TeamDevices({ user, onBack }) {
                   <div className="tm-tag">Waiting for approval</div>
                   <div className="tm-code" aria-label={`Pairing code ${d.code}`}>{formatCode(d.code)}</div>
                   <div className="tm-meta">{d.platform || "Device"} · requested {timeAgo(d.createdAt)}</div>
-                  <div className="tm-hint">Only approve if this matches the code on the iPad.</div>
+                  <div className="tm-hint">Only approve if this matches the code on the device.</div>
                 </div>
                 <div className="tm-request-side">
-                  <label className="tm-label" htmlFor={`name-${d.id}`}>Name this iPad</label>
+                  <label className="tm-label" htmlFor={`name-${d.id}`}>Name this device</label>
                   <input
                     id={`name-${d.id}`}
                     className="tm-input"
-                    placeholder="e.g. Front counter iPad"
+                    placeholder="e.g. Front counter iPad, Office laptop"
                     maxLength={40}
                     value={deviceNames[d.id] ?? ""}
                     onChange={(e) => setDeviceNames((prev) => ({ ...prev, [d.id]: e.target.value }))}
@@ -121,7 +121,7 @@ export default function TeamDevices({ user, onBack }) {
                     <button
                       className="tm-btn primary"
                       disabled={busyId === d.id}
-                      onClick={() => review("devices", d.id, { status: "approved", name: (deviceNames[d.id] || "").trim() || "iPad" })}
+                      onClick={() => review("devices", d.id, { status: "approved", name: (deviceNames[d.id] || "").trim() || (d.platform || "Device").split(" · ")[0] })}
                     >
                       Approve
                     </button>
@@ -132,7 +132,7 @@ export default function TeamDevices({ user, onBack }) {
 
             {connectedDevices.length === 0 && pendingDevices.length === 0 && (
               <div className="tm-empty">
-                No iPads connected yet. On the iPad, open <strong>{window.location.host}</strong> and tap <strong>Connect this iPad</strong>; its code will appear here.
+                No devices connected yet. On the iPad or computer that will enter reports, open <strong>{window.location.host}</strong> and tap <strong>Connect this device</strong>; its code will appear here.
               </div>
             )}
 
@@ -142,17 +142,17 @@ export default function TeamDevices({ user, onBack }) {
                   <ConfirmRow
                     busy={busyId === d.id}
                     onCancel={() => setConfirming(null)}
-                    message={`Disconnect ${d.name || "this iPad"}? It will need a new code to connect again.`}
+                    message={`Disconnect ${d.name || "this device"}? It will need a new code to connect again.`}
                     action="Disconnect"
                     onConfirm={() => review("devices", d.id, { status: "removed" })}
                   />
                 ) : (
                   <>
                     <div className="tm-avatar device" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="5" y="2.5" width="14" height="19" rx="2.5" /><path d="M11 18.5h2" /></svg>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2.5" y="4" width="14" height="10" rx="1.8" /><path d="M6.5 18h6M9.5 14v4" /><rect x="15.5" y="9" width="6" height="11" rx="1.5" /><path d="M18 17.5h1" /></svg>
                     </div>
                     <div className="tm-row-main">
-                      <div className="tm-name">{d.name || "iPad"}</div>
+                      <div className="tm-name">{d.name || "Device"}</div>
                       <div className="tm-meta">{d.platform || "Device"} · connected {shortDate(d.reviewedAt)}</div>
                     </div>
                     <button className="tm-btn ghost" onClick={() => setConfirming(`device:${d.id}`)}>Disconnect</button>

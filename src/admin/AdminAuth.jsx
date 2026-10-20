@@ -167,7 +167,7 @@ export default function AdminAuth({ onCreateAccount }) {
 
       <div className="au-divider" />
       <div className="au-foot">
-        Setting up the restaurant iPad?
+        Setting up a device for reports?
         <a className="au-link" href="/">Open the daily report</a>
       </div>
     </AuthScreen>

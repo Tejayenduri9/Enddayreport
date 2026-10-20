@@ -6,7 +6,7 @@ const svg = (path) => (
 );
 
 export const Icons = {
-  tablet: svg(<><rect x="5" y="2.5" width="14" height="19" rx="2.5" /><path d="M11 18.5h2" /></>),
+  devices: svg(<><rect x="2.5" y="4" width="14" height="10" rx="1.8" /><path d="M6.5 18h6M9.5 14v4" /><rect x="15.5" y="9" width="6" height="11" rx="1.5" /><path d="M18 17.5h1" /></>),
   lock: svg(<><rect x="4.5" y="10.5" width="15" height="10" rx="2.5" /><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" /></>),
   clock: svg(<><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></>),
   unplug: svg(<><path d="M9 7V3M15 7V3M7 7h10v4a5 5 0 0 1-10 0V7Z" /><path d="M12 16v5" /><path d="M3 3l18 18" /></>),

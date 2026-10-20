@@ -115,7 +115,7 @@ export default function AdminDashboard({ user }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [teamView, setTeamView] = useState(false);
 
-  // Live count of iPads and people waiting for approval (Team & devices).
+  // Live count of devices and people waiting for approval (Team & devices).
   const [pendingDevices, setPendingDevices] = useState(0);
   const [pendingPeople, setPendingPeople] = useState(0);
   useEffect(() => {
@@ -474,7 +474,7 @@ export default function AdminDashboard({ user }) {
                   <span>
                     <span className="tm-banner-dot" aria-hidden="true" />
                     {[
-                      pendingDevices > 0 && `${pendingDevices} iPad${pendingDevices > 1 ? "s" : ""}`,
+                      pendingDevices > 0 && `${pendingDevices} device${pendingDevices > 1 ? "s" : ""}`,
                       pendingPeople > 0 && `${pendingPeople} ${pendingPeople > 1 ? "people" : "person"}`,
                     ].filter(Boolean).join(" and ")}{" "}
                     waiting for your approval
