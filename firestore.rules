@@ -3,36 +3,45 @@ rules_version = '2';
 // Deploy with: firebase deploy --only firestore:rules
 //
 // Who can do what:
-//   - Admins (admin dashboard logins) - read everything, edit/delete reports, settings.
-//   - The kiosk account (signed in once on the kiosk device) - read reports,
-//     submit and edit reports dated within the last 14 days, leave feedback.
-//   - Everyone else - nothing.
+//   - Admins - the owner accounts below, plus anyone an admin has approved
+//     (users/{uid}.role == 'admin'). Read everything, edit/delete reports,
+//     settings, approve people and devices.
+//   - Connected iPads - a device signs in anonymously and asks to connect
+//     (devices/{uid}, status 'pending'); once an admin approves it, it can read
+//     reports, submit/edit reports dated within the last 14 days, leave feedback.
+//   - Everyone else - nothing. Creating an account only puts in a request.
 //
-// Keep these emails in sync with ADMIN_EMAILS / KIOSK_EMAIL in Cloudflare
-// (used by the server functions in /functions).
+// The owner IDs here must match OWNER_UIDS in src/accessConfig.js.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function adminEmails() {
-      return ['tejayenduri9999@gmail.com', 'vincebusiness2020@gmail.com'];
+    function ownerUids() {
+      return ['LYiaVtiEmoYJBqqLmNFNNNaIm0k1', 'RtcTtTbytNXY9dpO8yOdFwjl0IB3'];
     }
 
-    function kioskEmail() {
-      return 'spice@enddayreports.com';
+    function signedIn() {
+      return request.auth != null;
     }
 
-    function signedInEmail() {
-      return request.auth != null && request.auth.token.email is string
-        ? request.auth.token.email.lower()
-        : '';
+    function provider() {
+      return request.auth.token.firebase.sign_in_provider;
+    }
+
+    function isOwner() {
+      return signedIn() && provider() != 'anonymous' && request.auth.uid in ownerUids();
     }
 
     function isAdmin() {
-      return signedInEmail() in adminEmails();
+      return isOwner()
+        || (signedIn() && provider() != 'anonymous'
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
     }
 
     function isKiosk() {
-      return signedInEmail() == kioskEmail();
+      return signedIn()
+        && exists(/databases/$(database)/documents/devices/$(request.auth.uid))
+        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved';
     }
 
     // "2026-10-19" -> timestamp at midnight UTC
@@ -77,6 +86,56 @@ service cloud.firestore {
     // Admin settings (e.g. the auditor's email).
     match /settings/{settingId} {
       allow read, write: if isAdmin();
+    }
+
+    // People. Creating an account adds a 'pending' request; only an admin can
+    // approve it. Owners create their own record directly as 'admin'.
+    match /users/{userId} {
+      allow get: if (signedIn() && request.auth.uid == userId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if signedIn() && request.auth.uid == userId
+                    && provider() == 'password'
+                    && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'createdAt'])
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+                    && request.resource.data.createdAt == request.time
+                    && (request.resource.data.role == 'pending'
+                        || (request.resource.data.role == 'admin' && isOwner()));
+
+      // Admins approve/reject/remove others - never change their own access.
+      allow update: if isAdmin() && request.auth.uid != userId
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'reviewedAt', 'reviewedBy'])
+                    && request.resource.data.role in ['pending', 'admin', 'rejected'];
+
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    // iPads. A device creates its own 'pending' request with a pairing code;
+    // an admin approves it (or disconnects it later).
+    match /devices/{deviceId} {
+      allow get: if (signedIn() && request.auth.uid == deviceId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if signedIn() && request.auth.uid == deviceId
+                    && request.resource.data.keys().hasOnly(['code', 'status', 'platform', 'createdAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.code is string
+                    && request.resource.data.code.matches('^[A-HJ-NP-Z2-9]{6}$')
+                    && request.resource.data.platform is string
+                    && request.resource.data.platform.size() <= 60
+                    && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'name', 'reviewedAt', 'reviewedBy'])
+                    && request.resource.data.status in ['pending', 'approved', 'rejected', 'removed']
+                    && (!('name' in request.resource.data)
+                        || (request.resource.data.name is string && request.resource.data.name.size() <= 40));
+
+      // A device may withdraw its own unapproved request ("Start over").
+      allow delete: if isAdmin()
+                    || (signedIn() && request.auth.uid == deviceId && resource.data.status == 'pending');
     }
 
     // Everything else is closed.

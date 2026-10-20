@@ -1,12 +1,20 @@
-import { useState, useEffect } from "react";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase";
-import AdminLogin from "./AdminLogin";
+import { useState, useEffect, useRef } from "react";
+import { createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, updateProfile } from "firebase/auth";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "../firebase";
+import { OWNER_UIDS } from "../accessConfig";
+import { LoadingScreen } from "../authUi";
+import AdminAuth from "./AdminAuth";
+import AdminWaiting from "./AdminWaiting";
 import AdminDashboard from "./AdminDashboard";
 
 function AdminApp() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  // users/{uid} record for the signed-in account:
+  // { uid, status: "loading" | "admin" | "pending" | "rejected" | "error", name }
+  const [accessState, setAccess] = useState(null);
+  const signupNameRef = useRef("");
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -15,6 +23,50 @@ function AdminApp() {
     });
     return () => unsub();
   }, []);
+
+  // Watch this account's access record, creating it on first sign-in. Owners
+  // (OWNER_UIDS) start as admins; everyone else starts as a pending request
+  // that an admin approves from Team & devices. firestore.rules enforce this.
+  useEffect(() => {
+    if (!user) return undefined;
+    const ref = doc(db, "users", user.uid);
+    return onSnapshot(
+      ref,
+      async (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          setAccess({ uid: user.uid, status: data.role, name: data.name });
+          return;
+        }
+        setAccess({ uid: user.uid, status: "loading" });
+        try {
+          await setDoc(ref, {
+            email: user.email,
+            name: signupNameRef.current || user.displayName || user.email.split("@")[0],
+            role: OWNER_UIDS.includes(user.uid) ? "admin" : "pending",
+            createdAt: serverTimestamp(),
+          });
+        } catch (err) {
+          console.error("Couldn't record account:", err);
+          setAccess({ uid: user.uid, status: "error" });
+        }
+      },
+      (err) => {
+        console.error("Couldn't load account:", err);
+        setAccess({ uid: user.uid, status: "error" });
+      }
+    );
+  }, [user]);
+
+  // Ignore a record left over from a previous account on this browser.
+  const access = accessState && user && accessState.uid === user.uid ? accessState : { status: "loading" };
+
+  const createAccount = async (name, email, password) => {
+    signupNameRef.current = name;
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(cred.user, { displayName: name }).catch(() => {});
+    sendEmailVerification(cred.user).catch((err) => console.error(err));
+  };
 
   return (
     <>
@@ -232,11 +284,15 @@ function AdminApp() {
       `}</style>
 
       {checking ? (
-        <div className="ad-lock-screen">Loading…</div>
-      ) : user ? (
+        <LoadingScreen />
+      ) : !user ? (
+        <AdminAuth onCreateAccount={createAccount} />
+      ) : access.status === "loading" ? (
+        <LoadingScreen />
+      ) : access.status === "admin" ? (
         <AdminDashboard user={user} />
       ) : (
-        <AdminLogin />
+        <AdminWaiting user={user} access={access} />
       )}
     </>
   );

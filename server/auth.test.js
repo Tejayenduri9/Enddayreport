@@ -4,7 +4,15 @@ import assert from "node:assert/strict";
 import { requireUser, escapeHtml, ownerEmails } from "./auth.js";
 
 const PROJECT_ID = "invoice-bded6";
-const env = { KIOSK_EMAIL: "kiosk@example.com", ADMIN_EMAILS: "owner@example.com, Manager@Example.com" };
+const env = {};
+
+// Fake Firestore: path -> fields. Only answers when the caller sends a token.
+const firestore = {
+  "users/admin-1": { role: { stringValue: "admin" } },
+  "users/pending-1": { role: { stringValue: "pending" } },
+  "devices/ipad-1": { status: { stringValue: "approved" } },
+  "devices/ipad-2": { status: { stringValue: "pending" } },
+};
 
 let signingKey, otherKey;
 
@@ -25,11 +33,13 @@ async function makeToken(claims = {}, { key = signingKey, kid = key.kid } = {}) 
   const header = encodeJson({ alg: "RS256", kid, typ: "JWT" });
   const payload = encodeJson({
     aud: PROJECT_ID, iss: `https://securetoken.google.com/${PROJECT_ID}`,
-    sub: "user-1", email: "kiosk@example.com", iat: now - 10, exp: now + 3600, ...claims,
+    sub: "ipad-1", firebase: { sign_in_provider: "anonymous" }, iat: now - 10, exp: now + 3600, ...claims,
   });
   const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key.privateKey, new TextEncoder().encode(`${header}.${payload}`));
   return `${header}.${payload}.${b64url(new Uint8Array(sig))}`;
 }
+
+const adminClaims = { sub: "admin-1", email: "Owner@Example.com", firebase: { sign_in_provider: "password" } };
 
 const contextWith = (token) => ({
   env,
@@ -39,18 +49,37 @@ const contextWith = (token) => ({
 before(async () => {
   signingKey = await makeKey("key-1");
   otherKey = await makeKey("key-2"); // not published - stands in for a forged token
-  globalThis.fetch = async () => new Response(JSON.stringify({ keys: [signingKey.jwk] }), {
-    headers: { "cache-control": "public, max-age=3600" },
-  });
+  globalThis.fetch = async (url, opts = {}) => {
+    if (String(url).includes("securetoken@system")) {
+      return new Response(JSON.stringify({ keys: [signingKey.jwk] }), { headers: { "cache-control": "public, max-age=3600" } });
+    }
+    const path = String(url).split("/documents/")[1];
+    if (!opts.headers?.Authorization || !firestore[path]) return new Response("{}", { status: 404 });
+    return new Response(JSON.stringify({ fields: firestore[path] }));
+  };
 });
 
-test("accepts the kiosk account", async () => {
-  assert.deepEqual(await requireUser(contextWith(await makeToken())), { email: "kiosk@example.com", role: "kiosk" });
+test("accepts an approved iPad", async () => {
+  assert.deepEqual(await requireUser(contextWith(await makeToken())), { uid: "ipad-1", email: "", role: "kiosk" });
 });
 
-test("accepts admin accounts, case-insensitively", async () => {
-  const user = await requireUser(contextWith(await makeToken({ email: "manager@example.com" })));
-  assert.deepEqual(user, { email: "manager@example.com", role: "admin" });
+test("accepts an approved admin", async () => {
+  const user = await requireUser(contextWith(await makeToken(adminClaims)));
+  assert.deepEqual(user, { uid: "admin-1", email: "owner@example.com", role: "admin" });
+});
+
+test("rejects an iPad that is still waiting for approval", async () => {
+  assert.equal((await requireUser(contextWith(await makeToken({ sub: "ipad-2" })))).status, 403);
+});
+
+test("rejects an account that is still waiting for approval", async () => {
+  const claims = { ...adminClaims, sub: "pending-1" };
+  assert.equal((await requireUser(contextWith(await makeToken(claims)))).status, 403);
+});
+
+test("an anonymous login can never be an admin", async () => {
+  const claims = { sub: "admin-1", firebase: { sign_in_provider: "anonymous" } };
+  assert.equal((await requireUser(contextWith(await makeToken(claims)))).status, 403);
 });
 
 test("rejects a request with no login", async () => {
@@ -63,7 +92,7 @@ test("rejects a token signed with an unknown key", async () => {
 
 test("rejects a tampered token", async () => {
   const [h, , s] = (await makeToken()).split(".");
-  const forgedPayload = encodeJson({ aud: PROJECT_ID, iss: `https://securetoken.google.com/${PROJECT_ID}`, sub: "x", email: "owner@example.com", iat: 0, exp: 9999999999 });
+  const forgedPayload = encodeJson({ aud: PROJECT_ID, iss: `https://securetoken.google.com/${PROJECT_ID}`, sub: "admin-1", firebase: { sign_in_provider: "password" }, iat: 0, exp: 9999999999 });
   assert.equal((await requireUser(contextWith(`${h}.${forgedPayload}.${s}`))).status, 401);
 });
 
@@ -76,8 +105,9 @@ test("rejects a token from another Firebase project", async () => {
   assert.equal((await requireUser(contextWith(await makeToken({ aud: "some-other-project" })))).status, 401);
 });
 
-test("rejects a valid login that isn't the kiosk or an admin", async () => {
-  assert.equal((await requireUser(contextWith(await makeToken({ email: "stranger@example.com" })))).status, 403);
+test("rejects a valid login with no access", async () => {
+  const claims = { sub: "stranger", email: "stranger@example.com", firebase: { sign_in_provider: "password" } };
+  assert.equal((await requireUser(contextWith(await makeToken(claims)))).status, 403);
 });
 
 test("enforces allowed roles", async () => {

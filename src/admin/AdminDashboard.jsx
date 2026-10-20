@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { signOut } from "firebase/auth";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import {
   ResponsiveContainer,
   LineChart,
@@ -18,6 +18,7 @@ import { auth, db } from "../firebase";
 import logo from "../assets/logo.png";
 import ReportDetail from "./ReportDetail";
 import AdminSettings from "./AdminSettings";
+import TeamDevices from "./TeamDevices";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
@@ -112,6 +113,19 @@ export default function AdminDashboard({ user }) {
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [teamView, setTeamView] = useState(false);
+
+  // Live count of iPads and people waiting for approval (Team & devices).
+  const [pendingDevices, setPendingDevices] = useState(0);
+  const [pendingPeople, setPendingPeople] = useState(0);
+  useEffect(() => {
+    const onErr = (err) => console.error("Pending approvals check failed:", err);
+    const unsubDevices = onSnapshot(query(collection(db, "devices"), where("status", "==", "pending")), (snap) => setPendingDevices(snap.size), onErr);
+    const unsubPeople = onSnapshot(query(collection(db, "users"), where("role", "==", "pending")), (snap) => setPendingPeople(snap.size), onErr);
+    return () => { unsubDevices(); unsubPeople(); };
+  }, []);
+  const pendingTotal = pendingDevices + pendingPeople;
+  const openTeam = () => { setTaxView(null); setCompareView(false); setTeamView(true); setProfileOpen(false); };
 
   // Weekly Report selected by default
   const [activeSlide, setActiveSlide] = useState(0);
@@ -320,7 +334,7 @@ export default function AdminDashboard({ user }) {
     <div className="ad-wrapper">
       {/* TOP BAR */}
       <div className="ad-topbar">
-        <div className="ad-topbar-left" onClick={() => { setTaxView(null); setCompareView(false); }} style={{ cursor: "pointer" }} title="Back to main dashboard">
+        <div className="ad-topbar-left" onClick={() => { setTaxView(null); setCompareView(false); setTeamView(false); }} style={{ cursor: "pointer" }} title="Back to main dashboard">
           {logo && (
             <img
               src={logo}
@@ -343,7 +357,7 @@ export default function AdminDashboard({ user }) {
         <div className="ad-topbar-right">
           <button
             className="ad-tax-btn"
-            onClick={() => { setCompareView(false); setTaxModalOpen(true); }}
+            onClick={() => { setCompareView(false); setTeamView(false); setTaxModalOpen(true); }}
             title="Tax Dashboard"
           >
             Tax
@@ -351,7 +365,7 @@ export default function AdminDashboard({ user }) {
 
           <button
             className="ad-tax-btn"
-            onClick={() => { setTaxView(null); setCompareView(true); }}
+            onClick={() => { setTaxView(null); setTeamView(false); setCompareView(true); }}
             title="Year-over-Year Comparison"
           >
             Compare
@@ -365,12 +379,17 @@ export default function AdminDashboard({ user }) {
             >
               {(user?.email || "?").charAt(0).toUpperCase()}
             </button>
+            {pendingTotal > 0 && <span className="tm-avatar-badge" aria-label={`${pendingTotal} waiting for approval`}>{pendingTotal}</span>}
 
             {profileOpen && (
               <>
                 <div className="ad-profile-backdrop" onClick={() => setProfileOpen(false)} />
                 <div className="ad-profile-menu">
                   <div className="ad-profile-menu-email">{user?.email}</div>
+                  <button className="ad-profile-menu-item" onClick={openTeam}>
+                    👥 Team &amp; devices
+                    {pendingTotal > 0 && <span className="tm-menu-count">{pendingTotal}</span>}
+                  </button>
                   <button
                     className="ad-profile-menu-item"
                     onClick={() => { setSettingsOpen(true); setProfileOpen(false); }}
@@ -391,7 +410,9 @@ export default function AdminDashboard({ user }) {
       </div>
 
       <div className="ad-content">
-        {compareView ? (
+        {teamView ? (
+          <TeamDevices user={user} onBack={() => setTeamView(false)} />
+        ) : compareView ? (
           <YearOverYearReport reports={reports} onBack={() => setCompareView(false)} />
         ) : taxView === "general" ? (
           <TaxGeneralDashboard reports={reports} onBack={() => setTaxView(null)} onSelectReport={setSelected} />
@@ -444,6 +465,21 @@ export default function AdminDashboard({ user }) {
                       setCustomEnd(e.target.value)
                     }
                   />
+                </div>
+              )}
+
+              {/* WAITING FOR APPROVAL */}
+              {pendingTotal > 0 && (
+                <div className="tm-banner" role="status">
+                  <span>
+                    <span className="tm-banner-dot" aria-hidden="true" />
+                    {[
+                      pendingDevices > 0 && `${pendingDevices} iPad${pendingDevices > 1 ? "s" : ""}`,
+                      pendingPeople > 0 && `${pendingPeople} ${pendingPeople > 1 ? "people" : "person"}`,
+                    ].filter(Boolean).join(" and ")}{" "}
+                    waiting for your approval
+                  </span>
+                  <button className="tm-btn primary" onClick={openTeam}>Review</button>
                 </div>
               )}
 

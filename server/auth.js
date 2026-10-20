@@ -3,12 +3,13 @@
 // The browser sends the signed-in user's Firebase ID token as
 // "Authorization: Bearer <token>" (see src/authedFetch.js). This verifies the
 // token's signature against Google's public keys and checks it was issued for
-// this Firebase project, then maps the user's email to a role using the
-// Cloudflare environment variables:
-//   KIOSK_EMAIL   - the kiosk device account
-//   ADMIN_EMAILS  - comma-separated admin dashboard accounts
+// this Firebase project, then looks up the caller's access in Firestore - using
+// their own token, so firestore.rules decide what they may read:
+//   users/{uid}.role == 'admin'          -> admin
+//   devices/{uid}.status == 'approved'   -> kiosk (a connected iPad)
 
 const PROJECT_ID = "invoice-bded6";
+const FIRESTORE_DOCS = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const CLOCK_SKEW_SECONDS = 60;
 
@@ -70,8 +71,25 @@ async function verifyIdToken(token) {
 const emailList = (value) =>
   (value || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
 
+// Reads one string field of a Firestore document as the caller. Returns null
+// if the document is missing or the caller may not read it.
+async function readField(token, path, field) {
+  const res = await fetch(`${FIRESTORE_DOCS}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return null;
+  const doc = await res.json();
+  return doc.fields?.[field]?.stringValue ?? null;
+}
+
+async function roleOf(token, payload) {
+  const uid = encodeURIComponent(payload.sub);
+  const isAnonymous = payload.firebase?.sign_in_provider === "anonymous";
+  if (!isAnonymous && (await readField(token, `users/${uid}`, "role")) === "admin") return "admin";
+  if ((await readField(token, `devices/${uid}`, "status")) === "approved") return "kiosk";
+  return null;
+}
+
 /**
- * Checks the request's login. Returns { email, role } where role is
+ * Checks the request's login. Returns { uid, email, role } where role is
  * "admin" or "kiosk", or a Response (401/403) to return as-is.
  */
 export async function requireUser(context, allowedRoles = ["admin", "kiosk"]) {
@@ -79,13 +97,9 @@ export async function requireUser(context, allowedRoles = ["admin", "kiosk"]) {
   const payload = match ? await verifyIdToken(match[1]) : null;
   if (!payload) return new Response("Unauthorized", { status: 401 });
 
-  const email = (payload.email || "").toLowerCase();
-  let role = null;
-  if (emailList(context.env.ADMIN_EMAILS).includes(email)) role = "admin";
-  else if (email && email === (context.env.KIOSK_EMAIL || "").trim().toLowerCase()) role = "kiosk";
-
+  const role = await roleOf(match[1], payload);
   if (!role || !allowedRoles.includes(role)) return new Response("Forbidden", { status: 403 });
-  return { email, role };
+  return { uid: payload.sub, email: (payload.email || "").toLowerCase(), role };
 }
 
 // Owner recipients configured on the server (never taken from the request).

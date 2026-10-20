@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { db, kioskAuth } from "./kioskFirebase";
-import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import useDeviceAccess from "./useDeviceAccess";
+import KioskConnect from "./KioskConnect";
+import { AuthScreen } from "./authUi";
+import { Icons } from "./icons";
 import { authedFetch } from "./authedFetch";
 import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, runTransaction, query, where } from "firebase/firestore";
 import logo from "./assets/logo.png";
@@ -171,29 +174,11 @@ function App() {
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
 
-  // Kiosk device login (Firebase). undefined = still checking, null = signed out.
-  // Entered once per device and remembered; all database reads/writes and
-  // server calls require it (see firestore.rules and /server).
-  const [kioskUser, setKioskUser] = useState(undefined);
-  const [kioskEmail, setKioskEmail] = useState(import.meta.env.VITE_KIOSK_EMAIL || "");
-  const [kioskPassword, setKioskPassword] = useState("");
-  const [kioskLoginError, setKioskLoginError] = useState("");
-  const [kioskLoggingIn, setKioskLoggingIn] = useState(false);
-
-  useEffect(() => onAuthStateChanged(kioskAuth, (user) => setKioskUser(user)), []);
-
-  const handleKioskLogin = async () => {
-    setKioskLoginError("");
-    setKioskLoggingIn(true);
-    try {
-      await signInWithEmailAndPassword(kioskAuth, kioskEmail.trim(), kioskPassword);
-      setKioskPassword("");
-    } catch (err) {
-      console.error("Kiosk login failed:", err);
-      setKioskLoginError("Incorrect email or password.");
-    }
-    setKioskLoggingIn(false);
-  };
+  // This device's connection to the restaurant (approved from the admin
+  // dashboard's Team & devices). Reports and server calls require it - see
+  // firestore.rules and /server.
+  const device = useDeviceAccess();
+  const deviceApproved = device.status === "approved";
 
   const handlePageUnlock = () => {
     const correct = import.meta.env.VITE_PAGE_PIN || "0000";
@@ -396,7 +381,7 @@ function App() {
     let cancelled = false;
     (async () => {
       setEmailImportPreview(null);
-      if (!form.date || !kioskUser) return;
+      if (!form.date || !deviceApproved) return;
       try {
         const res = await authedFetch(kioskAuth, `/get-email-import?date=${form.date}`);
         const payload = await res.json();
@@ -423,7 +408,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [form.date, isEditMode, kioskUser]);
+  }, [form.date, isEditMode, deviceApproved]);
 
   // --- Load an existing report for a date. ---
   // New reports use the date as their Firestore doc ID (see saveData below).
@@ -836,84 +821,35 @@ function App() {
         .rs-modal-btn:hover { opacity: 0.85; }
         .rs-modal-btn.primary { background: #C45200; color: #fff; }
         .rs-modal-btn.secondary { background: #f5ece4; color: #333; }
-        .rs-lock-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #fdf3ec; padding: 1rem; }
-        .rs-lock-card { background: #fff; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.08); overflow: hidden; width: 100%; max-width: 360px; text-align: center; }
-        .rs-lock-header { background: #C45200; padding: 2rem 2rem 1.5rem; }
-        .rs-lock-header::after { content: ''; display: block; width: 40px; height: 3px; background: #ffc864; border-radius: 2px; margin: 1rem auto 0; }
-        .rs-lock-title { font-family: 'Playfair Display', Georgia, serif; font-size: 20px; font-weight: 600; color: #fff; }
-        .rs-lock-sub { font-size: 11px; letter-spacing: 3px; color: #ffc864; text-transform: uppercase; margin-top: 4px; }
-        .rs-lock-body { padding: 2rem; }
-        .rs-lock-icon { font-size: 36px; margin-bottom: 12px; }
-        .rs-lock-label { font-size: 12px; color: #666; margin-bottom: 8px; display: block; }
-        .rs-lock-input { width: 100%; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 12px 16px; font-size: 20px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; text-align: center; letter-spacing: 6px; margin-bottom: 12px; transition: border-color 0.15s, box-shadow 0.15s; }
-        .rs-lock-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
-        .rs-lock-input.error { border-color: #e05555; box-shadow: 0 0 0 2px rgba(224,85,85,0.12); }
-        .rs-lock-error { color: #e05555; font-size: 12px; margin-bottom: 12px; }
       `}</style>
 
-      {kioskUser === undefined ? (
-        <div className="rs-lock-screen" />
-      ) : !kioskUser ? (
-        <div className="rs-lock-screen">
-          <div className="rs-lock-card">
-            <div className="rs-lock-header">
-              {logo && <img src={logo} alt="logo" style={{ width: 100, marginBottom: 10, borderRadius: "10px" }} />}
-              <div className="rs-lock-title">Restaurant Sales</div>
-              <div className="rs-lock-sub">Set up this device</div>
-            </div>
-
-            <div className="rs-lock-body">
-              <div className="rs-lock-icon">🔑</div>
-              <label className="rs-lock-label">Sign in with the kiosk account (only needed once on this device)</label>
-              <input
-                className="rs-lock-input"
-                type="email"
-                value={kioskEmail}
-                placeholder="Kiosk email"
-                onChange={(e) => { setKioskEmail(e.target.value); setKioskLoginError(""); }}
-              />
-              <input
-                className={`rs-lock-input${kioskLoginError ? " error" : ""}`}
-                type="password"
-                value={kioskPassword}
-                placeholder="Password"
-                onChange={(e) => { setKioskPassword(e.target.value); setKioskLoginError(""); }}
-                onKeyDown={(e) => e.key === "Enter" && handleKioskLogin()}
-              />
-              {kioskLoginError && <div className="rs-lock-error">⚠️ {kioskLoginError}</div>}
-              <button className="rs-btn" onClick={handleKioskLogin} disabled={kioskLoggingIn}>
-                {kioskLoggingIn ? "Signing in..." : "Sign in"}
-              </button>
-            </div>
-          </div>
-        </div>
+      {!deviceApproved ? (
+        <KioskConnect device={device} />
       ) : !unlocked ? (
-        <div className="rs-lock-screen">
-          <div className="rs-lock-card">
-            <div className="rs-lock-header">
-              {logo && <img src={logo} alt="logo" style={{ width: 100, marginBottom: 10, borderRadius: "10px" }} />}
-              <div className="rs-lock-title">Restaurant Sales</div>
-              <div className="rs-lock-sub">Daily Report</div>
-            </div>
-
-            <div className="rs-lock-body">
-              <div className="rs-lock-icon">🔐</div>
-              <label className="rs-lock-label">Enter passcode to continue</label>
+        <AuthScreen subtitle={device.name || "Daily report"}>
+          <form onSubmit={(e) => { e.preventDefault(); handlePageUnlock(); }}>
+            <div className="au-icon">{Icons.lock}</div>
+            <h1 className="au-h">Enter passcode</h1>
+            <p className="au-p">Enter the staff passcode to open today&apos;s report.</p>
+            <div className="au-stack">
               <input
-                className={`rs-lock-input${pagePinError ? " error" : ""}`}
+                className="au-input pin"
                 type="password"
                 inputMode="numeric"
+                autoComplete="off"
                 maxLength={10}
                 value={pagePin}
                 placeholder="••••"
+                aria-label="Passcode"
+                aria-invalid={pagePinError}
+                autoFocus
                 onChange={(e) => { setPagePin(e.target.value); setPagePinError(false); }}
-                onKeyDown={(e) => e.key === "Enter" && handlePageUnlock()}
               />
-              {pagePinError && <div className="rs-lock-error">⚠️ Incorrect passcode. Try again.</div>}
-              <button className="rs-btn" onClick={handlePageUnlock}>Unlock</button>
+              {pagePinError && <div className="au-alert error" role="alert">That passcode isn&apos;t right. Try again.</div>}
+              <button className="au-btn primary" type="submit">Unlock</button>
             </div>
-          </div>
-        </div>
+          </form>
+        </AuthScreen>
       ) : (
         <div className="rs-wrapper">
           <div className="rs-card">
