@@ -206,7 +206,7 @@ export default function TeamDevices({ user, onBack }) {
                       <div className="tm-row-main">
                         <div className="tm-name">
                           {p.name || p.email}
-                          {isOwner && <span className="tm-badge owner">Owner</span>}
+                          {isOwner && <span className="tm-badge owner">Admin</span>}
                           {isYou && <span className="tm-badge">You</span>}
                         </div>
                         <div className="tm-meta">{p.email}</div>

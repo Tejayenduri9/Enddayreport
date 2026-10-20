@@ -21,7 +21,7 @@ function messageFor(err) {
       return "Too many attempts. Please wait a few minutes and try again.";
     case "auth/admin-restricted-operation":
     case "auth/operation-not-allowed":
-      return "Creating accounts isn't switched on yet. Ask the owner to enable it.";
+      return "Creating accounts isn't switched on yet. Ask an admin to enable it.";
     case "auth/network-request-failed":
       return "Can't reach the server. Check your internet connection.";
     default:
@@ -144,7 +144,7 @@ export default function AdminAuth({ onCreateAccount }) {
         )}
 
         {mode === "signup" && (
-          <div className="au-alert info">An owner approves new accounts before they can see any reports.</div>
+          <div className="au-alert info">An admin approves new accounts before they can see any reports.</div>
         )}
         {error && <div className="au-alert error" role="alert">{error}</div>}
         {notice && <div className="au-alert success" role="status">{notice}</div>}

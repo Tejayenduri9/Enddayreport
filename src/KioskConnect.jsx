@@ -25,7 +25,7 @@ export default function KioskConnect({ device }) {
       console.error(err);
       setError(
         err?.code === "auth/admin-restricted-operation" || err?.code === "auth/operation-not-allowed"
-          ? "Connecting devices isn't switched on yet. Ask the owner to turn on Anonymous sign-in in Firebase."
+          ? "Connecting devices isn't switched on yet. Ask an admin to turn on Anonymous sign-in in Firebase."
           : "Couldn't connect. Check the internet connection and try again."
       );
     }
@@ -43,7 +43,7 @@ export default function KioskConnect({ device }) {
       <AuthScreen subtitle="Connect this device">
         <div className="au-icon">{Icons.clock}</div>
         <h1 className="au-h">Waiting for approval</h1>
-        <p className="au-p">Ask the owner or a manager to approve this device. It only needs to be done once.</p>
+        <p className="au-p">Ask an admin to approve this device. It only needs to be done once.</p>
 
         <div className="au-code-box" aria-label={`Pairing code ${device.code}`}>
           <div className="au-code-label">Pairing code</div>
@@ -94,7 +94,7 @@ export default function KioskConnect({ device }) {
           ? "The request to connect this device was declined. You can send a new one."
           : device.status === "removed"
             ? "This device was disconnected from the admin dashboard. Connect it again to keep entering reports."
-            : "Connect this device to your restaurant so staff can enter the end-of-day report. You'll get a code for the owner to approve."}
+            : "Connect this device to your restaurant so staff can enter the end-of-day report. You'll get a code for an admin to approve."}
       </p>
 
       <div className="au-stack">
@@ -107,7 +107,7 @@ export default function KioskConnect({ device }) {
 
       <div className="au-divider" />
       <div className="au-foot">
-        Owner or manager?
+        Admin?
         <a className="au-link" href={ADMIN_PATH}>Open the dashboard</a>
       </div>
     </AuthScreen>

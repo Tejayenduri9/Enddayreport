@@ -39,9 +39,9 @@ export default function AdminWaiting({ user, access }) {
       <h1 className="au-h">{declined ? "You don't have access" : "Waiting for approval"}</h1>
       <p className="au-p">
         {declined ? (
-          <>The account <strong>{user.email}</strong> hasn&apos;t been given access to this dashboard. If you think this is a mistake, contact the owner.</>
+          <>The account <strong>{user.email}</strong> hasn&apos;t been given access to this dashboard. If you think this is a mistake, contact an admin.</>
         ) : (
-          <>Thanks{access.name ? `, ${access.name}` : ""}. An owner has been asked to approve <strong>{user.email}</strong>. The dashboard will open on its own as soon as they do.</>
+          <>Thanks{access.name ? `, ${access.name}` : ""}. An admin has been asked to approve <strong>{user.email}</strong>. The dashboard will open on its own as soon as they do.</>
         )}
       </p>
 
@@ -58,7 +58,7 @@ export default function AdminWaiting({ user, access }) {
             <>Verification email sent to {user.email}. Check your inbox and spam folder.</>
           ) : (
             <>
-              Help the owner trust your request: confirm your email.{" "}
+              Help the admin trust your request: confirm your email.{" "}
               <button className="au-link" style={{ padding: 0, fontSize: 14 }} onClick={resendVerification}>Send verification email</button>
             </>
           )}

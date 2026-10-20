@@ -558,7 +558,7 @@ function App() {
               showModal(
                 "error",
                 "Not Allowed",
-                `This device can only submit reports dated within the last 14 days.\n\nPlease check the date (${shortDate(form.date)}), or ask the owner to add this report.`
+                `This device can only submit reports dated within the last 14 days.\n\nPlease check the date (${shortDate(form.date)}), or ask an admin to add this report.`
               );
             }
             return;
