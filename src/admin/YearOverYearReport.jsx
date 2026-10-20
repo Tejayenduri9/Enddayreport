@@ -17,6 +17,8 @@ import {
   LabelList,
 } from "recharts";
 import { parseCsv } from "./parseCsv";
+import { auth } from "../firebase";
+import { authedFetch } from "../authedFetch";
 import { totalIncTipOf, guestsOf, onlineSaleOf, restaurantOnlineNetOf } from "../salesMath";
 
 const fmt = (v) =>
@@ -148,11 +150,12 @@ const ONLINE_PLATFORM_FIELDS = [
   { key: "uberEats", label: "Uber Eats", color: "#1F6F5C" },
 ];
 
-// Historical (pre-launch) data lives in /public/historical-sales.csv, exported
+// Historical (pre-launch) data lives in server/historical-sales.csv.txt (served to
+// admins only by functions/historical-sales.js), exported
 // from the Standardized Daily Sales Excel template. Field names match the
 // Firestore "restaurants" document schema exactly (see ReportDetail.jsx /
 // WeeklyReport.jsx) so the two sources merge without any translation.
-const HISTORICAL_CSV_PATH = "/historical-sales.csv";
+const HISTORICAL_CSV_PATH = "/historical-sales";
 
 // Online totals are rebuilt from raw fields via salesMath (not the stored totals),
 // so they match every other report and stay correct for older saved reports.
@@ -249,7 +252,7 @@ export default function YearOverYearReport({ reports, onBack }) {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(HISTORICAL_CSV_PATH)
+    authedFetch(auth, HISTORICAL_CSV_PATH)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.text();

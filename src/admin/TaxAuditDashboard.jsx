@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
+import { authedFetch } from "../authedFetch";
 import { generateAuditPDF } from "../reportPdfAudit";
 import { buildTaxAudit } from "../salesMath";
 
@@ -111,7 +112,7 @@ export default function TaxAuditDashboard({ reports, onBack }) {
         .filter(Boolean)
         .join(",");
 
-      const response = await fetch("/generate-report", {
+      const response = await authedFetch(auth, "/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

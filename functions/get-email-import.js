@@ -2,11 +2,16 @@
 // daily report form can offer it as an auto-fill. Requires the same
 // EMAIL_IMPORTS KV namespace to also be bound to this Pages project
 // (Settings -> Functions -> KV namespace bindings).
+import { requireUser } from "../server/auth.js";
+
 export async function onRequest(context) {
+  const user = await requireUser(context);
+  if (user instanceof Response) return user;
+
   const { searchParams } = new URL(context.request.url);
   const date = searchParams.get("date");
 
-  if (!date) {
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return new Response(JSON.stringify({ error: "date query param is required (YYYY-MM-DD)" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { db } from "./firebase";
-import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, deleteDoc, runTransaction } from "firebase/firestore";
+import { db, kioskAuth } from "./kioskFirebase";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
+import { authedFetch } from "./authedFetch";
+import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, runTransaction, query, where } from "firebase/firestore";
 import logo from "./assets/logo.png";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
@@ -168,6 +170,30 @@ function App() {
   const [emailImportPreview, setEmailImportPreview] = useState(null);
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
+
+  // Kiosk device login (Firebase). undefined = still checking, null = signed out.
+  // Entered once per device and remembered; all database reads/writes and
+  // server calls require it (see firestore.rules and /server).
+  const [kioskUser, setKioskUser] = useState(undefined);
+  const [kioskEmail, setKioskEmail] = useState(import.meta.env.VITE_KIOSK_EMAIL || "");
+  const [kioskPassword, setKioskPassword] = useState("");
+  const [kioskLoginError, setKioskLoginError] = useState("");
+  const [kioskLoggingIn, setKioskLoggingIn] = useState(false);
+
+  useEffect(() => onAuthStateChanged(kioskAuth, (user) => setKioskUser(user)), []);
+
+  const handleKioskLogin = async () => {
+    setKioskLoginError("");
+    setKioskLoggingIn(true);
+    try {
+      await signInWithEmailAndPassword(kioskAuth, kioskEmail.trim(), kioskPassword);
+      setKioskPassword("");
+    } catch (err) {
+      console.error("Kiosk login failed:", err);
+      setKioskLoginError("Incorrect email or password.");
+    }
+    setKioskLoggingIn(false);
+  };
 
   const handlePageUnlock = () => {
     const correct = import.meta.env.VITE_PAGE_PIN || "0000";
@@ -370,9 +396,9 @@ function App() {
     let cancelled = false;
     (async () => {
       setEmailImportPreview(null);
-      if (!form.date) return;
+      if (!form.date || !kioskUser) return;
       try {
-        const res = await fetch(`/get-email-import?date=${form.date}`);
+        const res = await authedFetch(kioskAuth, `/get-email-import?date=${form.date}`);
         const payload = await res.json();
         if (cancelled || !payload.found) return;
         const imported = payload.data;
@@ -397,12 +423,20 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [form.date, isEditMode]);
+  }, [form.date, isEditMode, kioskUser]);
 
-  // --- Load an existing report directly by its date-keyed document ID. ---
-  // Date IS the Firestore doc ID now (see saveData below), so this is a
-  // single direct read - no more scanning every report in the collection
-  // to find a date match.
+  // --- Load an existing report for a date. ---
+  // New reports use the date as their Firestore doc ID (see saveData below).
+  // Reports saved before that change have random IDs, so fall back to a
+  // query on the date field to find those.
+  // Returns the saved report for `date` (date-keyed or older random-ID), or null.
+  const findReportForDate = async (date) => {
+    const snap = await getDoc(firestoreDoc(db, "restaurants", date));
+    if (snap.exists()) return snap;
+    const legacy = await getDocs(query(collection(db, "restaurants"), where("date", "==", date)));
+    return legacy.empty ? null : legacy.docs[0];
+  };
+
   const loadReport = async () => {
     setLoadError("");
     const correctPin = import.meta.env.VITE_REPORT_PIN || "1234";
@@ -412,19 +446,18 @@ function App() {
     }
     setLoadLoading(true);
     try {
-      const docRef = firestoreDoc(db, "restaurants", loadDate);
-      const snap = await getDoc(docRef);
-      if (!snap.exists()) {
+      const existing = await findReportForDate(loadDate);
+      if (!existing) {
         setLoadError("No report found for this date.");
         setLoadLoading(false);
         return;
       }
-      const data = snap.data();
+      const data = existing.data();
       const loadedForm = { ...blankForm(), ...data, date: loadDate };
       setForm(loadedForm);
       setOriginalForm(loadedForm);
       setCateringNotes(data.cateringNotes || [emptyCatering()]);
-      setEditDocId(loadDate);
+      setEditDocId(existing.id);
       setIsEditMode(true);
       setLoadModalOpen(false);
       setLoadPin("");
@@ -436,7 +469,7 @@ function App() {
     setLoadLoading(false);
   };
 
-  const saveData = async () => {
+  const saveData = async ({ dateConfirmed = false } = {}) => {
     const requiredFields = {
       lunchGuests: "Lunch Guests", dinnerGuests: "Dinner Guests", dineInSales: "Dine-in Sales",
       cashSale: "Cash Sale",
@@ -469,26 +502,52 @@ function App() {
       return;
     }
 
+    // A kiosk tab left open overnight can still show yesterday's date, which
+    // used to save the next day's report under the wrong date. Block future
+    // dates outright and make any other non-today date an explicit choice.
+    const today = getToday();
+    if (!isEditMode && form.date > today) {
+      showModal("error", "Date Is in the Future", `The report date is ${shortDate(form.date)}, but today is ${shortDate(today)}.\n\nPlease fix the date before submitting.`);
+      return;
+    }
+    if (!isEditMode && form.date !== today && !dateConfirmed) {
+      setModal({
+        open: true,
+        type: "confirm",
+        title: "Check the Date",
+        message: `You are submitting a report for ${shortDate(form.date)}, but today is ${shortDate(today)}.\n\nIs ${shortDate(form.date)} the correct date?`,
+        onConfirm: () => { closeModal(); saveData({ dateConfirmed: true }); },
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // The Firestore document ID is now the report's date (e.g. "2026-09-25")
-      // instead of a random auto-generated ID. That, combined with doing the
-      // "does a report already exist for this date?" check and the create as
-      // ONE atomic transaction (instead of a separate getDocs scan followed
-      // by a separate addDoc), closes both ways a duplicate used to slip
-      // through:
-      //   1. A race between two near-simultaneous submissions - Firestore
-      //      transactions guarantee only one writer can win; the other
-      //      re-reads inside the transaction and sees the first one's write.
-      //   2. The old check failing open on a network/permissions hiccup and
-      //      silently letting the save through unprotected - there is no
-      //      longer a separate check step to fail; if anything goes wrong
-      //      here, the whole save fails loudly in the catch block below,
-      //      same as any other save error.
-      const docId = form.date;
-      const docRef = firestoreDoc(db, "restaurants", docId);
-
+      // One report per date, enforced in three layers:
+      //   1. New reports use the date as their Firestore doc ID, and the
+      //      create runs in a transaction, so two near-simultaneous
+      //      submissions can't both win.
+      //   2. Firestore security rules (firestore.rules) only allow creating a
+      //      report whose doc ID equals its date, so even an old cached kiosk
+      //      tab running pre-fix code can't add a second document for a date.
+      //   3. Reports saved before this change have random IDs, which (1) and
+      //      (2) can't see - findReportForDate checks for those first.
       if (!isEditMode) {
+        const alreadySubmittedModal = () => {
+          setLoading(false);
+          showModal(
+            "error",
+            "Already Submitted",
+            `A report for ${shortDate(form.date)} has already been submitted.\n\nPlease use "Load Report" to edit it instead, or email enddayreports.com if you need help.`
+          );
+        };
+
+        if (await findReportForDate(form.date)) {
+          alreadySubmittedModal();
+          return;
+        }
+
+        const docRef = firestoreDoc(db, "restaurants", form.date);
         try {
           await runTransaction(db, async (tx) => {
             const snap = await tx.get(docRef);
@@ -500,36 +559,31 @@ function App() {
             tx.set(docRef, { ...form, cateringNotes, createdAt: new Date() });
           });
         } catch (txErr) {
-          if (txErr && txErr.code === "ALREADY_SUBMITTED") {
-            setLoading(false);
-            showModal(
-              "error",
-              "Already Submitted",
-              `A report for ${shortDate(form.date)} has already been submitted.\n\nPlease use "Load Report" to edit it instead, or email enddayreports.com if you need help.`
-            );
+          if (txErr?.code === "ALREADY_SUBMITTED") {
+            alreadySubmittedModal();
             return;
           }
-          throw txErr; // anything else (network, permissions, etc.) surfaces as a real error below
+          // The security rules refuse a create when the date already has a
+          // report, or when the date is outside the kiosk's 14-day window.
+          if (txErr?.code === "permission-denied") {
+            if (await findReportForDate(form.date).catch(() => null)) {
+              alreadySubmittedModal();
+            } else {
+              setLoading(false);
+              showModal(
+                "error",
+                "Not Allowed",
+                `This device can only submit reports dated within the last 14 days.\n\nPlease check the date (${shortDate(form.date)}), or ask the owner to add this report.`
+              );
+            }
+            return;
+          }
+          throw txErr; // anything else (network, etc.) surfaces as a real error below
         }
       } else {
-        // Editing an existing report. If the date field itself was changed,
-        // the document "moves" to a new date-keyed ID - guard against
-        // silently colliding with some other day's real report first, then
-        // move it (delete old, write new).
-        if (editDocId && editDocId !== docId) {
-          const collideSnap = await getDoc(docRef);
-          if (collideSnap.exists()) {
-            setLoading(false);
-            showModal(
-              "error",
-              "Date Already Has a Report",
-              `You changed the date to ${shortDate(form.date)}, but that date already has its own report.\n\nPlease pick a different date, or edit that report separately.`
-            );
-            return;
-          }
-          await deleteDoc(firestoreDoc(db, "restaurants", editDocId));
-        }
-        await setDoc(docRef, { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
+        // Editing an existing report: always update that same document. The
+        // date field is locked in edit mode, so a report can't move dates.
+        await setDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
       }
 
       const pdfDoc = generatePDF(form, cateringNotes);
@@ -658,7 +712,7 @@ function App() {
         const changedSummary = changedLines.length > 0 ? changedLines.join("\n") : "No specific field changes detected.";
         emailBody = `⚠️ UPDATED REPORT - ${form.date}\n\nThis report has been edited. Please discard the previous version.\n\nWhat Changed:\n${changedSummary}\n\nThe updated PDF is attached.`;
       }
-      const response = await fetch("/generate-report", {
+      const response = await authedFetch(kioskAuth, "/generate-report", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -797,7 +851,43 @@ function App() {
         .rs-lock-error { color: #e05555; font-size: 12px; margin-bottom: 12px; }
       `}</style>
 
-      {!unlocked ? (
+      {kioskUser === undefined ? (
+        <div className="rs-lock-screen" />
+      ) : !kioskUser ? (
+        <div className="rs-lock-screen">
+          <div className="rs-lock-card">
+            <div className="rs-lock-header">
+              {logo && <img src={logo} alt="logo" style={{ width: 100, marginBottom: 10, borderRadius: "10px" }} />}
+              <div className="rs-lock-title">Restaurant Sales</div>
+              <div className="rs-lock-sub">Set up this device</div>
+            </div>
+
+            <div className="rs-lock-body">
+              <div className="rs-lock-icon">🔑</div>
+              <label className="rs-lock-label">Sign in with the kiosk account (only needed once on this device)</label>
+              <input
+                className="rs-lock-input"
+                type="email"
+                value={kioskEmail}
+                placeholder="Kiosk email"
+                onChange={(e) => { setKioskEmail(e.target.value); setKioskLoginError(""); }}
+              />
+              <input
+                className={`rs-lock-input${kioskLoginError ? " error" : ""}`}
+                type="password"
+                value={kioskPassword}
+                placeholder="Password"
+                onChange={(e) => { setKioskPassword(e.target.value); setKioskLoginError(""); }}
+                onKeyDown={(e) => e.key === "Enter" && handleKioskLogin()}
+              />
+              {kioskLoginError && <div className="rs-lock-error">⚠️ {kioskLoginError}</div>}
+              <button className="rs-btn" onClick={handleKioskLogin} disabled={kioskLoggingIn}>
+                {kioskLoggingIn ? "Signing in..." : "Sign in"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : !unlocked ? (
         <div className="rs-lock-screen">
           <div className="rs-lock-card">
             <div className="rs-lock-header">
@@ -854,7 +944,7 @@ function App() {
                 <div className="rs-section-label">Report Date</div>
                 <div className="rs-field">
                   <label>Date</label>
-                  <input type="date" name="date" value={form.date} onChange={handleChange} style={{ background: "#fff8f4" }} />
+                  <input type="date" name="date" value={form.date} onChange={handleChange} readOnly={isEditMode} title={isEditMode ? "The date can't be changed while editing a saved report" : undefined} style={{ background: "#fff8f4" }} />
                 </div>
               </div>
 
@@ -1003,13 +1093,19 @@ function App() {
                         if (feedback.trim()) {
                           try {
                             await addDoc(collection(db, "feedback"), { feedback, date: getToday(), createdAt: new Date() });
-                            await fetch("/send-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ feedback, date: getToday(), ownerEmails: form.ownerEmails || "" }) });
+                            await authedFetch(kioskAuth, "/send-feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ feedback, date: getToday() }) });
                           } catch (err) { console.error("Feedback error:", err); }
                         }
                         closeModal();
                       }}>Submit</button>
                     </div>
                   </>
+                )}
+                {modal.type === "confirm" && (
+                  <div className="rs-modal-actions">
+                    <button className="rs-modal-btn secondary" onClick={closeModal}>No, go back</button>
+                    <button className="rs-modal-btn primary" onClick={modal.onConfirm}>Yes, submit</button>
+                  </div>
                 )}
                 {modal.type === "error" && (
                   <>

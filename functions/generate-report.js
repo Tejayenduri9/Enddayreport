@@ -1,9 +1,13 @@
 import { Resend } from "resend";
+import { requireUser, ownerEmails as configuredOwnerEmails } from "../server/auth.js";
 
 export async function onRequest(context) {
   if (context.request.method !== "POST") {
     return new Response("Method Not Allowed", { status: 405 });
   }
+
+  const user = await requireUser(context);
+  if (user instanceof Response) return user;
 
   try {
     const {
@@ -14,13 +18,16 @@ export async function onRequest(context) {
       subjectOverride, attachmentFilename, // optional: used by non-daily reports (e.g. the Audit report)
     } = await context.request.json();
 
-    const fallbackEmails = context.env.OWNER_EMAILS
-      ? context.env.OWNER_EMAILS.split(",").map((e) => e.trim()).filter(Boolean)
-      : [];
-    const emails = ownerEmails
+    // Reports always go to the owners configured on the server (OWNER_EMAILS).
+    // Only admins may add other recipients (the Tax Audit report goes to the
+    // auditor) - the kiosk can never choose who gets emailed.
+    const extraEmails = user.role === "admin" && ownerEmails
       ? ownerEmails.split(",").map((e) => e.trim()).filter(Boolean)
       : [];
-    const allEmails = [...new Set([...emails, ...fallbackEmails])];
+    const allEmails = [...new Set([...extraEmails, ...configuredOwnerEmails(context.env)])];
+    if (allEmails.length === 0) {
+      return new Response("No recipients configured (set OWNER_EMAILS)", { status: 500 });
+    }
 
     console.log("📧 Sending to:", allEmails);
 
@@ -73,6 +80,6 @@ export async function onRequest(context) {
 
   } catch (err) {
     console.error("❌ ERROR:", err);
-    return new Response(err.message, { status: 500 });
+    return new Response("Failed to send report", { status: 500 });
   }
 }

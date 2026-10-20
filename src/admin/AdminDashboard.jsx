@@ -252,6 +252,12 @@ export default function AdminDashboard({ user }) {
     );
   }, [filteredByRange, search]);
 
+  const duplicateDates = useMemo(() => {
+    const counts = {};
+    reports.forEach((r) => { counts[r.date] = (counts[r.date] || 0) + 1; });
+    return Object.keys(counts).filter((d) => counts[d] > 1).sort();
+  }, [reports]);
+
   const summary = useMemo(() => {
     const list = filteredByRange;
 
@@ -445,6 +451,13 @@ export default function AdminDashboard({ user }) {
               {error && (
                 <div className="ad-error-banner">
                   ⚠️ {error}
+                </div>
+              )}
+
+              {/* DUPLICATES - more than one saved report for the same date */}
+              {duplicateDates.length > 0 && (
+                <div className="ad-error-banner">
+                  ⚠️ More than one report is saved for {duplicateDates.length === 1 ? "this date" : "these dates"}: {duplicateDates.map(fullDateLabel).join("; ")}. Totals for {duplicateDates.length === 1 ? "it are" : "them are"} counted twice until the extra report is removed.
                 </div>
               )}
 

@@ -1,0 +1,84 @@
+rules_version = '2';
+
+// Deploy with: firebase deploy --only firestore:rules
+//
+// Who can do what:
+//   - Admins (admin dashboard logins) - read everything, edit/delete reports, settings.
+//   - The kiosk account (signed in once on the kiosk device) - read reports,
+//     submit and edit reports dated within the last 14 days, leave feedback.
+//   - Everyone else - nothing.
+//
+// Keep these emails in sync with ADMIN_EMAILS / KIOSK_EMAIL in Cloudflare
+// (used by the server functions in /functions).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function adminEmails() {
+      return ['tejayenduri9999@gmail.com', 'vincebusiness2020@gmail.com'];
+    }
+
+    function kioskEmail() {
+      return 'spice@enddayreports.com';
+    }
+
+    function signedInEmail() {
+      return request.auth != null && request.auth.token.email is string
+        ? request.auth.token.email.lower()
+        : '';
+    }
+
+    function isAdmin() {
+      return signedInEmail() in adminEmails();
+    }
+
+    function isKiosk() {
+      return signedInEmail() == kioskEmail();
+    }
+
+    // "2026-10-19" -> timestamp at midnight UTC
+    function dayOf(dateStr) {
+      let parts = dateStr.split('-');
+      return timestamp.date(int(parts[0]), int(parts[1]), int(parts[2]));
+    }
+
+    // The kiosk may only work on recent reports (last 14 days, up to tomorrow
+    // to allow for time zones).
+    function inKioskWindow(dateStr) {
+      return dayOf(dateStr) > request.time - duration.value(15, 'd')
+          && dayOf(dateStr) < request.time + duration.value(2, 'd');
+    }
+
+    // Daily reports.
+    match /restaurants/{reportId} {
+      allow read: if isAdmin() || isKiosk();
+
+      // One report per date: a new report's document ID must be its date
+      // (e.g. "2026-10-19"). A second report for the same date would need the
+      // same ID - that's an update of the existing report, not a new one - so
+      // a duplicate document can never be created, even by an old cached tab.
+      allow create: if (isAdmin() || isKiosk())
+                    && reportId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                    && request.resource.data.date == reportId
+                    && (isAdmin() || inKioskWindow(reportId));
+
+      // Editing a report can't move it to a different date.
+      allow update: if request.resource.data.date == resource.data.date
+                    && (isAdmin() || (isKiosk() && inKioskWindow(resource.data.date)));
+
+      allow delete: if isAdmin();
+    }
+
+    // Feedback left on the kiosk after submitting.
+    match /feedback/{feedbackId} {
+      allow create: if isAdmin() || isKiosk();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Admin settings (e.g. the auditor's email).
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Everything else is closed.
+  }
+}
