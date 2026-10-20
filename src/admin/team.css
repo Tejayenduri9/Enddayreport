@@ -122,43 +122,6 @@
 .tm-footnote { font-size: 12.5px; color: #8a817a; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f5e9de; }
 .tm-footnote strong { color: #4a423c; }
 
-/* Pending-requests banner on the main dashboard */
-.tm-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  background: #fff6e8;
-  border: 1px solid #f7d9a6;
-  color: #7a4a00;
-  border-radius: 12px;
-  padding: 10px 14px;
-  font-size: 13.5px;
-  margin-bottom: 1rem;
-}
-
-.tm-banner-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f0a202; margin-right: 8px; }
-.tm-banner .tm-btn { min-height: 34px; }
-
-.ad-profile-wrap .tm-avatar-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  border-radius: 999px;
-  background: #ffc864;
-  color: #5a3300;
-  font-size: 11px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
 .ad-profile-menu-item .tm-menu-count {
   float: right;
   background: #fff1e6;

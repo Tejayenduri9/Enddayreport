@@ -19,6 +19,7 @@ import logo from "../assets/logo.png";
 import ReportDetail from "./ReportDetail";
 import AdminSettings from "./AdminSettings";
 import TeamDevices from "./TeamDevices";
+import NotificationBell from "./NotificationBell";
 import WeeklyReport from "./WeeklyReport";
 import MonthlyReport from "./MonthlyReport";
 import CalendarReport from "./CalendarReport";
@@ -272,6 +273,28 @@ export default function AdminDashboard({ user }) {
     return Object.keys(counts).filter((d) => counts[d] > 1).sort();
   }, [reports]);
 
+  const notifications = [
+    pendingTotal > 0 && {
+      id: "pending",
+      tone: "info",
+      title: `${[
+        pendingDevices > 0 && `${pendingDevices} device${pendingDevices > 1 ? "s" : ""}`,
+        pendingPeople > 0 && `${pendingPeople} ${pendingPeople > 1 ? "people" : "person"}`,
+      ].filter(Boolean).join(" and ")} waiting for your approval`,
+      action: { label: "Review", onClick: openTeam },
+    },
+    duplicateDates.length > 0 && {
+      id: "duplicates",
+      tone: "warn",
+      title: `More than one report is saved for ${duplicateDates.length === 1 ? "1 date" : `${duplicateDates.length} dates`}`,
+      list: duplicateDates.map((d) => {
+        const [y, m, day] = d.split("-").map(Number);
+        return new Date(y, m - 1, day).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+      }),
+      body: "Sales for these days are counted twice until the extra report is removed.",
+    },
+  ].filter(Boolean);
+
   const summary = useMemo(() => {
     const list = filteredByRange;
 
@@ -371,6 +394,8 @@ export default function AdminDashboard({ user }) {
             Compare
           </button>
 
+          <NotificationBell items={notifications} />
+
           <div className="ad-profile-wrap">
             <button
               className="ad-profile-avatar"
@@ -379,7 +404,6 @@ export default function AdminDashboard({ user }) {
             >
               {(user?.email || "?").charAt(0).toUpperCase()}
             </button>
-            {pendingTotal > 0 && <span className="tm-avatar-badge" aria-label={`${pendingTotal} waiting for approval`}>{pendingTotal}</span>}
 
             {profileOpen && (
               <>
@@ -468,21 +492,6 @@ export default function AdminDashboard({ user }) {
                 </div>
               )}
 
-              {/* WAITING FOR APPROVAL */}
-              {pendingTotal > 0 && (
-                <div className="tm-banner" role="status">
-                  <span>
-                    <span className="tm-banner-dot" aria-hidden="true" />
-                    {[
-                      pendingDevices > 0 && `${pendingDevices} device${pendingDevices > 1 ? "s" : ""}`,
-                      pendingPeople > 0 && `${pendingPeople} ${pendingPeople > 1 ? "people" : "person"}`,
-                    ].filter(Boolean).join(" and ")}{" "}
-                    waiting for your approval
-                  </span>
-                  <button className="tm-btn primary" onClick={openTeam}>Review</button>
-                </div>
-              )}
-
               {/* ERROR */}
               {error && (
                 <div className="ad-error-banner">
@@ -490,12 +499,6 @@ export default function AdminDashboard({ user }) {
                 </div>
               )}
 
-              {/* DUPLICATES - more than one saved report for the same date */}
-              {duplicateDates.length > 0 && (
-                <div className="ad-error-banner">
-                  ⚠️ More than one report is saved for {duplicateDates.length === 1 ? "this date" : "these dates"}: {duplicateDates.map(fullDateLabel).join("; ")}. Totals for {duplicateDates.length === 1 ? "it are" : "them are"} counted twice until the extra report is removed.
-                </div>
-              )}
 
               {/* SUMMARY CARDS */}
               <div className="ad-summary-grid">
