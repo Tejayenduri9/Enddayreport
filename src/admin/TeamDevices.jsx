@@ -238,17 +238,16 @@ export default function TeamDevices({ user, onBack }) {
             </div>
           </section>
 
-          <div className={`tm-cleanup${cleanup.running ? "" : cleanup.ok ? " ok" : " bad"}`} role="status">
-            <span>
-              <strong>Automatic Firebase cleanup: </strong>
-              {cleanup.running
-                ? "checking…"
-                : cleanup.ok
-                  ? `working${cleanup.deletedLogins ? ` (just removed ${cleanup.deletedLogins} login${cleanup.deletedLogins > 1 ? "s" : ""})` : ""}`
-                  : `not working - ${cleanup.message}`}
-            </span>
-            <button className="tm-btn ghost" onClick={runCleanup} disabled={cleanup.running}>Run cleanup now</button>
-          </div>
+          {/* Only shown when the automatic cleanup is failing (e.g. key problem). */}
+          {!cleanup.running && !cleanup.ok && (
+            <div className="tm-cleanup bad" role="alert">
+              <span>
+                <strong>Automatic Firebase cleanup isn&apos;t working: </strong>
+                {cleanup.message}
+              </span>
+              <button className="tm-btn ghost" onClick={runCleanup}>Try again</button>
+            </div>
+          )}
         </>
       )}
     </>

@@ -154,5 +154,4 @@
   padding: 10px 14px;
   overflow-wrap: anywhere;
 }
-.tm-cleanup.ok strong { color: #2f7a4f; }
 .tm-cleanup.bad { background: #fdecea; border-color: #f5c2bd; color: #8a1f17; }
