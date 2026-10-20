@@ -16,7 +16,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function ownerUids() {
-      return ['LYiaVtiEmoYJBqqLmNFNNNaIm0k1', 'RtcTtTbytNXY9dpO8yOdFwjl0IB3'];
+      return ['rpDnI0htofXzFZ71nqucLcZ50Lm1'];
     }
 
     function signedIn() {
@@ -105,9 +105,14 @@ service cloud.firestore {
                         || (request.resource.data.role == 'admin' && isOwner()));
 
       // Admins approve/reject/remove others - never change their own access.
-      allow update: if isAdmin() && request.auth.uid != userId
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'reviewedAt', 'reviewedBy'])
-                    && request.resource.data.role in ['pending', 'admin', 'rejected'];
+      // An owner may restore their own record to 'admin' (e.g. after their
+      // login was recreated).
+      allow update: if (isAdmin() && request.auth.uid != userId
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'reviewedAt', 'reviewedBy'])
+                        && request.resource.data.role in ['pending', 'admin', 'rejected'])
+                    || (isOwner() && request.auth.uid == userId
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+                        && request.resource.data.role == 'admin');
 
       allow delete: if isAdmin() && request.auth.uid != userId;
     }

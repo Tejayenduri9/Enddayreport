@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createUserWithEmailAndPassword, onAuthStateChanged, sendEmailVerification, updateProfile } from "firebase/auth";
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { OWNER_UIDS } from "../accessConfig";
 import { LoadingScreen } from "../authUi";
@@ -35,6 +35,14 @@ function AdminApp() {
       async (snap) => {
         if (snap.exists()) {
           const data = snap.data();
+          if (OWNER_UIDS.includes(user.uid) && data.role !== "admin") {
+            // An owner's record should always be admin - fix it (the snapshot fires again).
+            updateDoc(ref, { role: "admin" }).catch((err) => {
+              console.error("Couldn't restore owner access:", err);
+              setAccess({ uid: user.uid, status: "error" });
+            });
+            return;
+          }
           setAccess({ uid: user.uid, status: data.role, name: data.name });
           return;
         }
