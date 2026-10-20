@@ -16,7 +16,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function ownerUids() {
-      return ['rpDnI0htofXzFZ71nqucLcZ50Lm1'];
+      return ['rpDnI0htofXzFZ71nqucLcZ50Lm1', 'XCzpfJgupafGt3kYdvxWnzTHcxu2'];
     }
 
     function signedIn() {
