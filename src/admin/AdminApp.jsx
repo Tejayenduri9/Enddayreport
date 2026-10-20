@@ -15,6 +15,8 @@ function AdminApp() {
   // { uid, status: "loading" | "admin" | "pending" | "rejected" | "error", name }
   const [accessState, setAccess] = useState(null);
   const signupNameRef = useRef("");
+  // Owner self-repair is attempted at most once per account per page load.
+  const repairTriedRef = useRef(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -33,13 +35,20 @@ function AdminApp() {
     return onSnapshot(
       ref,
       async (snap) => {
+        // Only act on what the server has confirmed. Acting on our own
+        // not-yet-confirmed writes made the screen flip between the dashboard
+        // and "no access" when the server rejected the write.
+        if (snap.metadata.hasPendingWrites) return;
+
         if (snap.exists()) {
           const data = snap.data();
-          if (OWNER_UIDS.includes(user.uid) && data.role !== "admin") {
-            // An owner's record should always be admin - fix it (the snapshot fires again).
+          if (OWNER_UIDS.includes(user.uid) && data.role !== "admin" && repairTriedRef.current !== user.uid) {
+            // A main account's record should always be admin - fix it once
+            // (the snapshot fires again when the server confirms).
+            repairTriedRef.current = user.uid;
             updateDoc(ref, { role: "admin" }).catch((err) => {
-              console.error("Couldn't restore owner access:", err);
-              setAccess({ uid: user.uid, status: "error" });
+              console.error("Couldn't restore admin access:", err);
+              setAccess({ uid: user.uid, status: data.role, name: data.name });
             });
             return;
           }

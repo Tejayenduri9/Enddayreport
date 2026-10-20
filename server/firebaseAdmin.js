@@ -16,7 +16,12 @@ function pemToPkcs8(pem) {
 
 export function readServiceAccount(env) {
   if (!env.FIREBASE_SERVICE_ACCOUNT) return null;
-  const sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT);
+  let sa;
+  try {
+    sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT);
+  } catch {
+    throw new Error("FIREBASE_SERVICE_ACCOUNT is not valid JSON - paste the whole key file, including the { and }");
+  }
   if (!sa.client_email || !sa.private_key || !sa.project_id) throw new Error("FIREBASE_SERVICE_ACCOUNT is missing fields");
   return sa;
 }
@@ -37,7 +42,7 @@ export async function getAccessToken(sa) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: `${unsigned}.${b64url(sig)}` }),
   });
-  if (!res.ok) throw new Error(`Service account token request failed (${res.status})`);
+  if (!res.ok) throw new Error(`Service account sign-in failed (${res.status}): ${(await res.text()).slice(0, 200)}`);
   return (await res.json()).access_token;
 }
 
@@ -48,7 +53,10 @@ export function adminClient(sa, accessToken) {
 
   const call = async (url, init = {}) => {
     const res = await fetch(url, { ...init, headers: { ...auth, ...(init.headers || {}) } });
-    if (!res.ok) throw new Error(`${init.method || "GET"} ${url.split("?")[0]} failed (${res.status})`);
+    if (!res.ok) {
+      const detail = (await res.text()).slice(0, 200);
+      throw new Error(`${init.method || "GET"} ${url.split("?")[0].split("/v1/")[1]} failed (${res.status}): ${detail}`);
+    }
     return res.status === 204 ? null : res.json();
   };
 

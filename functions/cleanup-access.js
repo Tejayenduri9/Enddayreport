@@ -44,6 +44,7 @@ export async function onRequest(context) {
     return json({ deletedLogins: plan.accounts.length, deletedPeople: plan.userDocs.length, deletedDevices: plan.deviceDocs.length });
   } catch (err) {
     console.error("cleanup-access failed:", err);
-    return json({ error: "Cleanup failed" }, 500);
+    // Admin-only endpoint: the reason helps fix setup problems (bad key, missing permission).
+    return json({ error: "Cleanup failed", detail: String(err?.message || err).slice(0, 400) }, 500);
   }
 }

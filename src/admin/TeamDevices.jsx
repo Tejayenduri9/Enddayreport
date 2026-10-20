@@ -45,6 +45,13 @@ export default function TeamDevices({ user, onBack }) {
   const [confirming, setConfirming] = useState(null); // "device:<id>" | "user:<id>"
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
+  // Result of the last automatic cleanup (shown at the bottom of the page).
+  const [cleanup, setCleanup] = useState({ running: true });
+
+  const runCleanup = async () => {
+    setCleanup({ running: true });
+    setCleanup({ running: false, ...(await cleanupAccess()) });
+  };
 
   useEffect(() => {
     const onErr = (err) => {
@@ -56,6 +63,12 @@ export default function TeamDevices({ user, onBack }) {
     return () => { unsubPeople(); unsubDevices(); };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    cleanupAccess().then((result) => { if (!cancelled) setCleanup({ running: false, ...result }); });
+    return () => { cancelled = true; };
+  }, []);
+
   const review = async (collectionName, id, changes) => {
     setError("");
     setBusyId(id);
@@ -64,7 +77,7 @@ export default function TeamDevices({ user, onBack }) {
       setConfirming(null);
       // Declined / removed logins are deleted from Firebase entirely.
       const revoked = ["rejected", "removed"].includes(changes.status ?? changes.role);
-      if (revoked) cleanupAccess();
+      if (revoked) runCleanup();
     } catch (err) {
       console.error(err);
       setError("That didn't save. Please try again.");
@@ -224,6 +237,18 @@ export default function TeamDevices({ user, onBack }) {
               New people sign up at <strong>{window.location.host}/admin</strong> → <strong>Create account</strong>, then appear here for approval.
             </div>
           </section>
+
+          <div className={`tm-cleanup${cleanup.running ? "" : cleanup.ok ? " ok" : " bad"}`} role="status">
+            <span>
+              <strong>Automatic Firebase cleanup: </strong>
+              {cleanup.running
+                ? "checking…"
+                : cleanup.ok
+                  ? `working${cleanup.deletedLogins ? ` (just removed ${cleanup.deletedLogins} login${cleanup.deletedLogins > 1 ? "s" : ""})` : ""}`
+                  : `not working - ${cleanup.message}`}
+            </span>
+            <button className="tm-btn ghost" onClick={runCleanup} disabled={cleanup.running}>Run cleanup now</button>
+          </div>
         </>
       )}
     </>
