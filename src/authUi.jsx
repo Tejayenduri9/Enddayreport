@@ -1,5 +1,7 @@
-import logo from "./assets/logo.png";
 import "./auth.css";
+
+const restaurantLogo = import.meta.env.VITE_RESTAURANT_LOGO || "/logo.png";
+const restaurantName = import.meta.env.VITE_RESTAURANT_NAME || "Restaurant Sales";
 
 // Layout shared by the "front door" screens (see auth.css).
 export function AuthScreen({ subtitle, children }) {
@@ -7,8 +9,8 @@ export function AuthScreen({ subtitle, children }) {
     <div className="au-screen">
       <main className="au-card">
         <header className="au-head">
-          <div className="au-logo"><img src={logo} alt="Restaurant logo" /></div>
-          <div className="au-title">Restaurant Sales</div>
+          <div className="au-logo"><img src={restaurantLogo} alt="Restaurant logo" /></div>
+          <div className="au-title">{restaurantName}</div>
           {subtitle && <div className="au-sub">{subtitle}</div>}
         </header>
         <div className="au-body">{children}</div>

@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
-import logo from "./assets/logo.png";
+import spiceLogo from "./assets/logo.png";
+import karavalliLogo from "../public/Karavalli.png";
+const logo = import.meta.env.VITE_FIREBASE_PROJECT === 'karavalli' ? karavalliLogo : spiceLogo;
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
