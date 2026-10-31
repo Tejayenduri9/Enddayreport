@@ -1,5 +1,3 @@
-// Public Firebase web config (safe to ship to the browser - access is
-// controlled by firestore.rules and the login checks in /server).
 export const firebaseConfig = {
   apiKey: "AIzaSyCTA4j83zlxBSU3lrXiL43LxQpM7QB1ZKA",
   authDomain: "invoice-bded6.firebaseapp.com",

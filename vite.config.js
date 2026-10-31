@@ -5,9 +5,13 @@ import { fileURLToPath } from 'url'
 
 const root = fileURLToPath(new URL('.', import.meta.url))
 
-// https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  resolve: {
+    alias: mode === 'karavalli' ? {
+      './firebaseConfig': resolve(root, 'src/firebaseConfig.karavalli.js'),
+    } : {},
+  },
   build: {
     rollupOptions: {
       input: {
@@ -16,4 +20,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))

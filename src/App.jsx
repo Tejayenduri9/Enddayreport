@@ -6,7 +6,9 @@ import { AuthScreen } from "./authUi";
 import { Icons } from "./icons";
 import { authedFetch } from "./authedFetch";
 import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, runTransaction, query, where } from "firebase/firestore";
-import logo from "./assets/logo.png";
+const restaurantLogo = import.meta.env.VITE_RESTAURANT_LOGO || "/logo.png";
+const restaurantName = import.meta.env.VITE_RESTAURANT_NAME || "Restaurant Sales";
+const reportSubtitle = import.meta.env.VITE_REPORT_SUBTITLE || "Daily Report";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
 import { generatePDF } from "./reportPdf";
@@ -862,9 +864,9 @@ function App() {
                   <button className="rs-menu-item" onClick={() => { setMenuOpen(false); setLoadModalOpen(true); }}>📂 Load & Edit Report</button>
                 </div>
               )}
-              {logo && <img src={logo} alt="logo" style={{ width: 130, marginBottom: 10, borderRadius: "12px" }} />}
-              <div className="rs-brand-name">Restaurant Sales</div>
-              <div className="rs-brand-sub">Daily Report</div>
+              {restaurantLogo && <img src={restaurantLogo} alt="logo" style={{ width: 130, marginBottom: 10, borderRadius: "12px" }} />}
+              <div className="rs-brand-name">{restaurantName}</div>
+              <div className="rs-brand-sub">{reportSubtitle}</div>
               <div className="rs-date-pill">{formatDate(form.date)}</div>
             </div>
 
