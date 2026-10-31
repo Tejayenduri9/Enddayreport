@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(root, 'index.html'),
+        main: resolve(root, mode === 'karavalli' ? 'index.karavalli.html' : 'index.html'),
         admin: resolve(root, 'admin.html'),
       },
     },

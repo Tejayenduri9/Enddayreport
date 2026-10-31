@@ -8,7 +8,7 @@
     "dev:karavalli": "vite --mode karavalli",
     "dev:full": "npm run build && wrangler pages dev dist --compatibility-flag nodejs_compat",
     "build": "vite build",
-    "build:karavalli": "vite build --mode karavalli",
+    "build:karavalli": "vite build --mode karavalli && mv dist/index.karavalli.html dist/index.html",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "node --test \"src/**/*.test.js\" \"server/**/*.test.js\"",
