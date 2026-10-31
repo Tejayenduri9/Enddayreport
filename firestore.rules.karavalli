@@ -1,0 +1,148 @@
+rules_version = '2';
+
+// Deploy with: firebase deploy --only firestore:rules
+//
+// Who can do what:
+//   - Admins - the owner accounts below, plus anyone an admin has approved
+//     (users/{uid}.role == 'admin'). Read everything, edit/delete reports,
+//     settings, approve people and devices.
+//   - Connected iPads - a device signs in anonymously and asks to connect
+//     (devices/{uid}, status 'pending'); once an admin approves it, it can read
+//     reports, submit/edit reports dated within the last 14 days, leave feedback.
+//   - Everyone else - nothing. Creating an account only puts in a request.
+//
+// The owner IDs here must match OWNER_UIDS in src/accessConfig.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function ownerUids() {
+      return ['oF7CciuPehZgrSlCV13Om28rY7p2']; // karavalli@enddayreports.com
+    }
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function provider() {
+      return request.auth.token.firebase.sign_in_provider;
+    }
+
+    function isOwner() {
+      return signedIn() && provider() != 'anonymous' && request.auth.uid in ownerUids();
+    }
+
+    function isAdmin() {
+      return isOwner()
+        || (signedIn() && provider() != 'anonymous'
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
+    function isKiosk() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/devices/$(request.auth.uid))
+        && get(/databases/$(database)/documents/devices/$(request.auth.uid)).data.status == 'approved';
+    }
+
+    // "2026-10-19" -> timestamp at midnight UTC
+    function dayOf(dateStr) {
+      let parts = dateStr.split('-');
+      return timestamp.date(int(parts[0]), int(parts[1]), int(parts[2]));
+    }
+
+    // The kiosk may only work on recent reports (last 14 days, up to tomorrow
+    // to allow for time zones).
+    function inKioskWindow(dateStr) {
+      return dayOf(dateStr) > request.time - duration.value(15, 'd')
+          && dayOf(dateStr) < request.time + duration.value(2, 'd');
+    }
+
+    // Daily reports.
+    match /restaurants/{reportId} {
+      allow read: if isAdmin() || isKiosk();
+
+      // One report per date: a new report's document ID must be its date
+      // (e.g. "2026-10-19"). A second report for the same date would need the
+      // same ID - that's an update of the existing report, not a new one - so
+      // a duplicate document can never be created, even by an old cached tab.
+      allow create: if (isAdmin() || isKiosk())
+                    && reportId.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+                    && request.resource.data.date == reportId
+                    && (isAdmin() || inKioskWindow(reportId));
+
+      // Editing a report can't move it to a different date.
+      allow update: if request.resource.data.date == resource.data.date
+                    && (isAdmin() || (isKiosk() && inKioskWindow(resource.data.date)));
+
+      allow delete: if isAdmin();
+    }
+
+    // Feedback left on the kiosk after submitting.
+    match /feedback/{feedbackId} {
+      allow create: if isAdmin() || isKiosk();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // Admin settings (e.g. the auditor's email).
+    match /settings/{settingId} {
+      allow read, write: if isAdmin();
+    }
+
+    // People. Creating an account adds a 'pending' request; only an admin can
+    // approve it. Owners create their own record directly as 'admin'.
+    match /users/{userId} {
+      allow get: if (signedIn() && request.auth.uid == userId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if signedIn() && request.auth.uid == userId
+                    && provider() == 'password'
+                    && request.resource.data.keys().hasOnly(['email', 'name', 'role', 'createdAt'])
+                    && request.resource.data.email == request.auth.token.email
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 80
+                    && request.resource.data.createdAt == request.time
+                    && (request.resource.data.role == 'pending'
+                        || (request.resource.data.role == 'admin' && isOwner()));
+
+      // Admins approve/reject/remove others - never change their own access.
+      // An owner may restore their own record to 'admin' (e.g. after their
+      // login was recreated).
+      allow update: if (isAdmin() && request.auth.uid != userId
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'reviewedAt', 'reviewedBy'])
+                        && request.resource.data.role in ['pending', 'admin', 'rejected'])
+                    || (isOwner() && request.auth.uid == userId
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role'])
+                        && request.resource.data.role == 'admin');
+
+      allow delete: if isAdmin() && request.auth.uid != userId;
+    }
+
+    // iPads. A device creates its own 'pending' request with a pairing code;
+    // an admin approves it (or disconnects it later).
+    match /devices/{deviceId} {
+      allow get: if (signedIn() && request.auth.uid == deviceId) || isAdmin();
+      allow list: if isAdmin();
+
+      allow create: if signedIn() && request.auth.uid == deviceId
+                    && request.resource.data.keys().hasOnly(['code', 'status', 'platform', 'createdAt'])
+                    && request.resource.data.status == 'pending'
+                    && request.resource.data.code is string
+                    && request.resource.data.code.matches('^[A-HJ-NP-Z2-9]{6}$')
+                    && request.resource.data.platform is string
+                    && request.resource.data.platform.size() <= 60
+                    && request.resource.data.createdAt == request.time;
+
+      allow update: if isAdmin()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'name', 'reviewedAt', 'reviewedBy'])
+                    && request.resource.data.status in ['pending', 'approved', 'rejected', 'removed']
+                    && (!('name' in request.resource.data)
+                        || (request.resource.data.name is string && request.resource.data.name.size() <= 40));
+
+      // A device may withdraw its own unapproved request ("Start over").
+      allow delete: if isAdmin()
+                    || (signedIn() && request.auth.uid == deviceId && resource.data.status == 'pending');
+    }
+
+    // Everything else is closed.
+  }
+}

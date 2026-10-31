@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "invoice-bded6"
+    "default": "invoice-bded6",
+    "karavalli": "karavalli-7eae2"
   }
 }

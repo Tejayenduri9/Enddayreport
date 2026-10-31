@@ -11,7 +11,9 @@
     "build:karavalli": "vite build --mode karavalli",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test \"src/**/*.test.js\" \"server/**/*.test.js\""
+    "test": "node --test \"src/**/*.test.js\" \"server/**/*.test.js\"",
+    "deploy:rules": "firebase deploy --only firestore:rules",
+    "deploy:rules:karavalli": "cp firestore.rules firestore.rules.spice && cp firestore.rules.karavalli firestore.rules && firebase --project karavalli deploy --only firestore:rules && cp firestore.rules.spice firestore.rules"
   },
   "dependencies": {
     "firebase": "^12.12.1",
