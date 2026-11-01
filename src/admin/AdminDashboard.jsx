@@ -15,9 +15,7 @@ import {
 } from "recharts";
 
 import { auth, db } from "../firebase";
-import spiceLogo from "../assets/logo.png";
-import karavalliLogo from "../../public/Karavalli.png";
-const logo = import.meta.env.VITE_FIREBASE_PROJECT === 'karavalli' ? karavalliLogo : spiceLogo;
+import { restaurantLogo as logo, restaurantName } from "../restaurantConfig.js";
 import ReportDetail from "./ReportDetail";
 import AdminSettings from "./AdminSettings";
 import TeamDevices from "./TeamDevices";

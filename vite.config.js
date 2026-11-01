@@ -7,6 +7,9 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  define: {
+    __RESTAURANT__: JSON.stringify(mode === 'production' ? 'spice' : mode),
+  },
   build: {
     rollupOptions: {
       input: {

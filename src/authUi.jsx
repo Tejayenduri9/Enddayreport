@@ -1,7 +1,5 @@
 import "./auth.css";
-
-const restaurantLogo = import.meta.env.VITE_RESTAURANT_LOGO || "/logo.png";
-const restaurantName = import.meta.env.VITE_RESTAURANT_NAME || "Restaurant Sales";
+import { restaurantLogo, restaurantName } from "./restaurantConfig.js";
 
 // Layout shared by the "front door" screens (see auth.css).
 export function AuthScreen({ subtitle, children }) {

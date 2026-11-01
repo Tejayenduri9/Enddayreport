@@ -1,7 +1,5 @@
 import jsPDF from "jspdf";
-import spiceLogo from "./assets/logo.png";
-import karavalliLogo from "../public/Karavalli.png";
-const logo = import.meta.env.VITE_FIREBASE_PROJECT === 'karavalli' ? karavalliLogo : spiceLogo;
+import { restaurantLogo as logo } from "./restaurantConfig.js";
 import { onlineSaleOf, inHouseSaleOf, saleExclTipOf, tipsOf } from "./salesMath";
 
 const OG = {

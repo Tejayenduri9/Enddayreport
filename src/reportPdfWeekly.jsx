@@ -1,7 +1,5 @@
 import jsPDF from "jspdf";
-import spiceLogo from "./assets/logo.png";
-import karavalliLogo from "../public/Karavalli.png";
-const logo = import.meta.env.VITE_FIREBASE_PROJECT === 'karavalli' ? karavalliLogo : spiceLogo;
+import { restaurantLogo as logo } from "./restaurantConfig.js";
 import { totalIncTipOf } from "./salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
