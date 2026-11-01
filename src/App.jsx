@@ -758,17 +758,17 @@ function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@300;400;500&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #fdf3ec; font-family: 'DM Sans', sans-serif; }
+        body { background: var(--brand-bg); font-family: 'DM Sans', sans-serif; }
         .rs-wrapper { min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
         .rs-card { width: 100%; max-width: 520px; background: #fff; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.08); overflow: hidden; height: fit-content; }
-        .rs-header { background: #C45200; padding: 2rem 2rem 1.5rem; text-align: center; position: relative; }
-        .rs-header::after { content: ''; display: block; width: 40px; height: 3px; background: #ffc864; border-radius: 2px; margin: 1rem auto 0; }
+        .rs-header { background: var(--brand); padding: 2rem 2rem 1.5rem; text-align: center; position: relative; }
+        .rs-header::after { content: ''; display: block; width: 40px; height: 3px; background: var(--brand-accent); border-radius: 2px; margin: 1rem auto 0; }
         .rs-brand-name { font-family: 'Playfair Display', Georgia, serif; font-size: 22px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
-        .rs-brand-sub { font-size: 11px; letter-spacing: 3px; color: #ffc864; text-transform: uppercase; margin-top: 4px; }
+        .rs-brand-sub { font-size: 11px; letter-spacing: 3px; color: var(--brand-accent); text-transform: uppercase; margin-top: 4px; }
         .rs-date-pill { display: inline-block; margin-top: 1rem; background: rgba(255,255,255,0.15); border: 0.5px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 5px 16px; font-size: 13px; color: rgba(255,255,255,0.9); }
         .rs-body { padding: 1.5rem 1.75rem 2rem; }
         .rs-section { margin-bottom: 1.25rem; }
-        .rs-section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #8C3700; margin-bottom: 0.75rem; padding-bottom: 6px; border-bottom: 1px solid #f5d5b8; }
+        .rs-section-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--brand-deep); margin-bottom: 0.75rem; padding-bottom: 6px; border-bottom: 1px solid var(--brand-divider); }
         .rs-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .rs-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
         .rs-field:last-child { margin-bottom: 0; }
@@ -776,29 +776,29 @@ function App() {
         .rs-computed-hint { font-weight: 400; font-style: italic; color: #999; }
         .rs-field input:disabled { background: #f5f0ea; color: #888; cursor: not-allowed; }
         .rs-required { color: #c0392b; margin-left: 3px; font-weight: 700; }
-        .rs-field input { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
+        .rs-field input { background: #ffffff; border: 0.5px solid var(--brand-border); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; transition: border-color 0.15s, box-shadow 0.15s; outline: none; width: 100%; }
         .rs-input-money { position: relative; display: flex; align-items: center; }
-        .rs-input-money span { position: absolute; left: 10px; color: #C45200; font-weight: 600; font-size: 14px; pointer-events: none; z-index: 1; }
+        .rs-input-money span { position: absolute; left: 10px; color: var(--brand); font-weight: 600; font-size: 14px; pointer-events: none; z-index: 1; }
         .rs-input-money input { padding-left: 20px !important; }
-        .rs-field input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
-        .rs-field select { background: #ffffff; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
-        .rs-field select:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.12); }
-        .rs-btn { width: 100%; padding: 14px; background: #C45200; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.5px; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
+        .rs-field input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-glow); }
+        .rs-field select { background: #ffffff; border: 0.5px solid var(--brand-border); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+        .rs-field select:focus { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-glow); }
+        .rs-btn { width: 100%; padding: 14px; background: var(--brand); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.5px; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
         .rs-btn:hover { opacity: 0.88; }
         .rs-btn:disabled { opacity: 0.75; cursor: not-allowed; }
-        .rs-notes-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 12px 16px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #333; letter-spacing: 0.5px; transition: background 0.15s; outline: none; }
-        .rs-notes-toggle:hover { background: #fdeede; }
+        .rs-notes-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--brand-tint2); border: 0.5px solid var(--brand-border); border-radius: 10px; padding: 12px 16px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; color: #333; letter-spacing: 0.5px; transition: background 0.15s; outline: none; }
+        .rs-notes-toggle:hover { background: var(--brand-tint); }
         .rs-notes-arrow { transition: transform 0.25s ease; display: flex; align-items: center; }
         .rs-notes-arrow.open { transform: rotate(180deg); }
         .rs-notes-body { overflow: hidden; max-height: 0; transition: max-height 0.4s ease, opacity 0.25s ease; opacity: 0; pointer-events: none; }
         .rs-notes-body.open { max-height: 2000px; opacity: 1; pointer-events: all; }
         .rs-notes-inner { padding-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-        .rs-catering-entry { border: 0.5px solid #f5c9a0; border-radius: 10px; padding: 14px; position: relative; }
-        .rs-entry-label { font-size: 10px; font-weight: 700; color: #C45200; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+        .rs-catering-entry { border: 0.5px solid var(--brand-border); border-radius: 10px; padding: 14px; position: relative; }
+        .rs-entry-label { font-size: 10px; font-weight: 700; color: var(--brand); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
         .rs-remove-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; cursor: pointer; color: #bbb; font-size: 15px; line-height: 1; padding: 2px 5px; border-radius: 4px; transition: color 0.15s; }
         .rs-remove-btn:hover { color: #e05555; }
-        .rs-add-btn { width: 100%; padding: 10px; background: none; border: 1px dashed #f5c9a0; border-radius: 8px; cursor: pointer; font-size: 13px; color: #C45200; font-family: 'DM Sans', sans-serif; font-weight: 500; transition: border-color 0.15s; }
-        .rs-add-btn:hover { border-color: #C45200; }
+        .rs-add-btn { width: 100%; padding: 10px; background: none; border: 1px dashed var(--brand-border); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--brand); font-family: 'DM Sans', sans-serif; font-weight: 500; transition: border-color 0.15s; }
+        .rs-add-btn:hover { border-color: var(--brand); }
         .rs-burger { position: absolute; top: 16px; right: 16px; background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; z-index: 10; }
         .rs-burger span { display: block; width: 20px; height: 2px; background: #fff; border-radius: 2px; transition: all 0.25s ease; }
         .rs-burger.open span:nth-child(1) { transform: rotate(45deg) translate(4px, 4px); }
@@ -806,14 +806,14 @@ function App() {
         .rs-burger.open span:nth-child(3) { transform: rotate(-45deg) translate(4px, -4px); }
         .rs-menu { position: absolute; top: 56px; right: 16px; background: #fff; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15); overflow: hidden; z-index: 100; min-width: 180px; }
         .rs-menu-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; color: #333; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
-        .rs-menu-item:hover { background: #fff8f4; color: #C45200; }
-        .rs-edit-banner { background: #fff3e0; border: 1px solid #f5c9a0; border-radius: 10px; padding: 10px 14px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #8C3700; font-weight: 500; }
-        .rs-edit-banner button { background: none; border: none; color: #C45200; font-size: 12px; cursor: pointer; font-weight: 600; text-decoration: underline; }
-        .rs-load-input { width: 100%; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 10px; }
-        .rs-load-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
+        .rs-menu-item:hover { background: var(--brand-tint2); color: var(--brand); }
+        .rs-edit-banner { background: var(--brand-tint); border: 1px solid var(--brand-border); border-radius: 10px; padding: 10px 14px; margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--brand-deep); font-weight: 500; }
+        .rs-edit-banner button { background: none; border: none; color: var(--brand); font-size: 12px; cursor: pointer; font-weight: 600; text-decoration: underline; }
+        .rs-load-input { width: 100%; background: var(--brand-tint2); border: 0.5px solid var(--brand-border); border-radius: 8px; padding: 9px 12px; font-size: 14px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; margin-bottom: 10px; }
+        .rs-load-input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
         .rs-load-error { color: #e05555; font-size: 12px; margin-bottom: 10px; }
         .rs-loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
-        .rs-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #ffc864; border-radius: 50%; animation: rs-spin 0.8s linear infinite; }
+        .rs-loading-spinner { width: 52px; height: 52px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--brand-accent); border-radius: 50%; animation: rs-spin 0.8s linear infinite; }
         .rs-loading-text { color: #fff; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0.5px; }
         .rs-loading-sub { color: rgba(255,255,255,0.6); font-family: 'DM Sans', sans-serif; font-size: 12px; margin-top: -8px; }
         @keyframes rs-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -822,16 +822,16 @@ function App() {
         .rs-modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: rs-slide-up 0.25s ease; text-align: center; }
         @keyframes rs-slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .rs-modal-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 22px; }
-        .rs-modal-icon.success { background: #fff3e0; }
+        .rs-modal-icon.success { background: var(--brand-tint); }
         .rs-modal-icon.error { background: #fdecea; }
         .rs-modal-title { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #111; margin-bottom: 8px; }
         .rs-modal-message { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 1.5rem; white-space: pre-line; }
-        .rs-modal-input { width: 100%; background: #fff8f4; border: 0.5px solid #f5c9a0; border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; resize: vertical; min-height: 80px; margin-bottom: 1rem; transition: border-color 0.15s; }
-        .rs-modal-input:focus { border-color: #C45200; box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
+        .rs-modal-input { width: 100%; background: var(--brand-tint2); border: 0.5px solid var(--brand-border); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; resize: vertical; min-height: 80px; margin-bottom: 1rem; transition: border-color 0.15s; }
+        .rs-modal-input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(196,82,0,0.1); }
         .rs-modal-actions { display: flex; gap: 8px; }
         .rs-modal-btn { flex: 1; padding: 11px; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; border: none; transition: opacity 0.15s; }
         .rs-modal-btn:hover { opacity: 0.85; }
-        .rs-modal-btn.primary { background: #C45200; color: #fff; }
+        .rs-modal-btn.primary { background: var(--brand); color: #fff; }
         .rs-modal-btn.secondary { background: #f5ece4; color: #333; }
       `}</style>
 
@@ -892,7 +892,7 @@ function App() {
                 <div className="rs-section-label">Report Date</div>
                 <div className="rs-field">
                   <label>Date</label>
-                  <input type="date" name="date" value={form.date} onChange={handleChange} readOnly={isEditMode} title={isEditMode ? "The date can't be changed while editing a saved report" : undefined} style={{ background: "#fff8f4" }} />
+                  <input type="date" name="date" value={form.date} onChange={handleChange} readOnly={isEditMode} title={isEditMode ? "The date can't be changed while editing a saved report" : undefined} style={{ background: "var(--brand-tint2)" }} />
                 </div>
               </div>
 
@@ -954,7 +954,7 @@ function App() {
                       <div className="rs-field"><label>Cash Catering</label><MoneyInput name="cashCatering" value={form.cashCatering} onChange={handleChange} /></div>
                       <div className="rs-field"><label>Cheques Catering</label><MoneyInput name="chequesCatering" value={form.chequesCatering} onChange={handleChange} /></div>
                     </div>
-                    <div style={{ height: "1px", background: "#f5d5b8", margin: "4px 0 8px" }} />
+                    <div style={{ height: "1px", background: "var(--brand-divider)", margin: "4px 0 8px" }} />
                     {cateringNotes.map((note, index) => (
                       <div key={index} className="rs-catering-entry">
                         {cateringNotes.length > 1 && <button type="button" className="rs-remove-btn" onClick={() => removeCateringEntry(index)}>✕</button>}

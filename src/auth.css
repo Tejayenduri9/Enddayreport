@@ -4,8 +4,8 @@
 .au-screen {
   --au-brand: var(--brand);
   --au-brand-dark: var(--brand-dark);
-  --au-gold: #ffc864;
-  --au-cream: #fdf3ec;
+  --au-gold: var(--brand-accent);
+  --au-cream: var(--brand-bg);
   --au-ink: #1f1a17;
   --au-muted: #6f6660;
   --au-faint: #a39a93;

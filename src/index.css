@@ -1,7 +1,16 @@
 :root {
   --brand: #c45200;
   --brand-dark: #a24400;
-  --brand-glow: rgba(196, 82, 0, 0.12);
+  --brand-deep: #6e2d00;
+  --brand-glow: rgba(196,82,0,0.12);
+  --brand-accent: #ffc864;
+  --brand-border: #f5c9a0;
+  --brand-tint: #fff8f4;
+  --brand-tint2: #fdfaf7;
+  --brand-light: #f9d9b8;
+  --brand-divider: #f5e7d8;
+  --brand-bg: #fdf3ec;
+  --brand-secondary: #1a3d2b;
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
