@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
-import { restaurantLogo as logo } from "./restaurantConfig.js";
+import { restaurantLogo as logo, restaurantTheme } from "./restaurantConfig.js";
+import { buildTheme } from "./themeUtils.js";
+const T = buildTheme(restaurantTheme);
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtPlain = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -27,7 +29,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
 
   // --- Header ---
   const headerH = 38;
-  doc.setFillColor(196, 82, 0);
+  doc.setFillColor(...T.primary);
   doc.rect(0, 0, pageWidth, headerH, "F");
 
   // compact white card behind the logo, tightly fitted
@@ -49,10 +51,10 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const sumW = cw / 3;
   let sx = margin;
   sumLabels.forEach((label, i) => {
-    doc.setFillColor(26, 61, 43);
-    doc.setDrawColor(255, 200, 100);
+    doc.setFillColor(...T.secondary);
+    doc.setDrawColor(...T.primaryAccent);
     doc.rect(sx, y, sumW - 4, 20, "FD");
-    doc.setTextColor(255, 200, 100);
+    doc.setTextColor(...T.primaryAccent);
     doc.setFont("helvetica", "normal").setFontSize(8);
     doc.text(label, sx + (sumW - 4) / 2, y + 7, { align: "center" });
     doc.setTextColor(255, 255, 255);
@@ -72,7 +74,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const drawBreakdownCol = (x, title, rows) => {
     let by = y;
     doc.setFont("helvetica", "bold").setFontSize(9);
-    doc.setTextColor(196, 82, 0);
+    doc.setTextColor(...T.primary);
     doc.text(title, x, by);
     by += 3;
     doc.setDrawColor(230, 200, 170);
@@ -137,7 +139,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const drawHeaderRow = () => {
     let hx = margin;
     HEADERS.forEach((h, i) => {
-      doc.setFillColor(26, 61, 43);
+      doc.setFillColor(...T.secondary);
       doc.setDrawColor(150, 150, 150);
       doc.rect(hx, y, colW[i], HEADER_H, "FD");
       doc.setTextColor(255, 255, 255);
@@ -216,11 +218,11 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const totalCells = ["TOTAL", fmtPlain(t.cashSale), fmtPlain(t.creditCardSale), fmtPlain(t.restaurantOnline), fmtPlain(t.grubhub), fmtPlain(t.doordash), fmtPlain(t.uberEats), fmtPlain(t.chequesCatering), fmtPlain(t.totalWithoutTip), fmtPlain(t.tax), fmtPlain(t.cashTip), fmtPlain(t.creditCardTip), fmtPlain(t.restaurantOnlineTips), fmtPlain(t.grandTotal)];
   let tx2 = margin;
   totalCells.forEach((val, i) => {
-    doc.setDrawColor(200, 150, 100);
-    doc.setFillColor(255, 235, 200);
+    doc.setDrawColor(...T.primaryBorder);
+    doc.setFillColor(...T.primaryLight);
     doc.rect(tx2, y, colW[i], 8, "FD");
     doc.setFont("helvetica", "bold").setFontSize(7.5);
-    doc.setTextColor(140, 55, 0);
+    doc.setTextColor(...T.primaryDark);
     doc.text(String(val), tx2 + colW[i] / 2, y + 5.3, { align: "center" });
     tx2 += colW[i];
   });
@@ -228,7 +230,7 @@ export function generateAuditPDF({ monthLabel, dayRows, summary }) {
   const pageCount = doc.internal.getNumberOfPages();
   for (let p = 1; p <= pageCount; p++) {
     doc.setPage(p);
-    doc.setFillColor(196, 82, 0);
+    doc.setFillColor(...T.primary);
     doc.rect(0, pageHeight - 8, pageWidth, 8, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "normal").setFontSize(6.5);

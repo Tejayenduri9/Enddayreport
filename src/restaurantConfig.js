@@ -15,5 +15,6 @@ const data = restaurants[key] ?? restaurants.spice
 export const restaurantName = data.name
 export const restaurantSubtitle = data.subtitle
 export const restaurantLogo = logos[key] ?? logos.spice
+export const restaurantTheme = data.theme
 export const firebaseConfig = data.firebase
 export const OWNER_UIDS = data.ownerUids

@@ -14,6 +14,10 @@ export const restaurants = {
   spice: {
     name: 'Spice Malabar',
     subtitle: 'Daily Sales Report',
+    theme: {
+      primary: [196, 82, 0],    // burnt orange — header, footer, banner
+      secondary: [26, 61, 43],  // deep green  — section headers, bold rows
+    },
     firebase: {
       apiKey: 'AIzaSyCTA4j83zlxBSU3lrXiL43LxQpM7QB1ZKA',
       authDomain: 'invoice-bded6.firebaseapp.com',
@@ -27,6 +31,10 @@ export const restaurants = {
   karavalli: {
     name: 'Karavalli',
     subtitle: 'Daily Report',
+    theme: {
+      primary: [180, 30, 30],   // deep red  — header, footer, banner
+      secondary: [75, 75, 75],  // dark gray — section headers, bold rows
+    },
     firebase: {
       apiKey: 'AIzaSyDzLLdmpWb3ygeITIl_3qNAsyDQ8WoGsEo',
       authDomain: 'karavalli-7eae2.firebaseapp.com',

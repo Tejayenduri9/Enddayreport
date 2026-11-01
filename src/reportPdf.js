@@ -1,18 +1,9 @@
 import jsPDF from "jspdf";
-import { restaurantLogo as logo } from "./restaurantConfig.js";
+import { restaurantLogo as logo, restaurantTheme } from "./restaurantConfig.js";
+import { buildTheme } from "./themeUtils.js";
 import { onlineSaleOf, inHouseSaleOf, saleExclTipOf, tipsOf } from "./salesMath";
 
-const OG = {
-  primary: [196, 82, 0],
-  dark: [140, 55, 0],
-  light: [232, 121, 58],
-  accent: [255, 200, 100],
-  cash: [180, 90, 20],
-  cc: [150, 60, 10],
-  guests: [100, 70, 30],
-  online: [196, 110, 30],
-  channels: [160, 80, 10],
-};
+const T = buildTheme(restaurantTheme);
 
 /**
  * Builds the daily sales report PDF from a form object + catering notes.
@@ -27,7 +18,7 @@ export function generatePDF(form, cateringNotes) {
   const margin = 14;
   const cw = pageWidth - margin * 2;
 
-  doc.setFillColor(...OG.primary);
+  doc.setFillColor(...T.primary);
   doc.rect(0, 0, pageWidth, 36, "F");
   try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch { /* logo is optional - still build the PDF without it */ }
   doc.setTextColor(255, 255, 255);
@@ -42,7 +33,7 @@ export function generatePDF(form, cateringNotes) {
 
   const col5Base = Math.floor(cw / 5);
   const col5s = [col5Base, col5Base, col5Base, col5Base, cw - col5Base * 4];
-  const summaryColors = [[26, 61, 43], [35, 75, 52], [44, 88, 62], [32, 68, 50], [26, 61, 43]];
+  const summaryColors = T.secondaryVariants;
   const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
   const summaryValues = [
     fmt(saleExclTipOf(form)),
@@ -55,9 +46,9 @@ export function generatePDF(form, cateringNotes) {
   summaryColors.forEach(([r, g, b], i) => {
     const sw = col5s[i];
     doc.setFillColor(r, g, b);
-    doc.setDrawColor(255, 200, 100);
+    doc.setDrawColor(...T.primaryAccent);
     doc.rect(sumX, y, sw, 18, "FD");
-    doc.setTextColor(...OG.accent);
+    doc.setTextColor(...T.primaryAccent);
     doc.setFont("helvetica", "normal").setFontSize(4.8);
     doc.text(summaryLabels[i], sumX + sw / 2, y + 6, { align: "center" });
     doc.setTextColor(255, 255, 255);
@@ -77,17 +68,17 @@ export function generatePDF(form, cateringNotes) {
   };
 
   const row = (label, value, x, w, bold = false) => {
-    doc.setDrawColor(200, 150, 100);
-    doc.setFillColor(bold ? 235 : 255, bold ? 245 : 255, bold ? 235 : 255);
+    doc.setDrawColor(...T.primaryBorder);
+    doc.setFillColor(...(bold ? T.rowBoldBg : [255,255,255]));
     doc.rect(x, y, w, 6, bold ? "FD" : "D");
     doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(8);
-    if (bold) { doc.setTextColor(26, 61, 43); } else { doc.setTextColor(60, 60, 60); }
+    if (bold) { doc.setTextColor(...T.rowBoldText); } else { doc.setTextColor(60, 60, 60); }
     doc.text(String(label), x + 2, y + 4.5);
     doc.text(String(value), x + w - 2, y + 4.5, { align: "right" });
     y += 6;
   };
 
-  secHeader("GUESTS & DINE-IN", [26, 61, 43], margin, cw);
+  secHeader("GUESTS & DINE-IN", T.secondary, margin, cw);
   const gcb = Math.floor(cw / 3);
   const gcs = [gcb, gcb, cw - gcb * 2];
   doc.setDrawColor(180, 180, 180);
@@ -97,16 +88,16 @@ export function generatePDF(form, cateringNotes) {
   doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60, 60, 60);
   doc.text(`Lunch: ${form.lunchGuests || 0}`, margin + gcs[0] / 2, y + 4.5, { align: "center" });
   doc.text(`Dinner: ${form.dinnerGuests || 0}`, margin + gcs[0] + gcs[1] / 2, y + 4.5, { align: "center" });
-  doc.setFont("helvetica", "bold").setTextColor(26, 61, 43);
+  doc.setFont("helvetica", "bold").setTextColor(...T.secondary);
   doc.text(`Dine-in: ${fmt(form.dineInSales)}`, margin + gcs[0] + gcs[1] + gcs[2] / 2, y + 4.5, { align: "center" });
   y += 8;
 
   const hw = cw / 2;
   const rx = margin + hw;
   const hy = y;
-  doc.setFillColor(26, 61, 43);
+  doc.setFillColor(...T.secondary);
   doc.rect(margin, hy, hw, 7, "F");
-  doc.setFillColor(26, 61, 43);
+  doc.setFillColor(...T.secondary);
   doc.rect(rx, hy, hw, 7, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(8);
@@ -127,7 +118,7 @@ export function generatePDF(form, cateringNotes) {
   row("CC Sale", fmt(form.creditCardSale), rx, hw, true);
   if (y < cyEnd) {
     doc.setFillColor(255, 255, 255);
-    doc.setDrawColor(200, 150, 100);
+    doc.setDrawColor(...T.primaryBorder);
     doc.rect(rx, y, hw, cyEnd - y, "FD");
   }
   y = Math.max(cyEnd, y);
@@ -135,13 +126,13 @@ export function generatePDF(form, cateringNotes) {
   doc.rect(margin, hy, cw, y - hy);
   y += 4;
 
-  secHeader("SALES CHANNELS", [26, 61, 43], margin, cw);
+  secHeader("SALES CHANNELS", T.secondary, margin, cw);
   row("System Gross Sale", fmt(form.systemGross), margin, cw);
   row("Gift Card Redeemed", fmt(form.giftCard), margin, cw);
   row("Total In House", fmt(form.totalInHouse), margin, cw, true);
   y += 2;
 
-  secHeader("ONLINE SALES", [26, 61, 43], margin, cw);
+  secHeader("ONLINE SALES", T.secondary, margin, cw);
   const ocb = Math.floor(cw / 5);
   const ocs = [ocb, ocb, ocb, ocb, cw - ocb * 4];
   const platforms = [
@@ -154,25 +145,25 @@ export function generatePDF(form, cateringNotes) {
   let ox = margin;
   platforms.forEach((p, i) => {
     const pw = ocs[i];
-    doc.setFillColor(240, 248, 240);
-    doc.setDrawColor(180, 210, 180);
+    doc.setFillColor(...T.onlineBox);
+    doc.setDrawColor(...T.onlineBorder);
     doc.rect(ox, y, pw, 14, "FD");
     doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(60, 80, 60);
     doc.text(p.label, ox + pw / 2, y + 5, { align: "center" });
-    doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(26, 61, 43);
+    doc.setFont("helvetica","bold").setFontSize(9).setTextColor(...T.secondary);
     doc.text(fmt(p.val), ox + pw / 2, y + 11, { align: "center" });
     ox += pw;
   });
   y += 14;
-  doc.setFillColor(220, 240, 220);
-  doc.setDrawColor(150, 200, 150);
+  doc.setFillColor(...T.onlineTotal);
+  doc.setDrawColor(...T.onlineTotalBorder);
   doc.rect(margin, y, cw, 6, "FD");
-  doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(26, 61, 43);
+  doc.setFont("helvetica","bold").setFontSize(8).setTextColor(...T.secondary);
   doc.text("Total Online Sales", margin + 3, y + 4.5);
   doc.text(fmt(onlineSaleOf(form)), margin + cw - 2, y + 4.5, { align: "right" });
   y += 8;
 
-  secHeader("FINAL TOTALS", [26, 61, 43], margin, cw);
+  secHeader("FINAL TOTALS", T.secondary, margin, cw);
   row("Total Restaurant Sales", fmt(inHouseSaleOf(form) + onlineSaleOf(form)), margin, cw, true);
   row("Cash Catering", fmt(form.cashCatering), margin, cw);
   row("Cheques Catering", fmt(form.chequesCatering), margin, cw);
@@ -181,7 +172,7 @@ export function generatePDF(form, cateringNotes) {
   row("Total Catering", fmt(form.totalCatering), margin, cw, true);
   y += 2;
 
-  doc.setFillColor(...OG.primary);
+  doc.setFillColor(...T.primary);
   doc.rect(margin, y, cw, 12, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
@@ -193,16 +184,16 @@ export function generatePDF(form, cateringNotes) {
   const validCatering = (cateringNotes || []).filter(c => c.name || c.cateringDate || c.paymentType || c.amount);
   if (validCatering.length > 0) {
     if (y > pageHeight - 40) { doc.addPage(); y = 15; }
-    secHeader("CATERING NOTES", [26, 61, 43], margin, cw);
+    secHeader("CATERING NOTES", T.secondary, margin, cw);
     const ccb = Math.floor(cw / 4);
     const ccs = [ccb, ccb, ccb, cw - ccb * 3];
     const cHeaders = ["Catering Date", "Name", "Payment Type", "Amount"];
     let chx = margin;
     cHeaders.forEach((h, i) => {
-      doc.setFillColor(255, 235, 200);
-      doc.setDrawColor(200, 150, 100);
+      doc.setFillColor(...T.primaryLight);
+      doc.setDrawColor(...T.primaryBorder);
       doc.rect(chx, y, ccs[i], 6, "FD");
-      doc.setTextColor(...OG.dark);
+      doc.setTextColor(...T.primaryDark);
       doc.setFont("helvetica", "bold").setFontSize(7);
       doc.text(String(h), chx + ccs[i] / 2, y + 4.5, { align: "center" });
       chx += ccs[i];
@@ -223,7 +214,7 @@ export function generatePDF(form, cateringNotes) {
     });
   }
 
-  doc.setFillColor(...OG.primary);
+  doc.setFillColor(...T.primary);
   doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal").setFontSize(7);

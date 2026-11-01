@@ -1,5 +1,7 @@
 import jsPDF from "jspdf";
-import { restaurantLogo as logo } from "./restaurantConfig.js";
+import { restaurantLogo as logo, restaurantTheme } from "./restaurantConfig.js";
+import { buildTheme } from "./themeUtils.js";
+const T = buildTheme(restaurantTheme);
 import { totalIncTipOf } from "./salesMath";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -35,7 +37,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   const cw = pageWidth - margin * 2;
   let y = 42;
 
-  doc.setFillColor(196, 82, 0);
+  doc.setFillColor(...T.primary);
   doc.rect(0, 0, pageWidth, 36, "F");
   try { doc.addImage(logo, "PNG", pageWidth / 2 - 14, 3, 28, 14); } catch { /* logo is optional - still build the PDF without it */ }
   doc.setTextColor(255, 255, 255);
@@ -45,7 +47,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   doc.text(subtitle, pageWidth / 2, 31, { align: "center" });
 
   const secHeader = (label) => {
-    doc.setFillColor(26, 61, 43);
+    doc.setFillColor(...T.secondary);
     doc.rect(margin, y, cw, 7, "F");
     doc.setTextColor(255, 255, 255);
     doc.setFont("helvetica", "bold").setFontSize(8);
@@ -54,7 +56,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   };
 
   const row = (label, value, bold = false) => {
-    doc.setDrawColor(200, 150, 100);
+    doc.setDrawColor(...T.primaryBorder);
     doc.setFillColor(bold ? 235 : 255, bold ? 245 : 255, bold ? 235 : 255);
     doc.rect(margin, y, cw, 6, bold ? "FD" : "D");
     doc.setFont("helvetica", bold ? "bold" : "normal").setFontSize(8);
@@ -103,7 +105,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);
   y += 4;
 
-  doc.setFillColor(196, 82, 0);
+  doc.setFillColor(...T.primary);
   doc.rect(margin, y, cw, 12, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold").setFontSize(12);
@@ -119,10 +121,10 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
     const cols = [colDate, colGuests, cw - colDate - colGuests];
     let hx = margin;
     ["Date", "Guests", "Total Sales (incl. Tip)"].forEach((h, i) => {
-      doc.setFillColor(255, 235, 200);
-      doc.setDrawColor(200, 150, 100);
+      doc.setFillColor(...T.primaryLight);
+      doc.setDrawColor(...T.primaryBorder);
       doc.rect(hx, y, cols[i], 6, "FD");
-      doc.setTextColor(140, 55, 0);
+      doc.setTextColor(...T.primaryDark);
       doc.setFont("helvetica", "bold").setFontSize(7);
       doc.text(h, hx + cols[i] / 2, y + 4.5, { align: "center" });
       hx += cols[i];
@@ -143,7 +145,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
     });
   }
 
-  doc.setFillColor(196, 82, 0);
+  doc.setFillColor(...T.primary);
   doc.rect(0, pageHeight - 10, pageWidth, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "normal").setFontSize(7);

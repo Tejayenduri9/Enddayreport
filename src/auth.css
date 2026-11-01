@@ -2,8 +2,8 @@
    passcode, admin sign in / create account, and waiting-for-approval. */
 
 .au-screen {
-  --au-brand: #c45200;
-  --au-brand-dark: #a34400;
+  --au-brand: var(--brand);
+  --au-brand-dark: var(--brand-dark);
   --au-gold: #ffc864;
   --au-cream: #fdf3ec;
   --au-ink: #1f1a17;
@@ -186,7 +186,7 @@
 .au-input:focus {
   background: #fff;
   border-color: var(--au-brand);
-  box-shadow: 0 0 0 4px rgba(196, 82, 0, 0.12);
+  box-shadow: 0 0 0 4px var(--brand-glow);
 }
 
 .au-input[aria-invalid="true"] {
