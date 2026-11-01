@@ -1,10 +1,10 @@
-import spiceLogo from './assets/logo.png'
-import karavalliLogo from './assets/Karavalli.png'
-
 /**
- * Master config for every restaurant.
+ * Master config for every restaurant. Pure data — no asset imports here
+ * (logos are wired up in restaurantConfig.js so Cloudflare Functions
+ * can safely import this file without a PNG loader).
+ *
  * To add a new restaurant:
- *   1. Add its logo to src/assets/
+ *   1. Add its logo to src/assets/ and wire it in restaurantConfig.js
  *   2. Add an entry here
  *   3. Create .env.<key> with VITE_OWNER_EMAILS, VITE_PAGE_PIN, VITE_REPORT_PIN
  *   4. Add a Cloudflare Pages project with build command: npm run build:<key>
@@ -14,7 +14,6 @@ export const restaurants = {
   spice: {
     name: 'Spice Malabar',
     subtitle: 'Daily Sales Report',
-    logo: spiceLogo,
     firebase: {
       apiKey: 'AIzaSyCTA4j83zlxBSU3lrXiL43LxQpM7QB1ZKA',
       authDomain: 'invoice-bded6.firebaseapp.com',
@@ -28,7 +27,6 @@ export const restaurants = {
   karavalli: {
     name: 'Karavalli',
     subtitle: 'Daily Report',
-    logo: karavalliLogo,
     firebase: {
       apiKey: 'AIzaSyDzLLdmpWb3ygeITIl_3qNAsyDQ8WoGsEo',
       authDomain: 'karavalli-7eae2.firebaseapp.com',
