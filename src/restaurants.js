@@ -32,9 +32,9 @@ export const restaurants = {
     name: 'Karavalli',
     subtitle: 'Daily Report',
     theme: {
-      primary: [220, 68, 42],    // warm orange-red — header, footer, banner
-      secondary: [130, 38, 20],  // deep terracotta — section headers, bold rows
-      accent: [242, 230, 198],   // butter cream    — text on colored backgrounds
+      primary: [12, 38, 85],     // deep navy — header, footer, banner
+      secondary: [160, 120, 25], // rich gold — section headers, bold rows
+      accent: [240, 205, 95],    // bright gold — text on colored backgrounds
     },
     firebase: {
       apiKey: 'AIzaSyDzLLdmpWb3ygeITIl_3qNAsyDQ8WoGsEo',
