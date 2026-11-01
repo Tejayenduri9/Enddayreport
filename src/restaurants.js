@@ -32,8 +32,8 @@ export const restaurants = {
     name: 'Karavalli',
     subtitle: 'Daily Report',
     theme: {
-      primary: [180, 30, 30],   // deep red  — header, footer, banner
-      secondary: [75, 75, 75],  // dark gray — section headers, bold rows
+      primary: [180, 30, 30],    // vibrant red   — header, footer, banner
+      secondary: [100, 10, 10],  // deep crimson  — section headers, bold rows
     },
     firebase: {
       apiKey: 'AIzaSyDzLLdmpWb3ygeITIl_3qNAsyDQ8WoGsEo',
