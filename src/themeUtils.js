@@ -3,7 +3,7 @@
  * primary   = main brand color (header, footer, banner)
  * secondary = complementary color (section headers, bold rows)
  */
-export function buildTheme({ primary, secondary }) {
+export function buildTheme({ primary, secondary, accent }) {
   const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
   const W = [255, 255, 255];
   const toHex = ([r, g, b]) =>
@@ -15,7 +15,7 @@ export function buildTheme({ primary, secondary }) {
     // --- PDF (jsPDF RGB arrays) ---
     primary,
     primaryDark:    mix(primary, [0, 0, 0], 0.28),
-    primaryAccent:  mix(primary, W, 0.72),        // light text on primary bg
+    primaryAccent:  accent ?? mix(primary, W, 0.72), // light text on primary bg (custom or derived)
     primaryLight:   mix(primary, W, 0.87),        // subtle tinted bg
     primaryBorder:  mix(primary, [150, 150, 150], 0.5),
     secondary,
