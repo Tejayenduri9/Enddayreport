@@ -23,7 +23,7 @@ export function buildTheme({ primary, secondary, accent }) {
       mix(secondary, W, 0.10),
       secondary,
     ],
-    rowBoldBg:       mix(primary, W, 0.87),   // butter tint for bold rows
+    rowBoldBg:       accent ? mix(accent, W, 0.55) : mix(primary, W, 0.87),
     rowBoldText:     [30, 30, 30],            // black font on light bg
     onlineBox:       mix(secondary, W, 0.93),
     onlineBorder:    mix(secondary, W, 0.55),

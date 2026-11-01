@@ -33,8 +33,8 @@ export const restaurants = {
     subtitle: 'Daily Report',
     theme: {
       primary: [12, 38, 85],     // deep navy — header, footer, banner
-      secondary: [160, 120, 25], // rich gold — section headers, bold rows
-      accent: [240, 205, 95],    // bright gold — text on colored backgrounds
+      secondary: [185, 148, 22], // rich gold — section headers, bold rows
+      accent: [255, 213, 60],    // bright gold — text on colored backgrounds
     },
     firebase: {
       apiKey: 'AIzaSyDzLLdmpWb3ygeITIl_3qNAsyDQ8WoGsEo',
