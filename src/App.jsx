@@ -532,25 +532,18 @@ function App() {
           return;
         }
 
+        // Check for duplicates now, but don't save yet — the actual write
+        // happens after the email succeeds so a failed email never leaves
+        // orphaned data in Firestore.
         const docRef = firestoreDoc(db, "restaurants", form.date);
         try {
-          await runTransaction(db, async (tx) => {
-            const snap = await tx.get(docRef);
-            if (snap.exists()) {
-              const dupErr = new Error("ALREADY_SUBMITTED");
-              dupErr.code = "ALREADY_SUBMITTED";
-              throw dupErr;
-            }
-            tx.set(docRef, { ...form, cateringNotes, createdAt: new Date() });
-          });
-        } catch (txErr) {
-          if (txErr?.code === "ALREADY_SUBMITTED") {
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
             alreadySubmittedModal();
             return;
           }
-          // The security rules refuse a create when the date already has a
-          // report, or when the date is outside the kiosk's 14-day window.
-          if (txErr?.code === "permission-denied") {
+        } catch (checkErr) {
+          if (checkErr?.code === "permission-denied") {
             if (await findReportForDate(form.date).catch(() => null)) {
               alreadySubmittedModal();
             } else {
@@ -563,12 +556,8 @@ function App() {
             }
             return;
           }
-          throw txErr; // anything else (network, etc.) surfaces as a real error below
+          throw checkErr;
         }
-      } else {
-        // Editing an existing report: always update that same document. The
-        // date field is locked in edit mode, so a report can't move dates.
-        await setDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
       }
 
       const pdfDoc = generatePDF(form, cateringNotes);
@@ -711,6 +700,26 @@ function App() {
         const detail = await response.text().catch(() => "");
         throw new Error(`Backend request failed (${response.status})${detail ? ": " + detail : ""}`);
       }
+
+      // Email succeeded — now persist to Firestore. Doing this after the email
+      // ensures a failed email never leaves orphaned data in the database.
+      if (!isEditMode) {
+        const docRef = firestoreDoc(db, "restaurants", form.date);
+        try {
+          await runTransaction(db, async (tx) => {
+            const snap = await tx.get(docRef);
+            if (snap.exists()) return; // race: another submission beat us, email already sent, just don't double-write
+            tx.set(docRef, { ...form, cateringNotes, createdAt: new Date() });
+          });
+        } catch (saveErr) {
+          // Email sent successfully but Firestore write failed — log it, don't
+          // show a failure to the user (the report was delivered), but flag it.
+          console.error("Report emailed but Firestore save failed:", saveErr);
+        }
+      } else {
+        await setDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
+      }
+
       resetForm();
       setEditDocId(null);
       setIsEditMode(false);
