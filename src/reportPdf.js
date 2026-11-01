@@ -37,7 +37,7 @@ export function generatePDF(form, cateringNotes) {
   const summaryLabels = ["TOTAL SALES", "TOTAL CASH", "IN-HOUSE SALES", "ONLINE ORDERS", "TOTAL CATERING"];
   const summaryValues = [
     fmt(saleExclTipOf(form)),
-    fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)),
+    fmt((Number(form.cashSale) || 0) + (Number(form.cashTip) || 0) + (Number(form.cashCatering) || 0)),
     fmt(form.totalInHouse),
     fmt(onlineSaleOf(form)),
     fmt(form.totalCatering),
@@ -109,7 +109,7 @@ export function generatePDF(form, cateringNotes) {
   row("Cash Sale", fmt(form.cashSale), margin, hw);
   row("Cash Tip", fmt(form.cashTip), margin, hw);
   row("Cash Catering", fmt(form.cashCatering), margin, hw);
-  row("Total Cash", fmt((Number(form.totalCashWithTip) || 0) + (Number(form.cashCatering) || 0)), margin, hw, true);
+  row("Total Cash", fmt((Number(form.cashSale) || 0) + (Number(form.cashTip) || 0) + (Number(form.cashCatering) || 0)), margin, hw, true);
   const cyEnd = y;
 
   y = cy0;
