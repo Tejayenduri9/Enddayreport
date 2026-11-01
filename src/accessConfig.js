@@ -3,5 +3,5 @@
 // spice@enddayreports.com / karavalli@enddayreports.com
 export const OWNER_UIDS = [
   "XCzpfJgupafGt3kYdvxWnzTHcxu2", // spice@enddayreports.com
-  "BYkaNWrvi0UDGpEYCaC4ipRXLos1",  // karavalli@enddayreports.com
+  "pRvZaGOEAMhufvxeUGvJeb3O0xF3",  // karavalli@enddayreports.com
 ];

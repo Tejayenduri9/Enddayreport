@@ -16,7 +16,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function ownerUids() {
-      return ['BYkaNWrvi0UDGpEYCaC4ipRXLos1']; // karavalli@enddayreports.com
+      return ['pRvZaGOEAMhufvxeUGvJeb3O0xF3']; // karavalli@enddayreports.com
     }
 
     function signedIn() {
