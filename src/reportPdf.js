@@ -43,15 +43,15 @@ export function generatePDF(form, cateringNotes) {
     fmt(form.totalCatering),
   ];
   let sumX = margin;
-  summaryColors.forEach(([r, g, b], i) => {
+  summaryLabels.forEach((label, i) => {
     const sw = col5s[i];
-    doc.setFillColor(r, g, b);
-    doc.setDrawColor(...T.primaryAccent);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...T.secondary);
     doc.rect(sumX, y, sw, 18, "FD");
-    doc.setTextColor(...T.primaryAccent);
+    doc.setTextColor(...T.secondary);
     doc.setFont("helvetica", "normal").setFontSize(4.8);
-    doc.text(summaryLabels[i], sumX + sw / 2, y + 6, { align: "center" });
-    doc.setTextColor(255, 255, 255);
+    doc.text(label, sumX + sw / 2, y + 6, { align: "center" });
+    doc.setTextColor(30, 30, 30);
     doc.setFont("helvetica", "bold").setFontSize(8);
     doc.text(summaryValues[i], sumX + sw / 2, y + 14, { align: "center" });
     sumX += sw;
