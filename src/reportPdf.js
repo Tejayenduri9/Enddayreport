@@ -48,7 +48,7 @@ export function generatePDF(form, cateringNotes) {
     doc.setFillColor(255, 255, 255);
     doc.setDrawColor(...T.secondary);
     doc.rect(sumX, y, sw, 18, "FD");
-    doc.setTextColor(...T.secondary);
+    doc.setTextColor(30, 30, 30);
     doc.setFont("helvetica", "normal").setFontSize(4.8);
     doc.text(label, sumX + sw / 2, y + 6, { align: "center" });
     doc.setTextColor(30, 30, 30);
@@ -88,7 +88,7 @@ export function generatePDF(form, cateringNotes) {
   doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60, 60, 60);
   doc.text(`Lunch: ${form.lunchGuests || 0}`, margin + gcs[0] / 2, y + 4.5, { align: "center" });
   doc.text(`Dinner: ${form.dinnerGuests || 0}`, margin + gcs[0] + gcs[1] / 2, y + 4.5, { align: "center" });
-  doc.setFont("helvetica", "bold").setTextColor(...T.secondary);
+  doc.setFont("helvetica", "bold").setTextColor(30, 30, 30);
   doc.text(`Dine-in: ${fmt(form.dineInSales)}`, margin + gcs[0] + gcs[1] + gcs[2] / 2, y + 4.5, { align: "center" });
   y += 8;
 
@@ -150,7 +150,7 @@ export function generatePDF(form, cateringNotes) {
     doc.rect(ox, y, pw, 14, "FD");
     doc.setFont("helvetica", "normal").setFontSize(7).setTextColor(60, 80, 60);
     doc.text(p.label, ox + pw / 2, y + 5, { align: "center" });
-    doc.setFont("helvetica","bold").setFontSize(9).setTextColor(...T.secondary);
+    doc.setFont("helvetica","bold").setFontSize(9).setTextColor(30, 30, 30);
     doc.text(fmt(p.val), ox + pw / 2, y + 11, { align: "center" });
     ox += pw;
   });
@@ -158,7 +158,7 @@ export function generatePDF(form, cateringNotes) {
   doc.setFillColor(...T.onlineTotal);
   doc.setDrawColor(...T.onlineTotalBorder);
   doc.rect(margin, y, cw, 6, "FD");
-  doc.setFont("helvetica","bold").setFontSize(8).setTextColor(...T.secondary);
+  doc.setFont("helvetica","bold").setFontSize(8).setTextColor(30, 30, 30);
   doc.text("Total Online Sales", margin + 3, y + 4.5);
   doc.text(fmt(onlineSaleOf(form)), margin + cw - 2, y + 4.5, { align: "right" });
   y += 8;
