@@ -707,7 +707,10 @@ function App() {
           auditPdfBase64,
         }),
       });
-      if (!response.ok) throw new Error("Backend request failed");
+      if (!response.ok) {
+        const detail = await response.text().catch(() => "");
+        throw new Error(`Backend request failed (${response.status})${detail ? ": " + detail : ""}`);
+      }
       resetForm();
       setEditDocId(null);
       setIsEditMode(false);
