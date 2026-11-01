@@ -8,10 +8,20 @@
 //   users/{uid}.role == 'admin'          -> admin
 //   devices/{uid}.status == 'approved'   -> kiosk (a connected iPad)
 
-const PROJECT_ID = "invoice-bded6";
-const FIRESTORE_DOCS = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com";
 const CLOCK_SKEW_SECONDS = 60;
+
+// Read the Firebase project ID from the service account secret (already
+// required by other functions) so no extra env var is needed per restaurant.
+function projectIdFromEnv(env) {
+  try {
+    const raw = String(env?.FIREBASE_SERVICE_ACCOUNT || "").trim();
+    const text = raw.startsWith('"') ? JSON.parse(raw) : raw;
+    return JSON.parse(text).project_id || "invoice-bded6";
+  } catch {
+    return "invoice-bded6";
+  }
+}
 
 let cachedKeys = null;
 let cachedKeysExpireAt = 0;
@@ -35,7 +45,7 @@ const base64UrlToBytes = (str) => {
 const decodeJson = (part) => JSON.parse(new TextDecoder().decode(base64UrlToBytes(part)));
 
 // Returns the token's payload if valid, otherwise null.
-async function verifyIdToken(token) {
+async function verifyIdToken(token, projectId) {
   const parts = token.split(".");
   if (parts.length !== 3) return null;
   const [headerPart, payloadPart, signaturePart] = parts;
@@ -60,8 +70,8 @@ async function verifyIdToken(token) {
   if (!valid) return null;
 
   const now = Math.floor(Date.now() / 1000);
-  if (payload.aud !== PROJECT_ID) return null;
-  if (payload.iss !== `https://securetoken.google.com/${PROJECT_ID}`) return null;
+  if (payload.aud !== projectId) return null;
+  if (payload.iss !== `https://securetoken.google.com/${projectId}`) return null;
   if (typeof payload.sub !== "string" || !payload.sub) return null;
   if (!(payload.exp > now - CLOCK_SKEW_SECONDS)) return null;
   if (!(payload.iat <= now + CLOCK_SKEW_SECONDS)) return null;
@@ -73,18 +83,19 @@ const emailList = (value) =>
 
 // Reads one string field of a Firestore document as the caller. Returns null
 // if the document is missing or the caller may not read it.
-async function readField(token, path, field) {
-  const res = await fetch(`${FIRESTORE_DOCS}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
+async function readField(token, projectId, path, field) {
+  const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+  const res = await fetch(`${base}/${path}`, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) return null;
   const doc = await res.json();
   return doc.fields?.[field]?.stringValue ?? null;
 }
 
-async function roleOf(token, payload) {
+async function roleOf(token, payload, projectId) {
   const uid = encodeURIComponent(payload.sub);
   const isAnonymous = payload.firebase?.sign_in_provider === "anonymous";
-  if (!isAnonymous && (await readField(token, `users/${uid}`, "role")) === "admin") return "admin";
-  if ((await readField(token, `devices/${uid}`, "status")) === "approved") return "kiosk";
+  if (!isAnonymous && (await readField(token, projectId, `users/${uid}`, "role")) === "admin") return "admin";
+  if ((await readField(token, projectId, `devices/${uid}`, "status")) === "approved") return "kiosk";
   return null;
 }
 
@@ -93,11 +104,12 @@ async function roleOf(token, payload) {
  * "admin" or "kiosk", or a Response (401/403) to return as-is.
  */
 export async function requireUser(context, allowedRoles = ["admin", "kiosk"]) {
+  const projectId = projectIdFromEnv(context.env);
   const match = /^Bearer (.+)$/.exec(context.request.headers.get("Authorization") || "");
-  const payload = match ? await verifyIdToken(match[1]) : null;
+  const payload = match ? await verifyIdToken(match[1], projectId) : null;
   if (!payload) return new Response("Unauthorized", { status: 401 });
 
-  const role = await roleOf(match[1], payload);
+  const role = await roleOf(match[1], payload, projectId);
   if (!role || !allowedRoles.includes(role)) return new Response("Forbidden", { status: 403 });
   return { uid: payload.sub, email: (payload.email || "").toLowerCase(), role };
 }
