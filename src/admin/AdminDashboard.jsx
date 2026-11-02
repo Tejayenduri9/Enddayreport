@@ -30,6 +30,12 @@ import TaxGeneralDashboard from "./TaxGeneralDashboard";
 import TaxAuditDashboard from "./TaxAuditDashboard";
 import useIdleLogout from "./useIdleLogout";
 import { totalIncTipOf, inHouseSaleOf, onlineSaleOf } from "../salesMath";
+import { restaurantTheme } from "../restaurantConfig";
+
+const _toHex = ([r, g, b]) => '#' + [r, g, b].map(v => Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+const _mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const BRAND       = _toHex(restaurantTheme.primary);
+const BRAND_LIGHT = _toHex(_mix(restaurantTheme.primary, [255,255,255], 0.5));
 
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", {
@@ -630,7 +636,7 @@ export default function AdminDashboard({ user }) {
                           <Line
                             type="monotone"
                             dataKey="total"
-                            stroke="#C45200"
+                            stroke={BRAND}
                             strokeWidth={2.5}
                             dot={{ r: 3 }}
                             name="Total Sales"
@@ -709,14 +715,14 @@ export default function AdminDashboard({ user }) {
                           <Bar
                             dataKey="online"
                             stackId="a"
-                            fill="#C45200"
+                            fill={BRAND}
                             name="Online"
                           />
 
                           <Bar
                             dataKey="catering"
                             stackId="a"
-                            fill="#ffc864"
+                            fill={BRAND_LIGHT}
                             name="Catering"
                           />
                         </BarChart>

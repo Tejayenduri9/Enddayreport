@@ -20,6 +20,15 @@ import { parseCsv } from "./parseCsv";
 import { auth } from "../firebase";
 import { authedFetch } from "../authedFetch";
 import { totalIncTipOf, guestsOf, onlineSaleOf, restaurantOnlineNetOf } from "../salesMath";
+import { restaurantTheme } from "../restaurantConfig";
+
+const _toHex = ([r, g, b]) => '#' + [r, g, b].map(v => Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('');
+const _mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const _W = [255, 255, 255];
+const BRAND       = _toHex(restaurantTheme.primary);
+const BRAND_LIGHT = _toHex(_mix(restaurantTheme.primary, _W, 0.5));
+const BRAND_DARK  = _toHex(_mix(restaurantTheme.primary, [0,0,0], 0.28));
+const BRAND_SEC   = _toHex(restaurantTheme.secondary);
 
 const fmt = (v) =>
   `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -133,21 +142,21 @@ const diffDaysInclusive = (aStr, bStr) => {
 };
 
 const CHANNEL_FIELDS = [
-  { key: "totalInHouse", label: "In-House", color: "#C45200" },
-  { key: "totalRestaurantOnline", label: "Online", color: "#F0A202" },
-  { key: "totalCatering", label: "Catering", color: "#2F6F62" },
+  { key: "totalInHouse", label: "In-House", color: BRAND },
+  { key: "totalRestaurantOnline", label: "Online", color: BRAND_SEC },
+  { key: "totalCatering", label: "Catering", color: BRAND_LIGHT },
 ];
 
 const PAYMENT_FIELDS = [
-  { key: "cashSale", label: "Cash", color: "#8C3700" },
-  { key: "creditCardSale", label: "Credit Card", color: "#C45200" },
+  { key: "cashSale", label: "Cash", color: BRAND_DARK },
+  { key: "creditCardSale", label: "Credit Card", color: BRAND },
 ];
 
 const ONLINE_PLATFORM_FIELDS = [
-  { key: "restaurantOnline", label: "Website", color: "#F0A202" },
-  { key: "grubhub", label: "Grubhub", color: "#D94F30" },
-  { key: "doordash", label: "DoorDash", color: "#5B3A29" },
-  { key: "uberEats", label: "Uber Eats", color: "#1F6F5C" },
+  { key: "restaurantOnline", label: "Website", color: BRAND_SEC },
+  { key: "grubhub", label: "Grubhub", color: BRAND },
+  { key: "doordash", label: "DoorDash", color: BRAND_DARK },
+  { key: "uberEats", label: "Uber Eats", color: BRAND_LIGHT },
 ];
 
 // Historical (pre-launch) data lives in server/historical-sales.csv.txt (served to
@@ -823,8 +832,8 @@ export default function YearOverYearReport({ reports, onBack }) {
                 />
                 <Tooltip content={renderAggregateTooltip} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]}>
+                <Bar dataKey="prior" fill={BRAND_LIGHT} name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" fill={BRAND} name={currentRangeLabel} radius={[4, 4, 0, 0]}>
                   <LabelList
                     dataKey="current"
                     position="top"
@@ -873,8 +882,8 @@ export default function YearOverYearReport({ reports, onBack }) {
                   />
                   <Tooltip content={renderAggregateTooltip} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="prior" fill={BRAND_LIGHT} name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="current" fill={BRAND} name={currentRangeLabel} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -957,8 +966,8 @@ export default function YearOverYearReport({ reports, onBack }) {
                 />
                 <Tooltip content={renderAggregateTooltip} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="prior" fill="#ffc864" name={priorRangeLabel} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="current" fill="#C45200" name={currentRangeLabel} radius={[4, 4, 0, 0]}>
+                <Bar dataKey="prior" fill={BRAND_LIGHT} name={priorRangeLabel} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="current" fill={BRAND} name={currentRangeLabel} radius={[4, 4, 0, 0]}>
                   <LabelList
                     dataKey="current"
                     position="top"
@@ -1068,8 +1077,8 @@ export default function YearOverYearReport({ reports, onBack }) {
                   type="monotone"
                   dataKey="current"
                   name={currentRangeLabel}
-                  fill="#C45200"
-                  stroke="#C45200"
+                  fill={BRAND}
+                  stroke={BRAND}
                   fillOpacity={0.18}
                   strokeWidth={2}
                   connectNulls
