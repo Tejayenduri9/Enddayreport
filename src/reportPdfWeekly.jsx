@@ -29,7 +29,7 @@ const fullDateLabel = (dateStr) => {
   return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
 };
 
-function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) {
+function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, rangeStart, rangeEnd }) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -113,7 +113,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
   doc.text(fmt(summary.totalAmountIncTip), margin + cw - 3, y + 8, { align: "right" });
   y += 18;
 
-  if (dailyReports?.length) {
+  if (rangeStart && rangeEnd) {
     if (y > pageHeight - 40) { doc.addPage(); y = 15; }
     secHeader("DAILY BREAKDOWN");
     const colDate = Math.floor(cw * 0.42);
@@ -130,19 +130,36 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel }) 
       hx += cols[i];
     });
     y += 6;
-    dailyReports.forEach((r) => {
+
+    // Build a lookup so we can fill every date in the range (zeros for missing days)
+    const byDate = {};
+    (dailyReports || []).forEach((r) => { byDate[r.date] = r; });
+    const [sy, sm, sd] = rangeStart.split("-").map(Number);
+    const [ey, em, ed] = rangeEnd.split("-").map(Number);
+    const start = new Date(sy, sm - 1, sd);
+    const end   = new Date(ey, em - 1, ed);
+    for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
+      const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      const r = byDate[iso];
       if (y > pageHeight - 20) { doc.addPage(); y = 15; }
-      const cells = [fullDateLabel(r.date), String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)), fmt(totalIncTipOf(r))];
+      const cells = [
+        fullDateLabel(iso),
+        r ? String((Number(r.lunchGuests) || 0) + (Number(r.dinnerGuests) || 0)) : "—",
+        r ? fmt(totalIncTipOf(r)) : "—",
+      ];
+      const noData = !r;
       let dx = margin;
       cells.forEach((val, i) => {
+        doc.setFillColor(...(noData ? [245, 245, 245] : [255, 255, 255]));
         doc.setDrawColor(200, 200, 200);
-        doc.rect(dx, y, cols[i], 6);
-        doc.setFont("helvetica", "normal").setFontSize(i === 0 ? 6.5 : 7.5).setTextColor(50, 50, 50);
+        doc.rect(dx, y, cols[i], 6, noData ? "FD" : "D");
+        doc.setFont("helvetica", "normal").setFontSize(i === 0 ? 6.5 : 7.5)
+           .setTextColor(noData ? 160 : 50, noData ? 160 : 50, noData ? 160 : 50);
         doc.text(val, dx + cols[i] / 2, y + 4.5, { align: "center" });
         dx += cols[i];
       });
       y += 6;
-    });
+    }
   }
 
   doc.setFillColor(...T.primary);
@@ -165,6 +182,8 @@ export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports })
     subtitle: `${shortDate(weekStart)} — ${shortDate(weekEnd)}`,
     summary,
     dailyReports,
+    rangeStart: weekStart,
+    rangeEnd: weekEnd,
     totalLabel: { sectionTitle: "WEEKLY TOTALS", bannerTitle: "TOTAL SALES OF THE WEEK (INCL. TIP)" },
   });
 }
@@ -191,6 +210,8 @@ export function generateCustomRangePDF({ rangeStart, rangeEnd, summary, dailyRep
     subtitle: `${shortDate(rangeStart)} — ${shortDate(rangeEnd)}`,
     summary,
     dailyReports,
+    rangeStart,
+    rangeEnd,
     totalLabel: { sectionTitle: "RANGE TOTALS", bannerTitle: "TOTAL SALES OF THE RANGE (INCL. TIP)" },
   });
 }
