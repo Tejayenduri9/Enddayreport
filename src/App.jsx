@@ -748,8 +748,8 @@ function App() {
         // Honest message: the email went out, but we could not confirm the save.
         // The owners already have the PDF by email; the dashboard is missing it.
         successMessage = isEditMode
-          ? "⚠️ Your updated report was emailed, but your internet connection dropped before the change could be saved to the dashboard.\n\nThe owners have the revised PDF by email. Please tell the admin so the saved copy can be updated."
-          : "⚠️ Your report was emailed to the owners, but your internet connection dropped before it could be saved to the dashboard.\n\nThe owners already have the PDF by email. Once you're back online, please submit this report again so it's recorded — or tell the admin.";
+          ? "⚠️ Your updated report was emailed, but your internet connection dropped before the change could be saved to the dashboard.\n\nThe owners have the revised PDF by email. Please contact the EndDay Reports admin at enddayreports.com so the saved copy can be updated."
+          : "⚠️ Your report was emailed to the owners, but your internet connection dropped before it could be saved to the dashboard.\n\nThe owners already have the PDF by email. Please contact the EndDay Reports admin at enddayreports.com to get it recorded — do not resubmit, to avoid sending a duplicate.";
       } else {
         successMessage = isEditMode
           ? "Your report has been updated and the revised PDF has been emailed."
