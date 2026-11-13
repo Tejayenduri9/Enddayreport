@@ -7,6 +7,7 @@ import { LoadingScreen } from "../authUi";
 import AdminAuth from "./AdminAuth";
 import AdminWaiting from "./AdminWaiting";
 import AdminDashboard from "./AdminDashboard";
+import { useAutoRefresh } from "../useAutoRefresh";
 
 function AdminApp() {
   const [user, setUser] = useState(null);
@@ -17,6 +18,18 @@ function AdminApp() {
   const signupNameRef = useRef("");
   // Owner self-repair is attempted at most once per account per page load.
   const repairTriedRef = useRef(null);
+
+  // Auto-apply new deploys when the admin has been idle for a bit, so an open
+  // dashboard tab stays current without a manual refresh and without yanking
+  // the page out from under an active click or edit.
+  const lastActiveRef = useRef(Date.now());
+  useEffect(() => {
+    const bump = () => { lastActiveRef.current = Date.now(); };
+    const events = ["mousedown", "keydown", "touchstart", "scroll"];
+    events.forEach((e) => window.addEventListener(e, bump, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, bump));
+  }, []);
+  useAutoRefresh(() => Date.now() - lastActiveRef.current > 30000);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {

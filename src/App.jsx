@@ -5,6 +5,7 @@ import KioskConnect from "./KioskConnect";
 import { AuthScreen } from "./authUi";
 import { Icons } from "./icons";
 import { authedFetch } from "./authedFetch";
+import { useAutoRefresh } from "./useAutoRefresh";
 import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, runTransaction, query, where } from "firebase/firestore";
 import { restaurantLogo, restaurantName, restaurantSubtitle as reportSubtitle } from "./restaurantConfig.js";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
@@ -173,6 +174,23 @@ function App() {
   const [emailImportPreview, setEmailImportPreview] = useState(null);
   const [pagePin, setPagePin] = useState("");
   const [pagePinError, setPagePinError] = useState(false);
+
+  // Auto-apply new deploys, but only when nothing would be lost: the form has no
+  // typed-in values, no modal is open, nothing is submitting, and we're not
+  // mid-edit. A kiosk sitting idle on a blank form updates itself; a manager
+  // typing a report is never interrupted.
+  const dataFields = [
+    "lunchGuests", "dinnerGuests", "dineInSales", "cashSale", "cashTip",
+    "cashCatering", "chequesCatering", "totalSettle", "creditCardTip", "giftCard",
+    "restaurantOnline", "restaurantOnlineTips", "grubhub", "doordash", "uberEats",
+    "totalCashWithTip",
+  ];
+  const formIsPristine =
+    dataFields.every((k) => !String(form[k] || "").trim()) &&
+    cateringNotes.every((c) => !c.name && !c.cateringDate && !c.paymentType && !c.amount);
+  useAutoRefresh(() =>
+    formIsPristine && !loading && !modal.open && !loadModalOpen && !isEditMode
+  );
 
   // This device's connection to the restaurant (approved from the admin
   // dashboard's Team & devices). Reports and server calls require it - see
