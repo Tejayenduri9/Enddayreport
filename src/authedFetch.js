@@ -21,7 +21,7 @@ export async function authedFetch(auth, url, options = {}, timeoutMs = 120000) {
     if (err?.name === "AbortError") {
       throw new Error(
         "The request took too long and was stopped. Your report may not have been sent — " +
-        "please check your email, and if it didn't arrive, try again."
+        "please check your email, and if it didn't arrive, contact the EndDay Reports admin at enddayreports.com."
       );
     }
     throw err;
