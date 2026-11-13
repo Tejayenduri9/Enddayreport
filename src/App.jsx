@@ -715,6 +715,7 @@ function App() {
           promise,
           new Promise((_, reject) => setTimeout(() => reject(new Error("Save timed out — the connection may be offline.")), ms)),
         ]);
+      let savedOk = false;
       try {
         if (!isEditMode) {
           const docRef = firestoreDoc(db, "restaurants", form.date);
@@ -729,10 +730,11 @@ function App() {
             20000
           );
         }
+        savedOk = true;
       } catch (saveErr) {
         // Email sent successfully but Firestore write failed or timed out — log
-        // it, don't show a failure (the report was delivered), and move on so
-        // the UI never gets stuck.
+        // it, don't block the UI. We DON'T claim it was saved: the success
+        // message below tells the truth so the report can be recovered.
         console.error("Report emailed but Firestore save failed or timed out:", saveErr);
       }
 
@@ -741,9 +743,18 @@ function App() {
       setIsEditMode(false);
       setLoading(false);
 
-      let successMessage = isEditMode
-        ? "Your report has been updated and the revised PDF has been emailed."
-        : "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.";
+      let successMessage;
+      if (!savedOk) {
+        // Honest message: the email went out, but we could not confirm the save.
+        // The owners already have the PDF by email; the dashboard is missing it.
+        successMessage = isEditMode
+          ? "⚠️ Your updated report was emailed, but your internet connection dropped before the change could be saved to the dashboard.\n\nThe owners have the revised PDF by email. Please tell the admin so the saved copy can be updated."
+          : "⚠️ Your report was emailed to the owners, but your internet connection dropped before it could be saved to the dashboard.\n\nThe owners already have the PDF by email. Once you're back online, please submit this report again so it's recorded — or tell the admin.";
+      } else {
+        successMessage = isEditMode
+          ? "Your report has been updated and the revised PDF has been emailed."
+          : "Your daily sales report has been saved and emailed. Did everything look correct? Leave a note below if anything needs attention.";
+      }
 
       if (isWeeklyTriggerDay) {
         if (weeklyPdfBase64) {
@@ -761,7 +772,11 @@ function App() {
         }
       }
 
-      showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", successMessage);
+      if (!savedOk) {
+        showModal("warning", "Emailed — But Not Saved", successMessage);
+      } else {
+        showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", successMessage);
+      }
     } catch (err) {
       console.error(err);
       showModal("error", "Something went wrong", err.message || "An unexpected error occurred. Please check your entries and try again.");
@@ -842,6 +857,7 @@ function App() {
         .rs-modal-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; font-size: 22px; }
         .rs-modal-icon.success { background: var(--brand-tint); }
         .rs-modal-icon.error { background: #fdecea; }
+        .rs-modal-icon.warning { background: #fff4e0; }
         .rs-modal-title { font-family: 'Playfair Display', Georgia, serif; font-size: 18px; font-weight: 600; color: #111; margin-bottom: 8px; }
         .rs-modal-message { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 1.5rem; white-space: pre-line; }
         .rs-modal-input { width: 100%; background: var(--brand-tint2); border: 0.5px solid var(--brand-border); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: #111; font-family: 'DM Sans', sans-serif; outline: none; resize: vertical; min-height: 80px; margin-bottom: 1rem; transition: border-color 0.15s; }
@@ -1081,6 +1097,11 @@ function App() {
                       <button className="rs-modal-btn primary" onClick={closeModal}>Got it</button>
                     </div>
                   </>
+                )}
+                {modal.type === "warning" && (
+                  <div className="rs-modal-actions">
+                    <button className="rs-modal-btn primary" onClick={closeModal}>Got it</button>
+                  </div>
                 )}
               </div>
             </div>
