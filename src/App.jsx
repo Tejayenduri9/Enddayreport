@@ -703,21 +703,37 @@ function App() {
 
       // Email succeeded — now persist to Firestore. Doing this after the email
       // ensures a failed email never leaves orphaned data in the database.
-      if (!isEditMode) {
-        const docRef = firestoreDoc(db, "restaurants", form.date);
-        try {
-          await runTransaction(db, async (tx) => {
+      //
+      // The report is already delivered at this point, so the save must never
+      // block the screen: Firestore's runTransaction/setDoc hang indefinitely
+      // when the kiosk's connection is offline or flaky (it retries forever and
+      // never rejects). We cap the write so a stuck connection can't freeze the
+      // UI on an endless spinner — if it times out we log it and still show the
+      // success the manager earned by getting the email out.
+      const withTimeout = (promise, ms) =>
+        Promise.race([
+          promise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Save timed out — the connection may be offline.")), ms)),
+        ]);
+      try {
+        if (!isEditMode) {
+          const docRef = firestoreDoc(db, "restaurants", form.date);
+          await withTimeout(runTransaction(db, async (tx) => {
             const snap = await tx.get(docRef);
             if (snap.exists()) return; // race: another submission beat us, email already sent, just don't double-write
             tx.set(docRef, { ...form, cateringNotes, createdAt: new Date() });
-          });
-        } catch (saveErr) {
-          // Email sent successfully but Firestore write failed — log it, don't
-          // show a failure to the user (the report was delivered), but flag it.
-          console.error("Report emailed but Firestore save failed:", saveErr);
+          }), 20000);
+        } else {
+          await withTimeout(
+            setDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() }, { merge: true }),
+            20000
+          );
         }
-      } else {
-        await setDoc(firestoreDoc(db, "restaurants", editDocId), { ...form, cateringNotes, updatedAt: new Date() }, { merge: true });
+      } catch (saveErr) {
+        // Email sent successfully but Firestore write failed or timed out — log
+        // it, don't show a failure (the report was delivered), and move on so
+        // the UI never gets stuck.
+        console.error("Report emailed but Firestore save failed or timed out:", saveErr);
       }
 
       resetForm();
@@ -747,9 +763,11 @@ function App() {
 
       showModal("success", isEditMode ? "Report Updated! ✅" : "Report Sent! 🎉", successMessage);
     } catch (err) {
-      setLoading(false);
       console.error(err);
       showModal("error", "Something went wrong", err.message || "An unexpected error occurred. Please check your entries and try again.");
+    } finally {
+      // Guarantee the spinner always stops, no matter which path we exit on.
+      setLoading(false);
     }
   };
 
