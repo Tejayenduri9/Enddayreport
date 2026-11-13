@@ -113,7 +113,24 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
   doc.text(fmt(summary.totalAmountIncTip), margin + cw - 3, y + 8, { align: "right" });
   y += 18;
 
+  // Build the list of day rows. When a date range is given (weekly / custom),
+  // fill every day in the range so missing days show as "—". Otherwise (monthly)
+  // just list whatever reports were passed in.
+  const byDate = {};
+  (dailyReports || []).forEach((r) => { byDate[r.date] = r; });
+  let dayIsos = [];
   if (rangeStart && rangeEnd) {
+    const [sy, sm, sd] = rangeStart.split("-").map(Number);
+    const [ey, em, ed] = rangeEnd.split("-").map(Number);
+    const end = new Date(ey, em - 1, ed);
+    for (let cur = new Date(sy, sm - 1, sd); cur <= end; cur.setDate(cur.getDate() + 1)) {
+      dayIsos.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`);
+    }
+  } else {
+    dayIsos = (dailyReports || []).map((r) => r.date);
+  }
+
+  if (dayIsos.length) {
     if (y > pageHeight - 40) { doc.addPage(); y = 15; }
     secHeader("DAILY BREAKDOWN");
     const colDate = Math.floor(cw * 0.42);
@@ -131,15 +148,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
     });
     y += 6;
 
-    // Build a lookup so we can fill every date in the range (zeros for missing days)
-    const byDate = {};
-    (dailyReports || []).forEach((r) => { byDate[r.date] = r; });
-    const [sy, sm, sd] = rangeStart.split("-").map(Number);
-    const [ey, em, ed] = rangeEnd.split("-").map(Number);
-    const start = new Date(sy, sm - 1, sd);
-    const end   = new Date(ey, em - 1, ed);
-    for (let cur = new Date(start); cur <= end; cur.setDate(cur.getDate() + 1)) {
-      const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+    dayIsos.forEach((iso) => {
       const r = byDate[iso];
       if (y > pageHeight - 20) { doc.addPage(); y = 15; }
       const cells = [
@@ -159,7 +168,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
         dx += cols[i];
       });
       y += 6;
-    }
+    });
   }
 
   doc.setFillColor(...T.primary);
