@@ -14,6 +14,7 @@ export const restaurants = {
   spice: {
     name: 'Spice Malabar',
     subtitle: 'Daily Sales Report',
+    closedDay: 1, // Monday (0=Sun, 1=Mon, ... 6=Sat) — excluded from the weekly report
     theme: {
       primary: [196, 82, 0],    // burnt orange — header, footer, banner
       secondary: [26, 61, 43],  // deep green  — section headers, bold rows
@@ -31,6 +32,7 @@ export const restaurants = {
   karavalli: {
     name: 'Karavalli',
     subtitle: 'Daily Report',
+    closedDay: 2, // Tuesday (0=Sun, 1=Mon, ... 6=Sat) — excluded from the weekly report
     theme: {
       primary: [12, 38, 85],     // deep navy — header, footer, banner
       secondary: [185, 148, 22], // rich gold — section headers, bold rows

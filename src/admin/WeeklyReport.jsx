@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { generateWeeklyPDF } from "../reportPdfWeekly";
 import { summarizeReports } from "../salesMath";
+import { restaurantClosedDay } from "../restaurantConfig";
 
 const fmt = (v) => `$${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -44,7 +45,7 @@ export default function WeeklyReport({ reports }) {
 
   const handleDownload = () => {
     const pdfDoc = generateWeeklyPDF({
-      weekStart, weekEnd, summary, dailyReports: weekReports,
+      weekStart, weekEnd, summary, dailyReports: weekReports, closedDay: restaurantClosedDay,
     });
     pdfDoc.save(`Week of ${shortDate(weekStart)} Sales Report.pdf`);
   };

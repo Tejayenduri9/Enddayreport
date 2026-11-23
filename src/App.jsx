@@ -7,7 +7,7 @@ import { Icons } from "./icons";
 import { authedFetch } from "./authedFetch";
 import { useAutoRefresh } from "./useAutoRefresh";
 import { collection, addDoc, getDoc, getDocs, doc as firestoreDoc, setDoc, runTransaction, query, where } from "firebase/firestore";
-import { restaurantLogo, restaurantName, restaurantSubtitle as reportSubtitle } from "./restaurantConfig.js";
+import { restaurantLogo, restaurantName, restaurantSubtitle as reportSubtitle, restaurantClosedDay } from "./restaurantConfig.js";
 import { generateWeeklyPDF, generateMonthlyPDF } from "./reportPdfWeekly";
 import { generateAuditPDF } from "./reportPdfAudit";
 import { generatePDF } from "./reportPdf";
@@ -45,18 +45,24 @@ const STALE_CHECK_INTERVAL_MS = 2 * 60 * 1000;
 // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
 const WEEKLY_REPORT_TRIGGER_DAY = 0; // Sunday - production
 
-// Business week = Tuesday through Sunday. Given ANY date, find that week's
-// Tuesday (start) and Sunday (end) - works no matter which day of the week
-// the weekly summary is triggered on, so WEEKLY_REPORT_TRIGGER_DAY above can
-// be changed freely without breaking which reports get included.
-const getBusinessWeekBounds = (dateStr) => {
+// Business week = Monday through Sunday, minus the restaurant's closed day.
+// weekEnd is always that week's Sunday (the trigger day); weekStart is the
+// first OPEN day of the week, so a restaurant closed on Monday starts Tuesday
+// and one closed on Tuesday still starts Monday (its Tuesday is skipped inside
+// the report instead of dropping Monday). Works no matter which day the summary
+// is triggered on.
+const getBusinessWeekBounds = (dateStr, closedDay = null) => {
   const [y, m, d] = dateStr.split("-").map(Number);
   const date = new Date(y, m - 1, d);
-  const day = date.getDay(); // 0=Sun,1=Mon,2=Tue,...,6=Sat
-  const daysSinceTuesday = (day + 7 - 2) % 7; // Tuesday = day 0 of the business week
-  const start = new Date(y, m - 1, d - daysSinceTuesday);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 5);
-  return { weekStart: toISO(start), weekEnd: toISO(end) };
+  const day = date.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const daysSinceMonday = (day + 6) % 7; // Monday = day 0 of the week
+  const monday = new Date(y, m - 1, d - daysSinceMonday);
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  // If the week opens on the closed day, start the report on the next day so it
+  // doesn't lead with an empty row; a mid-week closed day is skipped in the PDF.
+  const start = new Date(monday);
+  if (closedDay === 1) start.setDate(start.getDate() + 1); // closed Monday -> start Tuesday
+  return { weekStart: toISO(start), weekEnd: toISO(sunday) };
 };
 
 // e.g. "July 2026"
@@ -591,7 +597,7 @@ function App() {
 
       if (isWeeklyTriggerDay) {
         try {
-          const { weekStart, weekEnd } = getBusinessWeekBounds(form.date);
+          const { weekStart, weekEnd } = getBusinessWeekBounds(form.date, restaurantClosedDay);
           const allDocsSnap = await getDocs(collection(db, "restaurants"));
           const weekReports = allDocsSnap.docs
             .map((d) => d.data())
@@ -600,7 +606,7 @@ function App() {
 
           if (weekReports.length > 0) {
             const weekSummary = summarizeReports(weekReports);
-            const weeklyDoc = generateWeeklyPDF({ weekStart, weekEnd, summary: weekSummary, dailyReports: weekReports });
+            const weeklyDoc = generateWeeklyPDF({ weekStart, weekEnd, summary: weekSummary, dailyReports: weekReports, closedDay: restaurantClosedDay });
             weeklyPdfBase64 = weeklyDoc.output("datauristring").split(",")[1];
             weekLabel = `${shortDate(weekStart)} to ${shortDate(weekEnd)}`;
           } else {

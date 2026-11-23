@@ -29,7 +29,7 @@ const fullDateLabel = (dateStr) => {
   return `${month} ${d}${ordinalSuffix(d)}, ${y}, ${weekday}`;
 };
 
-function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, rangeStart, rangeEnd }) {
+function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, rangeStart, rangeEnd, closedDay = null }) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -124,6 +124,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
     const [ey, em, ed] = rangeEnd.split("-").map(Number);
     const end = new Date(ey, em - 1, ed);
     for (let cur = new Date(sy, sm - 1, sd); cur <= end; cur.setDate(cur.getDate() + 1)) {
+      if (closedDay != null && cur.getDay() === closedDay) continue; // restaurant closed — not a missing day
       dayIsos.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`);
     }
   } else {
@@ -185,7 +186,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
  * (see WeeklyReport.jsx for the shape) plus the week's date range and
  * the list of daily reports included.
  */
-export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports }) {
+export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports, closedDay = null }) {
   return buildReportPDF({
     title: "WEEKLY SALES REPORT",
     subtitle: `${shortDate(weekStart)} — ${shortDate(weekEnd)}`,
@@ -193,6 +194,7 @@ export function generateWeeklyPDF({ weekStart, weekEnd, summary, dailyReports })
     dailyReports,
     rangeStart: weekStart,
     rangeEnd: weekEnd,
+    closedDay,
     totalLabel: { sectionTitle: "WEEKLY TOTALS", bannerTitle: "TOTAL SALES OF THE WEEK (INCL. TIP)" },
   });
 }

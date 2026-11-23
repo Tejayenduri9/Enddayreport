@@ -18,3 +18,6 @@ export const restaurantLogo = logos[key] ?? logos.spice
 export const restaurantTheme = data.theme
 export const firebaseConfig = data.firebase
 export const OWNER_UIDS = data.ownerUids
+// Day of week the restaurant is closed (0=Sun … 6=Sat), or null if open daily.
+// Excluded from the weekly report so a closed day never shows as a missing day.
+export const restaurantClosedDay = data.closedDay ?? null
