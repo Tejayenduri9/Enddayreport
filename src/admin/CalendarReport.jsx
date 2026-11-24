@@ -175,7 +175,7 @@ export default function CalendarReport({ reports, onSelectReport }) {
               <div className="ad-detail-row"><span>Total CC Settle</span><span>{fmt(summary.totalSettle)}</span></div>
               <div className="ad-detail-row"><span>CC Tip</span><span>{fmt(summary.creditCardTip)}</span></div>
               <div className="ad-detail-row bold"><span>CC Sale</span><span>{fmt(summary.creditCardSale)}</span></div>
-              <div className="ad-detail-row"><span>Gift Card Redeemed (deducted)</span><span>{fmt(summary.giftCard)}</span></div>
+              <div className="ad-detail-row"><span>Gift Card Redeemed</span><span>{fmt(summary.giftCard)}</span></div>
             </div>
             <div className="ad-week-detail-col">
               <div className="ad-detail-section-label">Online</div>

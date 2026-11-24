@@ -99,7 +99,7 @@ function buildReportPDF({ title, subtitle, summary, dailyReports, totalLabel, ra
   y += 2;
 
   secHeader(totalLabel.sectionTitle);
-  row("Gift Card Redeemed (deducted)", fmt(summary.giftCard));
+  row("Gift Card Redeemed", fmt(summary.giftCard));
   row("Total Sale (excl. Tip)", fmt(summary.totalSale));
   row("Total Tips (Cash + CC + Online)", fmt(summary.totalTips));
   row("Total Amount (incl. Tip)", fmt(summary.totalAmountIncTip), true);

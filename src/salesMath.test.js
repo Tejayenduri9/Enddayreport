@@ -27,16 +27,16 @@ test("online sale nets the online tip out of restaurantOnline", () => {
   assert.equal(onlineSaleOf(day), 300 + 100 + 150 + 50);
 });
 
-test("in-house sale subtracts gift card redemptions", () => {
-  assert.equal(inHouseSaleOf(day), 500 + 2000 - 100);
+test("in-house sale does NOT subtract gift card redemptions", () => {
+  assert.equal(inHouseSaleOf(day), 500 + 2000);
 });
 
 test("sale excl. tip = in-house + online + catering", () => {
-  assert.equal(saleExclTipOf(day), 2400 + 600 + 500);
+  assert.equal(saleExclTipOf(day), 2500 + 600 + 500);
 });
 
 test("total incl. tip = sale excl. tip + all tips", () => {
-  assert.equal(totalIncTipOf(day), 3500 + 280);
+  assert.equal(totalIncTipOf(day), 3600 + 280);
 });
 
 test("guests = lunch + dinner", () => {

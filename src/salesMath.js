@@ -21,10 +21,11 @@ export const restaurantOnlineNetOf = (r) =>
 export const onlineSaleOf = (r) =>
   restaurantOnlineNetOf(r) + num(r, "grubhub") + num(r, "doordash") + num(r, "uberEats");
 
-// Gift card redemptions were already counted when the card was sold, so they
-// are removed from in-house sales.
+// Gift card redemptions are recorded for reference only — they are NOT
+// deducted from in-house sales (the amount is shown on the report, but the
+// sale total stands on its own).
 export const inHouseSaleOf = (r) =>
-  num(r, "cashSale") + num(r, "creditCardSale") - num(r, "giftCard");
+  num(r, "cashSale") + num(r, "creditCardSale");
 
 export const saleExclTipOf = (r) =>
   inHouseSaleOf(r) + onlineSaleOf(r) + num(r, "totalCatering");

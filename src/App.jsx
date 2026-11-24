@@ -357,8 +357,9 @@ function App() {
     const creditCardTip = Number(updated.creditCardTip) || 0;
     const creditCardSale = totalSettle - creditCardTip;
     const systemGross = cashSale + creditCardSale;
-    const giftCard = Number(updated.giftCard) || 0;
-    const totalInHouse = systemGross - giftCard;
+    // Gift card redemptions are shown on the report for reference but are not
+    // deducted from in-house sales.
+    const totalInHouse = systemGross;
     const restaurantOnline = Number(updated.restaurantOnline) || 0;
     const restaurantOnlineTips = Number(updated.restaurantOnlineTips) || 0;
     const grubhub = Number(updated.grubhub) || 0;
