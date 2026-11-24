@@ -38,7 +38,7 @@ export function generatePDF(form, cateringNotes) {
   const summaryValues = [
     fmt(saleExclTipOf(form)),
     fmt((Number(form.cashSale) || 0) + (Number(form.cashTip) || 0) + (Number(form.cashCatering) || 0)),
-    fmt(form.totalInHouse),
+    fmt(inHouseSaleOf(form)),
     fmt(onlineSaleOf(form)),
     fmt(form.totalCatering),
   ];
@@ -129,7 +129,7 @@ export function generatePDF(form, cateringNotes) {
   secHeader("SALES CHANNELS", T.secondary, margin, cw);
   row("System Gross Sale", fmt(form.systemGross), margin, cw);
   row("Gift Card Redeemed", fmt(form.giftCard), margin, cw);
-  row("Total In House", fmt(form.totalInHouse), margin, cw, true);
+  row("Total In House", fmt(inHouseSaleOf(form)), margin, cw, true);
   y += 2;
 
   secHeader("ONLINE SALES", T.secondary, margin, cw);

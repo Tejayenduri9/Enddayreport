@@ -70,7 +70,7 @@ export default function ReportDetail({ report, onClose }) {
             <div className="ad-detail-section-label">Sales Channels</div>
             <Row label="System Gross Sale" value={fmt(report.systemGross)} />
             <Row label="Gift Card Redeemed" value={fmt(report.giftCard)} />
-            <Row label="Total In House" value={fmt(report.totalInHouse)} bold />
+            <Row label="Total In House" value={fmt(inHouseSaleOf(report))} bold />
           </div>
 
           <div className="ad-detail-section">
